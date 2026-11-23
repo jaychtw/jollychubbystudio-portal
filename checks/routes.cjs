@@ -25,11 +25,19 @@ const modules = JSON.parse(fs.readFileSync('migration/sources.json')).slice(1);
         const url = new URL(r.url());
         if (url.origin === base && r.status() >= 400 && url.pathname !== '/favicon.ico') failures.push([path,r.status(),url.pathname]);
       });
-      page.on('pageerror', e=>console.log('JS diagnostic',path,e.message.slice(0,220)));
+      page.on('pageerror', e=>failures.push([path,'JavaScript',e.message.slice(0,220)]));
       try {
         const r = await page.goto(base+path,{waitUntil:'domcontentloaded',timeout:45000});
         if (!r || r.status()!==200) failures.push([path,'entry',r?.status()]);
         await page.waitForTimeout(650);
+        if(path === '/wdic/') {
+          const data = await page.evaluate(async()=>{const r=await fetch('events.json'); return {status:r.status, feed: (await r.json()).generated};});
+          if(data.status!==200 || typeof data.feed!=='number') failures.push([path,'live feed',data]);
+        }
+        if(path === '/travelcanvas/') {
+          // Wait for Firebase authentication, without opening or editing any trip.
+          await page.waitForFunction(()=>document.body.innerText.trim().length>40,{},{timeout:10000});
+        }
         if (!(await page.locator('body').innerText()).trim() && !(await page.locator('canvas,iframe,svg,img').count())) failures.push([path,'empty']);
       } catch(e) {failures.push([path,e.message.slice(0,200)]);}
       finally {await context.close();}

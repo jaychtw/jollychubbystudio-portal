@@ -18,6 +18,10 @@ jobs:
           node-version: '24'
       - run: python3 migration/verify.py
       - run: npm install --prefix "$RUNNER_TEMP/studio-tools" firebase-tools@14.23.0 playwright@1.56.1 --no-audit --no-fund
+      - name: Inspect the custom domain before release
+        run: |
+          getent ahostsv4 jollychubbystudio.com | head -1 || true
+          curl -sS --max-time 12 -o /dev/null -w 'Custom domain HTTPS status %{http_code}\n' https://jollychubbystudio.com/ || true
       - name: Check browser routes using Firebase Hosting's emulator
         run: |
           export NODE_PATH="$RUNNER_TEMP/studio-tools/node_modules"

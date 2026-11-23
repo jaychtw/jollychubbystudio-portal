@@ -40,7 +40,8 @@ def localize(file, content, module):
                 return match.group()
             if path.rstrip("/").lstrip("/") in SLUGS:
                 return lead + path.rstrip("/") + "/" + value[len(path):]
-            base = directory if file.suffix in (".html", ".css") else ROOT / module
+            uses_module_url = re.match(r"""["']\s*,\s*import\.meta\.url""", content[match.end():])
+            base = directory if file.suffix in (".html", ".css") or uses_module_url else ROOT / module
             relative = os.path.relpath(target, base)
             if not relative.startswith("."):
                 relative = "./" + relative

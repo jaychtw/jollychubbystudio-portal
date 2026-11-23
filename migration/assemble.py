@@ -23,8 +23,12 @@ def assemble(item):
     if mode == "firebase":
         dest = OUT / item["slug"]
         dest.mkdir(exist_ok=True)
-        with urllib.request.urlopen(item["live"], timeout=30) as response:
-            body = response.read()
+        snapshot = subprocess.run(["git", "show", "HEAD:public/travelcanvas/index.html"], capture_output=True)
+        if snapshot.returncode == 0:
+            body = snapshot.stdout
+        else:
+            with urllib.request.urlopen(item["live"], timeout=30) as response:
+                body = response.read()
         if b"TravelCanvas" not in body or b"firebase" not in body:
             raise ValueError("Unexpected Travel Canvas entry")
         (dest / "index.html").write_bytes(body)
