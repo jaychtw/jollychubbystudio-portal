@@ -16,3 +16,9 @@ The “Assemble studio release on a working branch” workflow rebuilds from the
 GitHub Actions uses the repository secret `FIREBASE_SERVICE_ACCOUNT` and the Firebase project `jollychubbystudio`. The canonical domain also requires a connected custom domain and valid DNS records in Firebase Hosting. The contact address is `support@jollychubbystudio.com`.
 
 `public/ads.txt` has no seller entries. Add the exact account-authorized seller record when advertising is enabled. Review the privacy and terms pages when adding accounts, analytics, advertising or paid features.
+
+## Publishing a blog post
+
+Create `posts/YYYY-MM-DD-<slug>/en.md`, `zh.md`, or both. Copy the starter post’s YAML header and set its title, date and summary. Tags, a relative cover path and `draft: true` are optional. Each edition publishes independently. Store inline illustrations beside the Markdown and refer to them with paths such as `./diagram.png`. Slugs must be unique across dated folders.
+
+Run `npm ci && npm run build:blog` to regenerate the blog in the Hosting directory. The index, post pages, navigation and sitemap are generated before deployment. Merge the post into this repository’s main branch to publish it to Jolly Chubby Studio.
