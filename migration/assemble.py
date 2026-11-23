@@ -66,6 +66,17 @@ def assemble(item):
             raise ValueError(f"Missing entry for {repo}: {output}")
         skip = shutil.ignore_patterns(".*", "README*", "docs", "tests", "*.command", "*.py", "*.map") if output == src else shutil.ignore_patterns(".*", "*.map")
         shutil.copytree(output, dest, dirs_exist_ok=True, ignore=skip)
+        if item["slug"]:
+            for notice in src.rglob("*"):
+                if any(part in (".git", "node_modules") for part in notice.relative_to(src).parts):
+                    continue
+                name = notice.name.lower().split(".")[0].replace("_", "-")
+                if not notice.is_file() or name not in {"license", "licence", "notice", "third-party-notices", "attribution", "credits"}:
+                    continue
+                if not (dest / notice.name).exists():
+                    target = dest / "licenses" / (notice.relative_to(src).as_posix() + ".txt")
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copyfile(notice, target)
         print("Assembled", repo, flush=True)
 
 
