@@ -1,0 +1,377 @@
+[
+  {
+    "id": "portal",
+    "slug": "",
+    "repo": "jaychtw.github.io",
+    "revision": "5348d4f00dcb5555624c3cfb2f16ea29b052fcfa",
+    "mode": "build"
+  },
+  {
+    "id": "before-you-go",
+    "slug": "before-you-go",
+    "repo": "before-you-go",
+    "revision": "0f4b27b4f6fe3efbc6ead1864866c9a99514e4cd",
+    "live": "https://jaychtw.github.io/before-you-go/",
+    "mode": "static"
+  },
+  {
+    "id": "cinema-prompting-studio",
+    "slug": "cinema-prompting-studio",
+    "repo": "cinema-prompting-studio",
+    "revision": "0c3b45d8d1eba2335d927c6920bbf310713825fb",
+    "live": "https://jaychtw.github.io/cinema-prompting-studio/",
+    "mode": "static"
+  },
+  {
+    "id": "prompt-builder",
+    "slug": "prompt-builder",
+    "repo": "prompt-builder",
+    "revision": "63341e39e51b7dac18e189b91332c46187be076d",
+    "live": "https://jaychtw.github.io/prompt-builder/",
+    "mode": "static"
+  },
+  {
+    "id": "the-other-window",
+    "slug": "the-other-window",
+    "repo": "the-other-window",
+    "revision": "7337745791ab6de40d0ce062b4b84a405ebafcbd",
+    "live": "https://jaychtw.github.io/the-other-window/",
+    "mode": "static"
+  },
+  {
+    "id": "travel-canvas",
+    "slug": "travelcanvas",
+    "repo": "plan-together-travel-together",
+    "revision": "921b558d070c0bf4f45ed80a4e9913a0e3710bbf",
+    "live": "https://traveltogether-2a321.web.app/",
+    "mode": "firebase"
+  },
+  {
+    "id": "wdic",
+    "slug": "wdic",
+    "repo": "wdic",
+    "revision": "e29f68767ef3adf610fb189712a6d7024dc05b3d",
+    "live": "https://jaychtw.github.io/wdic/",
+    "mode": "site"
+  },
+  {
+    "id": "animal-match",
+    "slug": "animal-match",
+    "repo": "animal-match",
+    "revision": "372016711574bf216b94b9a3eb1490fa824f0090",
+    "live": "https://jaychtw.github.io/animal-match/",
+    "mode": "build"
+  },
+  {
+    "id": "armorheart",
+    "slug": "armorheart",
+    "repo": "armorheart",
+    "revision": "824618bed223c147a34562ff415e86a922594f7b",
+    "live": "https://jaychtw.github.io/armorheart/",
+    "mode": "build"
+  },
+  {
+    "id": "carrier-battle-group",
+    "slug": "carrier-battle-group",
+    "repo": "carrier-battle-group",
+    "revision": "1c8508dadce80af2c31b84c2ac3d406fd218c0c9",
+    "live": "https://jaychtw.github.io/carrier-battle-group/",
+    "mode": "static"
+  },
+  {
+    "id": "constellation-builder",
+    "slug": "constellation-builder",
+    "repo": "constellation-builder",
+    "revision": "b78929fd1270a457b77c847ebd933e0deef6987b",
+    "live": "https://jaychtw.github.io/constellation-builder/",
+    "mode": "static"
+  },
+  {
+    "id": "construction-projects",
+    "slug": "construction-projects",
+    "repo": "layer-by-layer",
+    "revision": "adcb4aa7502cfae7fbc36598a0cdbbcb0c7ef22f",
+    "live": "https://jaychtw.github.io/layer-by-layer/",
+    "mode": "static"
+  },
+  {
+    "id": "formosa-quest",
+    "slug": "formosa-quest",
+    "repo": "formosa-quest",
+    "revision": "98f64306da0599aac6fde5b9f6a5224048edc75d",
+    "live": "https://jaychtw.github.io/formosa-quest/",
+    "mode": "build"
+  },
+  {
+    "id": "gbd-war-room",
+    "slug": "gbd-war-room",
+    "repo": "gbd-war-room",
+    "revision": "f03ca4b1fe7572181c29c5fe94218f536f6ec42c",
+    "live": "https://jaychtw.github.io/gbd-war-room/",
+    "mode": "static"
+  },
+  {
+    "id": "jack-of-all-trades",
+    "slug": "jack-of-all-trades",
+    "repo": "jack-of-all-trades",
+    "revision": "337a7af7ffb4a52a22583547f62aea1a35ed7c7d",
+    "live": "https://jaychtw.github.io/jack-of-all-trades/",
+    "mode": "build"
+  },
+  {
+    "id": "jasmine-odyssey",
+    "slug": "jasmine-odyssey",
+    "repo": "jasmine-odyssey",
+    "revision": "78306ed91ab39fecff6034f14dcb9a284c8a0f10",
+    "live": "https://jaychtw.github.io/jasmine-odyssey/",
+    "mode": "build"
+  },
+  {
+    "id": "jeremy-odyssey",
+    "slug": "jeremy-odyssey",
+    "repo": "jeremy-odyssey",
+    "revision": "bb77e034df5837ed0d98f0d7040a693f530e6360",
+    "live": "https://jaychtw.github.io/jeremy-odyssey/",
+    "mode": "build"
+  },
+  {
+    "id": "junctioneer",
+    "slug": "junctioneer",
+    "repo": "junctioneer",
+    "revision": "b35abf0276bb9dfd0583d7dfc8d9c63b2cc824ec",
+    "live": "https://jaychtw.github.io/junctioneer/",
+    "mode": "build"
+  },
+  {
+    "id": "kaiju-demolition",
+    "slug": "kaiju-demolition",
+    "repo": "kaiju-demolition",
+    "revision": "572a663af66f37e8cfa12b85d219aac55e23bca3",
+    "live": "https://jaychtw.github.io/kaiju-demolition/",
+    "mode": "build"
+  },
+  {
+    "id": "kaiju-tournament",
+    "slug": "kaiju-tournament",
+    "repo": "kaiju-tournament",
+    "revision": "430aa94e891f9a7738a0102037b7f7f4ebfa4216",
+    "live": "https://jaychtw.github.io/kaiju-tournament/",
+    "mode": "build"
+  },
+  {
+    "id": "kodi-and-gilly-the-game",
+    "slug": "kodi-and-gilly-the-game",
+    "repo": "kodi-and-gilly-the-game",
+    "revision": "ac7164f44baa3a7c20f50cd70ac0fe824527cf8a",
+    "live": "https://jaychtw.github.io/kodi-and-gilly-the-game/",
+    "mode": "static"
+  },
+  {
+    "id": "launch-sequence",
+    "slug": "launch-sequence",
+    "repo": "launch-sequence",
+    "revision": "8c030ec4d5e3f0e451f73e9a8de086697e737fd3",
+    "live": "https://jaychtw.github.io/launch-sequence/",
+    "mode": "build"
+  },
+  {
+    "id": "my-queens",
+    "slug": "my-queens",
+    "repo": "my-queens",
+    "revision": "5b81e5c979c76bd83cf420247349a6a933a49106",
+    "live": "https://jaychtw.github.io/my-queens/",
+    "mode": "build"
+  },
+  {
+    "id": "nom-nom-boom",
+    "slug": "nom-nom-boom",
+    "repo": "nom_nom_boom",
+    "revision": "a4ed9e060088afa47c76735572e6e7dda3c63910",
+    "live": "https://jaychtw.github.io/nom_nom_boom/",
+    "mode": "build"
+  },
+  {
+    "id": "pedestrian-living-hell",
+    "slug": "pedestrian-living-hell",
+    "repo": "pedestrian-living-hell",
+    "revision": "a99e7e8b181eb5ad7a5275b6aed095d651c9b68f",
+    "live": "https://jaychtw.github.io/pedestrian-living-hell/",
+    "mode": "static"
+  },
+  {
+    "id": "petting-spots",
+    "slug": "petting-spots",
+    "repo": "petting-spots",
+    "revision": "47b6d3ffbc17789899d6da10cd65fcc89ade362a",
+    "live": "https://jaychtw.github.io/petting-spots/",
+    "mode": "static"
+  },
+  {
+    "id": "republic-of-chickens",
+    "slug": "republic-of-chickens",
+    "repo": "reppublic-of-chickens",
+    "revision": "4ad62e03ef16242b995105e2e5c0c7caf63b9d73",
+    "live": "https://jaychtw.github.io/reppublic-of-chickens/",
+    "mode": "build"
+  },
+  {
+    "id": "riot-defender",
+    "slug": "riot-defender",
+    "repo": "riot-defender",
+    "revision": "50529a94d0ea5f97fdfe379c1bb1a4a6e497b28c",
+    "live": "https://jaychtw.github.io/riot-defender/",
+    "mode": "build"
+  },
+  {
+    "id": "shadow-becomes-me",
+    "slug": "shadow-becomes-me",
+    "repo": "shadow-becomes-me",
+    "revision": "c5faf728a54660add3af3989c22847c59fe6b50b",
+    "live": "https://jaychtw.github.io/shadow-becomes-me/",
+    "mode": "build"
+  },
+  {
+    "id": "shape-match",
+    "slug": "shape-match",
+    "repo": "shape-match",
+    "revision": "8b8bee699f1dc66fb335d6584f98417929d652bb",
+    "live": "https://jaychtw.github.io/shape-match/",
+    "mode": "build"
+  },
+  {
+    "id": "shibuya-scramble-crossing",
+    "slug": "shibuya-scramble-crossing",
+    "repo": "shibuya-scramble-crossing",
+    "revision": "acec696278e7a7113d68e42f3f8a9ab59c7dd25c",
+    "live": "https://jaychtw.github.io/shibuya-scramble-crossing/",
+    "mode": "static"
+  },
+  {
+    "id": "snacks-match-raohe",
+    "slug": "snacks-match-raohe",
+    "repo": "snacks-match-raohe",
+    "revision": "29886ca22efd0cb27b248aecc0415093e38cd4bb",
+    "live": "https://jaychtw.github.io/snacks-match-raohe/",
+    "mode": "build"
+  },
+  {
+    "id": "squirrel-control",
+    "slug": "squirrel-control",
+    "repo": "squirrel-control",
+    "revision": "b7ca1dffd55eff650979d5ed828f78b37f4dfd31",
+    "live": "https://jaychtw.github.io/squirrel-control/",
+    "mode": "build"
+  },
+  {
+    "id": "stillwater-aquarium",
+    "slug": "stillwater-aquarium",
+    "repo": "stillwater-aquarium",
+    "revision": "45489307a4e4b34c694c0899e1797e53afd08001",
+    "live": "https://jaychtw.github.io/stillwater-aquarium/",
+    "mode": "static"
+  },
+  {
+    "id": "stillwater",
+    "slug": "stillwater",
+    "repo": "stillwater",
+    "revision": "afa21d79ddb08469c46f30c99d319942e64f0782",
+    "live": "https://jaychtw.github.io/stillwater/",
+    "mode": "static"
+  },
+  {
+    "id": "taipei-rush",
+    "slug": "taipei-rush",
+    "repo": "taipei-rush",
+    "revision": "2b31dd9e0e2c4548b06070decb51882d5ec7c575",
+    "live": "https://jaychtw.github.io/taipei-rush/",
+    "mode": "static"
+  },
+  {
+    "id": "tavern-brawl",
+    "slug": "tavern-brawl",
+    "repo": "tavern-brawl",
+    "revision": "9ca64cf6a055ca583002f278d14aad07a76bb56e",
+    "live": "https://jaychtw.github.io/tavern-brawl/",
+    "mode": "static"
+  },
+  {
+    "id": "the-butterfly-department",
+    "slug": "the-butterfly-department",
+    "repo": "the-butterfly-department",
+    "revision": "86eee1a8689bf87c678ec4081d55810033b90c44",
+    "live": "https://jaychtw.github.io/the-butterfly-department/",
+    "mode": "build"
+  },
+  {
+    "id": "the-hours-between",
+    "slug": "the-hours-between",
+    "repo": "the-hours-between",
+    "revision": "830e3c041bc40e1312a7751f0aa2b784f63493a4",
+    "live": "https://jaychtw.github.io/the-hours-between/",
+    "mode": "static"
+  },
+  {
+    "id": "the-impossible-room",
+    "slug": "the-impossible-room",
+    "repo": "the-impossible-room",
+    "revision": "fa24693d1b71c9b3957cf53a51ccfdf36696134d",
+    "live": "https://jaychtw.github.io/the-impossible-room/",
+    "mode": "build"
+  },
+  {
+    "id": "the-last-crossing",
+    "slug": "the-last-crossing",
+    "repo": "the-last-crossing",
+    "revision": "f8ac70f78b6c2fbecae04b09dc336386003cc12a",
+    "live": "https://jaychtw.github.io/the-last-crossing/",
+    "mode": "static"
+  },
+  {
+    "id": "the-last-lantern",
+    "slug": "the-last-lantern",
+    "repo": "the-last-lantern",
+    "revision": "99dcad1f29c7a6d5e389ac274046eb8d6e24a5a6",
+    "live": "https://jaychtw.github.io/the-last-lantern/",
+    "mode": "build"
+  },
+  {
+    "id": "the-other-ninty-percent",
+    "slug": "the-other-ninty-percent",
+    "repo": "the-other-ninty-percent",
+    "revision": "60b31f84040769b2a76e7444e8cbe295c255a289",
+    "live": "https://jaychtw.github.io/the-other-ninty-percent/",
+    "mode": "build"
+  },
+  {
+    "id": "tidelight",
+    "slug": "tidelight",
+    "repo": "tidelight",
+    "revision": "9a1cea4b93833664af25a4a2005e9d35cfbc4c04",
+    "live": "https://jaychtw.github.io/tidelight/",
+    "mode": "build"
+  },
+  {
+    "id": "typhoon-defender",
+    "slug": "typhoon-defender",
+    "repo": "typhoon-defender",
+    "revision": "f80c3303f645545d4acaccbebc2670f3290e755c",
+    "live": "https://jaychtw.github.io/typhoon-defender/",
+    "mode": "build"
+  },
+  {
+    "id": "wonderlands",
+    "slug": "wonderlands",
+    "repo": "wonderlands",
+    "revision": "33f262a5be41d118d4ebd90ca955fbb2eb2ccb25",
+    "live": "https://jaychtw.github.io/wonderlands/",
+    "mode": "build"
+  },
+  {
+    "id": "zero-sum",
+    "slug": "zero-sum",
+    "repo": "zero-sum",
+    "revision": "20ed4a7554ab66b23ba3e81a7c23ae819d68dcc5",
+    "live": "https://jaychtw.github.io/zero-sum/",
+    "mode": "static"
+  }
+]

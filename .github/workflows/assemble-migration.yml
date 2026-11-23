@@ -1,0 +1,45 @@
+name: Assemble migration branch
+on:
+  push:
+    branches: [migration/firebase-portal]
+    paths:
+      - 'migration/**'
+      - '.github/workflows/assemble-migration.yml'
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: python3 migration/assemble.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: studio-runtime
+          path: public
+  stage:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: migration/firebase-portal
+      - uses: actions/download-artifact@v4
+        with:
+          name: studio-runtime
+          path: public
+      - name: Commit release files on the working branch
+        run: |
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public
+          git diff --cached --quiet || git commit -m "Stage consolidated studio runtimes"
+          git push origin HEAD:migration/firebase-portal
