@@ -1,0 +1,21 @@
+name: Inspect Travel Canvas hosting entry
+on:
+  push:
+    branches: [migration/firebase-portal]
+    paths: ['.github/workflows/inspect-travel.yml']
+permissions: {}
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Read public entry and asset references
+        run: |
+          curl --fail --location --max-time 30 --silent --show-error https://traveltogether-2a321.web.app/ -o /tmp/travel.html
+          wc -c /tmp/travel.html
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+          html = Path('/tmp/travel.html').read_text()
+          print(re.findall(r'<title[^>]*>([^<]+)|(?:src|href)="([^"]+)"', html)[:80])
+          print('Firebase, auth, routing indicators:', {x:html.count(x) for x in ['firebase', 'signIn', '/__/', '/api/', 'serviceWorker', 'indexedDB']})
+          PY
