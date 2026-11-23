@@ -66,6 +66,14 @@ for file in ROOT.rglob("*"):
     if source != result:
         file.write_text(result)
 
+# The app can advance independently of the pinned portal catalog.
+place_script = (ROOT / "before-you-go/catalog.js").read_text().strip()
+place_count = len(json.loads(place_script.removeprefix("const places = ").removesuffix(";")))
+for listing in ("apps/index.html", "apps/before-you-go/index.html"):
+    path = ROOT / listing
+    content = re.sub(r"from \d+ destinations across Taiwan", f"from {place_count} destinations across Taiwan", path.read_text())
+    path.write_text(re.sub(r"從臺灣 \d+ 個景點", f"從臺灣 {place_count} 個景點", content))
+
 for name, title, zh, eng, chinese in [
     ("privacy", "Privacy", "隱私權", "Games and apps may save preferences or progress in your browser. Clearing site data removes local copies. Shared features can transmit the information you submit. Embedded media, maps and live streams connect to their providers when loaded. Hosting providers receive connection information when serving pages. Email the studio with privacy questions or to request help with data you shared.", "遊戲與應用程式可能會將偏好設定或進度儲存在瀏覽器中。清除網站資料會移除本機副本。使用共享功能時，您提交的資訊可能會傳送至服務提供者。載入嵌入式媒體、地圖與直播時，瀏覽器會連線至相關供應商。代管服務會在提供網頁時接收連線資訊。若有隱私疑問或需要處理已分享的資料，請來信聯絡。"),
     ("terms", "Terms of use", "使用條款", "You may play, read and explore the works hosted here. Individual works may include separately licensed software, artwork and services. Their published license terms apply to those materials. Only share content you have permission to share. Direct questions about reuse, attribution or support to the studio.", "歡迎遊玩、閱讀與探索本站作品。個別作品可能包含另行授權的軟體、美術素材與服務，相關素材適用其公布的授權條款。請僅分享您有權分享的內容。如有再利用、出處標示或支援問題，請聯絡工作室。")
