@@ -1,0 +1,12 @@
+{
+  "name": "jolly-chubby-studio-portal",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build:blog": "node scripts/build-blog.mjs"
+  },
+  "dependencies": {
+    "marked": "13.0.3",
+    "yaml": "2.9.1"
+  }
+}

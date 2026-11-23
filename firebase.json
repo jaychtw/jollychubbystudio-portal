@@ -13,6 +13,9 @@
         "destination": "https://jaychtw.github.io/wdic/events.json",
         "type": 302
       }
+    ],
+    "predeploy": [
+      "npm run build:blog"
     ]
   }
 }
