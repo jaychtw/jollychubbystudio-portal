@@ -2,9 +2,6 @@ name: Verify Firebase routes
 on:
   pull_request:
     branches: [main]
-  push:
-    branches: [migration/firebase-portal]
-    paths: ['.github/workflows/verify-routing.yml', 'checks/**']
   workflow_dispatch:
 permissions:
   contents: read

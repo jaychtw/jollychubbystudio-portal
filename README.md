@@ -1,6 +1,6 @@
 # Jolly Chubby Studio
 
-The public portfolio is served by Firebase Hosting at https://jollychubbystudio.com. The deployable site is committed under `public/`. Firebase serves these files directly.
+The public portfolio is configured to be served by Firebase Hosting at https://jollychubbystudio.com. The deployable site is committed under `public/`. Firebase serves these files directly.
 
 ## Publishing a work
 
@@ -9,7 +9,7 @@ The public portfolio is served by Firebase Hosting at https://jollychubbystudio.
 3. Update the studio sitemap and validate changed routes in the Firebase Hosting emulator. Run `python3 migration/verify.py` for the catalog and local HTML asset checks. The browser workflow also checks nested pages.
 4. Merge the studio pull request into `main` to release the committed files to Firebase. The live workflow can also be dispatched on `main`. Reverting a release commit through a new commit triggers the same deployment path.
 
-The initial migration scripts reproduce the catalog using its pinned source inputs. Travel Canvas uses its separately hosted frontend and existing Firebase backend. Shared trip records stay in that backend. WDIC uses the upstream collector's refreshed public feed.
+The “Assemble studio release on a working branch” workflow rebuilds from the manifest on a selected working branch. Its output replaces that branch’s entire public directory. Update the pinned portal/catalog input alongside module revisions before a full rebuild. The initial migration scripts reproduce the catalog using its pinned source inputs. Travel Canvas uses its separately hosted frontend and existing Firebase backend. Shared trip records stay in that backend. WDIC uses the upstream collector's refreshed public feed.
 
 ## Hosting setup
 

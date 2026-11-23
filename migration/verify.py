@@ -14,6 +14,8 @@ class Links(HTMLParser):
         self.assets = []
     def handle_starttag(self, tag, attrs):
         a = dict(attrs)
+        if tag == "a" and a.get("href","").startswith("/") and not a.get("download"):
+            self.assets.append(a["href"])
         if tag == "a" and "data-project" in a:
             self.cards.append(a["href"])
         if tag in ("img","script","audio","video","source","iframe"):

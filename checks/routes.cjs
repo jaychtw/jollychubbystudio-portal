@@ -27,6 +27,7 @@ const modules = JSON.parse(fs.readFileSync('migration/sources.json')).slice(1);
       });
       page.on('pageerror', e=>failures.push([path,'JavaScript',e.message.slice(0,220)]));
       try {
+        const auth = path === '/travelcanvas/' ? page.waitForResponse(r=>new URL(r.url()).hostname === 'identitytoolkit.googleapis.com' && r.url().includes('accounts:signUp'),{timeout:18000}).then(r=>r.status()).catch(()=>0) : undefined;
         const r = await page.goto(base+path,{waitUntil:'domcontentloaded',timeout:45000});
         if (!r || r.status()!==200) failures.push([path,'entry',r?.status()]);
         await page.waitForTimeout(650);
@@ -36,7 +37,8 @@ const modules = JSON.parse(fs.readFileSync('migration/sources.json')).slice(1);
         }
         if(path === '/travelcanvas/') {
           // Wait for Firebase authentication, without opening or editing any trip.
-          await page.waitForFunction(()=>document.body.innerText.trim().length>40,{},{timeout:10000});
+          const status = await auth;
+          if (status !== 200) failures.push([path,'anonymous sign-in',status]);
         }
         if (!(await page.locator('body').innerText()).trim() && !(await page.locator('canvas,iframe,svg,img').count())) failures.push([path,'empty']);
       } catch(e) {failures.push([path,e.message.slice(0,200)]);}

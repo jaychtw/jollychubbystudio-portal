@@ -1,16 +1,11 @@
-name: Assemble migration branch
+name: Assemble studio release on a working branch
 on:
-  push:
-    branches: [migration/firebase-portal]
-    paths:
-      - 'migration/sources.json'
-      - 'migration/assemble.py'
-      - 'migration/localize.py'
-      - '.github/workflows/assemble-migration.yml'
+  workflow_dispatch:
 permissions:
   contents: read
 jobs:
   build:
+    if: github.ref_type == 'branch' && github.ref_name != 'main'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -34,7 +29,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: migration/firebase-portal
+          ref: ${{ github.ref_name }}
+      - name: Replace the previous build in the runner checkout
+        run: rm -rf public
       - uses: actions/download-artifact@v4
         with:
           name: studio-runtime
@@ -46,4 +43,4 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add public
           git diff --cached --quiet || git commit -m "Stage consolidated studio runtimes"
-          git push origin HEAD:migration/firebase-portal
+          git push origin "HEAD:$GITHUB_REF_NAME"
