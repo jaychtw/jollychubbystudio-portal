@@ -1,0 +1,24 @@
+name: Verify Firebase routes
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [migration/firebase-portal]
+    paths: ['.github/workflows/verify-routing.yml', 'checks/**']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: python3 migration/verify.py
+      - run: npm install --prefix "$RUNNER_TEMP/studio-tools" firebase-tools@14.23.0 playwright@1.56.1 --no-audit --no-fund
+      - name: Check browser routes using Firebase Hosting's emulator
+        run: |
+          export NODE_PATH="$RUNNER_TEMP/studio-tools/node_modules"
+          "$RUNNER_TEMP/studio-tools/node_modules/.bin/firebase" emulators:exec --project demo-jollychubbystudio --only hosting 'node checks/routes.cjs'
