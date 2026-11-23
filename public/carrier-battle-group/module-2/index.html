@@ -1,0 +1,3080 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>CVN-78 Carrier Strike Group — 3D Ocean Sandbox</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #07131f;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: none;
+    }
+    #canvas-container {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      cursor: grab;
+    }
+    #canvas-container:active {
+      cursor: grabbing;
+    }
+    .glass-panel {
+      background: rgba(8, 19, 32, 0.62);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(148, 210, 255, 0.18);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+    }
+    .btn-pill {
+      transition: all 0.18s ease;
+    }
+    .btn-pill:hover {
+      transform: translateY(-1px);
+      background: rgba(56, 189, 248, 0.25);
+      border-color: rgba(125, 211, 252, 0.55);
+    }
+    .btn-pill:active {
+      transform: translateY(0px) scale(0.97);
+    }
+    .btn-active {
+      background: rgba(14, 165, 233, 0.38) !important;
+      border-color: rgba(125, 211, 252, 0.85) !important;
+      color: #ffffff !important;
+      box-shadow: 0 0 14px rgba(56, 189, 248, 0.35);
+    }
+    .hud-fade {
+      transition: opacity 0.28s ease, transform 0.28s ease;
+    }
+    .toast-enter {
+      animation: toastSlide 0.28s ease forwards;
+    }
+    @keyframes toastSlide {
+      from { opacity: 0; transform: translate(-50%, 10px); }
+      to { opacity: 1; transform: translate(-50%, 0); }
+    }
+    /* Custom subtle range slider */
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      height: 4px;
+      background: rgba(148, 210, 255, 0.25);
+      border-radius: 999px;
+      outline: none;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #38bdf8;
+      cursor: pointer;
+      border: 2px solid #e0f2fe;
+    }
+  </style>
+</head>
+<body class="text-slate-100">
+  <!-- Fullscreen 3D Viewport -->
+  <div id="canvas-container"></div>
+
+  <!-- Top Bar: Title, Ops Telemetry, Language & Audio Controls -->
+  <header class="fixed top-3 left-3 right-3 z-20 flex flex-wrap items-start justify-between gap-2 pointer-events-none">
+    <!-- Left: Carrier Title & Live Ops Counters -->
+    <div class="glass-panel rounded-2xl px-3.5 py-2.5 pointer-events-auto flex items-center gap-3.5 max-w-full">
+      <div class="flex items-center gap-2.5">
+        <div class="w-9 h-9 rounded-xl bg-sky-500/20 border border-sky-400/40 flex items-center justify-center text-sky-300 font-bold text-xs tracking-wider shrink-0">
+          78
+        </div>
+        <div class="min-w-0">
+          <h1 id="ui-title" class="text-sm sm:text-base font-semibold tracking-tight text-white leading-tight truncate">
+            USS Gerald R. Ford
+          </h1>
+          <p id="ui-subtitle" class="text-[11px] text-sky-200/75 leading-tight truncate">
+            Carrier Strike Group • Interactive 3D Ocean
+          </p>
+        </div>
+      </div>
+
+      <div class="hidden sm:flex items-center gap-3 pl-3 border-l border-sky-300/15 text-xs">
+        <div class="text-center">
+          <div id="stat-launches" class="font-semibold text-sky-300 tabular-nums text-sm">0</div>
+          <div id="lbl-launches" class="text-[10px] text-slate-300/80 uppercase tracking-wider">Launches</div>
+        </div>
+        <div class="text-center">
+          <div id="stat-traps" class="font-semibold text-emerald-300 tabular-nums text-sm">0</div>
+          <div id="lbl-traps" class="text-[10px] text-slate-300/80 uppercase tracking-wider">Landings</div>
+        </div>
+        <div class="text-center">
+          <div id="stat-airborne" class="font-semibold text-amber-300 tabular-nums text-sm">2</div>
+          <div id="lbl-airborne" class="text-[10px] text-slate-300/80 uppercase tracking-wider">Airborne</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Quick Toggles (Language, Sound, Auto-Ops, Hide HUD) -->
+    <div class="flex items-center gap-1.5 pointer-events-auto">
+      <button id="btn-auto" type="button" class="glass-panel btn-pill btn-active rounded-xl px-2.5 py-2 text-xs font-medium flex items-center gap-1.5" title="Toggle autonomous flight operations">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" id="auto-dot"></span>
+        <span id="lbl-auto">Auto Ops</span>
+      </button>
+      <button id="btn-sound" type="button" class="glass-panel btn-pill rounded-xl px-2.5 py-2 text-xs font-medium flex items-center gap-1.5" title="Toggle Web Audio soundscape">
+        <span id="sound-icon">🔇</span>
+        <span id="lbl-sound" class="hidden sm:inline">Sound Off</span>
+      </button>
+      <button id="btn-lang" type="button" class="glass-panel btn-pill rounded-xl px-2.5 py-2 text-xs font-semibold text-sky-200" title="Switch English / Traditional Chinese">
+        繁體中文
+      </button>
+      <button id="btn-hud" type="button" class="glass-panel btn-pill rounded-xl px-2.5 py-2 text-xs font-medium text-slate-200" title="Hide or show controls">
+        <span id="lbl-hud">Hide UI</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Floating Status / Action Toast -->
+  <div id="toast-bar" class="fixed top-20 left-1/2 -translate-x-1/2 z-20 pointer-events-none opacity-0 transition-opacity duration-300">
+    <div id="toast-text" class="glass-panel rounded-full px-4 py-1.5 text-xs font-medium text-sky-100 whitespace-nowrap">
+      EMALS Catapult 1 Ready
+    </div>
+  </div>
+
+  <!-- Bottom Control Deck -->
+  <footer id="bottom-hud" class="hud-fade fixed bottom-3 left-3 right-3 z-20 flex flex-col items-center gap-2 pointer-events-none">
+    <!-- Subtle Interactive Hint -->
+    <div id="ui-hint" class="text-[11px] text-sky-100/75 bg-slate-950/40 backdrop-blur-sm px-3 py-1 rounded-full border border-white/10 pointer-events-none text-center">
+      Drag to orbit • Scroll to zoom • Click deck to launch • Click ocean for wave pulse • Click any jet to follow
+    </div>
+
+    <!-- Main Action & Environment Bar -->
+    <div class="glass-panel rounded-2xl p-2.5 pointer-events-auto flex flex-wrap items-center justify-center gap-2 max-w-4xl w-full sm:w-auto">
+      <!-- Flight Deck Actions -->
+      <div class="flex items-center gap-1.5">
+        <button id="btn-launch" type="button" class="btn-pill rounded-xl px-3 py-2 text-xs font-semibold bg-sky-500/30 border border-sky-400/50 text-white flex items-center gap-1.5">
+          <span>✈️</span>
+          <span id="lbl-launch">Launch Jet</span>
+        </button>
+        <button id="btn-recover" type="button" class="btn-pill rounded-xl px-3 py-2 text-xs font-semibold bg-emerald-500/25 border border-emerald-400/45 text-emerald-100 flex items-center gap-1.5">
+          <span>🛬</span>
+          <span id="lbl-recover">Call Landing</span>
+        </button>
+        <button id="btn-scramble" type="button" class="btn-pill rounded-xl px-3 py-2 text-xs font-semibold bg-amber-500/25 border border-amber-400/45 text-amber-100 flex items-center gap-1.5">
+          <span>⚡</span>
+          <span id="lbl-scramble">Scramble Wing</span>
+        </button>
+      </div>
+
+      <div class="hidden md:block w-px h-6 bg-sky-300/20"></div>
+
+      <!-- Camera Views -->
+      <div class="flex items-center gap-1 bg-slate-950/35 rounded-xl p-1 border border-white/10">
+        <button id="cam-orbit" data-cam="orbit" type="button" class="cam-btn btn-pill btn-active rounded-lg px-2.5 py-1.5 text-[11px] font-medium border border-transparent">Orbit</button>
+        <button id="cam-bridge" data-cam="bridge" type="button" class="cam-btn btn-pill rounded-lg px-2.5 py-1.5 text-[11px] font-medium border border-transparent text-slate-300">Tower</button>
+        <button id="cam-chase" data-cam="chase" type="button" class="cam-btn btn-pill rounded-lg px-2.5 py-1.5 text-[11px] font-medium border border-transparent text-slate-300">Jet Cam</button>
+        <button id="cam-convoy" data-cam="convoy" type="button" class="cam-btn btn-pill rounded-lg px-2.5 py-1.5 text-[11px] font-medium border border-transparent text-slate-300">Convoy</button>
+      </div>
+
+      <div class="hidden md:block w-px h-6 bg-sky-300/20"></div>
+
+      <!-- Weather / Atmosphere Mood -->
+      <div class="flex items-center gap-1 bg-slate-950/35 rounded-xl p-1 border border-white/10">
+        <button id="env-sunset" data-env="sunset" type="button" class="env-btn btn-pill btn-active rounded-lg px-2.5 py-1.5 text-[11px] font-medium border border-transparent">Sunset</button>
+        <button id="env-noon" data-env="noon" type="button" class="env-btn btn-pill rounded-lg px-2.5 py-1.5 text-[11px] font-medium border border-transparent text-slate-300">Noon</button>
+        <button id="env-storm" data-env="storm" type="button" class="env-btn btn-pill rounded-lg px-2.5 py-1.5 text-[11px] font-medium border border-transparent text-slate-300">Storm</button>
+        <button id="env-night" data-env="night" type="button" class="env-btn btn-pill rounded-lg px-2.5 py-1.5 text-[11px] font-medium border border-transparent text-slate-300">Night</button>
+      </div>
+
+      <!-- Sea State Slider -->
+      <div class="flex items-center gap-2 px-2 py-1 bg-slate-950/35 rounded-xl border border-white/10">
+        <span id="lbl-waves" class="text-[11px] text-sky-200/80 whitespace-nowrap">Swell</span>
+        <input id="slider-swell" type="range" min="0.4" max="2.2" step="0.05" value="1.0" class="w-16 sm:w-20" aria-label="Ocean Swell" />
+      </div>
+    </div>
+  </footer>
+
+  <!-- Minimal Show-UI Button (visible only when HUD is hidden) -->
+  <button id="btn-show-hud" type="button" class="hidden fixed bottom-4 right-4 z-30 glass-panel btn-pill rounded-xl px-3 py-2 text-xs font-medium text-sky-100">
+    Show UI
+  </button>
+
+  <script>
+  (function () {
+    'use strict';
+
+    // =========================================================================
+    // 1. BILINGUAL LOCALIZATION (EN / 繁體中文)
+    // =========================================================================
+    const I18N = {
+      en: {
+        title: 'USS Gerald R. Ford',
+        subtitle: 'Carrier Strike Group • Interactive 3D Ocean',
+        launches: 'Launches',
+        traps: 'Landings',
+        airborne: 'Airborne',
+        autoOps: 'Auto Ops',
+        soundOn: 'Sound On',
+        soundOff: 'Sound Off',
+        langBtn: '繁體中文',
+        hideUi: 'Hide UI',
+        showUi: 'Show UI',
+        hint: 'Drag to orbit • Scroll to zoom • Click deck to launch • Click ocean for wave pulse • Click any jet to follow',
+        launch: 'Launch Jet',
+        recover: 'Call Landing',
+        scramble: 'Scramble Wing',
+        camOrbit: 'Orbit',
+        camBridge: 'Tower',
+        camChase: 'Jet Cam',
+        camConvoy: 'Convoy',
+        envSunset: 'Sunset',
+        envNoon: 'Noon',
+        envStorm: 'Storm',
+        envNight: 'Night',
+        waves: 'Swell',
+        msgLaunch: (cs, cat) => `${cs} launching from EMALS Catapult ${cat}`,
+        msgNoDeckJet: 'All fighters are currently airborne or launching',
+        msgRecover: (cs) => `${cs} cleared for angled deck arrestor approach`,
+        msgNoAirJet: 'No fighters on patrol — launch one first',
+        msgScramble: 'Scrambling flight wing — rapid EMALS sequence initiated',
+        msgTrap: (cs) => `${cs} caught Wire 3 — clean trap!`,
+        msgFollow: (cs) => `Tracking ${cs} — drag or switch view anytime`,
+        msgRipple: 'Ocean swell pulse triggered'
+      },
+      zh: {
+        title: '福特號航空母艦打擊群',
+        subtitle: 'CVN-78 互動 3D 海洋與艦載機起降沙盒',
+        launches: '彈射起飛',
+        traps: '攔阻降落',
+        airborne: '巡航中',
+        autoOps: '自動調度',
+        soundOn: '音效開啟',
+        soundOff: '音效關閉',
+        langBtn: 'English',
+        hideUi: '隱藏介面',
+        showUi: '顯示介面',
+        hint: '拖曳旋轉視角 • 滾輪縮放 • 點擊甲板起飛 • 點擊海面產生波紋 • 點擊戰機跟拍',
+        launch: '彈射起飛',
+        recover: '呼叫降落',
+        scramble: '緊急升空',
+        camOrbit: '自由環繞',
+        camBridge: '艦島塔台',
+        camChase: '戰機跟拍',
+        camConvoy: '護衛艦隊',
+        envSunset: '黃金日落',
+        envNoon: '晴朗正午',
+        envStorm: '暴風雨',
+        envNight: '夜間巡航',
+        waves: '海浪',
+        msgLaunch: (cs, cat) => `${cs} 正從第 ${cat} 號電磁彈射器起飛`,
+        msgNoDeckJet: '目前所有戰機皆在空中或準備起飛中',
+        msgRecover: (cs) => `${cs} 已獲准進場，準備勾索降落斜角甲板`,
+        msgNoAirJet: '目前空中無巡航戰機，請先彈射起飛',
+        msgScramble: '緊急升空！連續電磁彈射序列啟動',
+        msgTrap: (cs) => `${cs} 成功勾住第 3 號攔阻索！`,
+        msgFollow: (cs) => `正在跟拍 ${cs} — 隨時可切換其他視角`,
+        msgRipple: '海面激起擴散波紋'
+      }
+    };
+
+    let lang = 'en';
+    try {
+      const saved = localStorage.getItem('cvn78_lang');
+      if (saved === 'en' || saved === 'zh') lang = saved;
+    } catch (e) {}
+
+    // =========================================================================
+    // 2. WEB AUDIO PROCEDURAL SOUNDSCAPE
+    // =========================================================================
+    class SoundEngine {
+      constructor() {
+        this.ctx = null;
+        this.enabled = false;
+        this.masterGain = null;
+        this.oceanFilter = null;
+        this.oceanGain = null;
+      }
+
+      init() {
+        if (this.ctx) return;
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        this.ctx = new AudioCtx();
+        this.masterGain = this.ctx.createGain();
+        this.masterGain.gain.value = 0.0;
+        this.masterGain.connect(this.ctx.destination);
+
+        // Pink-ish noise buffer for continuous ocean surf & wind
+        const bufferSize = this.ctx.sampleRate * 3;
+        const noiseBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+        const data = noiseBuffer.getChannelData(0);
+        let b0 = 0, b1 = 0, b2 = 0;
+        for (let i = 0; i < bufferSize; i++) {
+          const white = Math.random() * 2 - 1;
+          b0 = 0.997 * b0 + white * 0.029;
+          b1 = 0.985 * b1 + white * 0.032;
+          b2 = 0.950 * b2 + white * 0.048;
+          data[i] = (b0 + b1 + b2 + white * 0.02) * 0.6;
+        }
+        const oceanSrc = this.ctx.createBufferSource();
+        oceanSrc.buffer = noiseBuffer;
+        oceanSrc.loop = true;
+
+        this.oceanFilter = this.ctx.createBiquadFilter();
+        this.oceanFilter.type = 'lowpass';
+        this.oceanFilter.frequency.value = 340;
+        this.oceanFilter.Q.value = 0.7;
+
+        this.oceanGain = this.ctx.createGain();
+        this.oceanGain.gain.value = 0.24;
+
+        oceanSrc.connect(this.oceanFilter);
+        this.oceanFilter.connect(this.oceanGain);
+        this.oceanGain.connect(this.masterGain);
+        oceanSrc.start();
+      }
+
+      setEnabled(flag) {
+        this.enabled = flag;
+        if (flag) {
+          this.init();
+          if (this.ctx && this.ctx.state === 'suspended') {
+            this.ctx.resume();
+          }
+          if (this.masterGain && this.ctx) {
+            this.masterGain.gain.setTargetAtTime(0.65, this.ctx.currentTime, 0.25);
+          }
+        } else if (this.masterGain && this.ctx) {
+          this.masterGain.gain.setTargetAtTime(0.0, this.ctx.currentTime, 0.2);
+        }
+      }
+
+      updateAmbience(swell, isStorm) {
+        if (!this.enabled || !this.ctx || !this.oceanFilter) return;
+        const targetFreq = isStorm ? 620 : 280 + swell * 120;
+        const targetVol = isStorm ? 0.36 : 0.18 + swell * 0.06;
+        this.oceanFilter.frequency.setTargetAtTime(targetFreq, this.ctx.currentTime, 0.4);
+        this.oceanGain.gain.setTargetAtTime(targetVol, this.ctx.currentTime, 0.4);
+      }
+
+      playCatapultLaunch() {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+
+        // Filtered noise whoosh + jet afterburner roar
+        const dur = 2.4;
+        const buf = this.ctx.createBuffer(1, Math.floor(this.ctx.sampleRate * dur), this.ctx.sampleRate);
+        const ch = buf.getChannelData(0);
+        for (let i = 0; i < ch.length; i++) ch[i] = Math.random() * 2 - 1;
+
+        const src = this.ctx.createBufferSource();
+        src.buffer = buf;
+
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(220, now);
+        filter.frequency.exponentialRampToValueAtTime(1400, now + 0.9);
+        filter.frequency.exponentialRampToValueAtTime(320, now + dur);
+        filter.Q.value = 1.2;
+
+        const gain = this.ctx.createGain();
+        gain.gain.setValueAtTime(0.001, now);
+        gain.gain.linearRampToValueAtTime(0.32, now + 0.35);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+
+        src.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.masterGain);
+        src.start(now);
+
+        // EMALS electromagnetic whine
+        const osc = this.ctx.createOscillator();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(110, now);
+        osc.frequency.exponentialRampToValueAtTime(420, now + 0.85);
+        const oGain = this.ctx.createGain();
+        oGain.gain.setValueAtTime(0.001, now);
+        oGain.gain.linearRampToValueAtTime(0.06, now + 0.2);
+        oGain.gain.exponentialRampToValueAtTime(0.001, now + 0.95);
+        osc.connect(oGain);
+        oGain.connect(this.masterGain);
+        osc.start(now);
+        osc.stop(now + 1.0);
+      }
+
+      playTrapLanding() {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        // Deck touchdown thump + arrestor cable zip
+        const osc = this.ctx.createOscillator();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(135, now);
+        osc.frequency.exponentialRampToValueAtTime(38, now + 0.25);
+
+        const gain = this.ctx.createGain();
+        gain.gain.setValueAtTime(0.28, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
+
+        osc.connect(gain);
+        gain.connect(this.masterGain);
+        osc.start(now);
+        osc.stop(now + 0.3);
+      }
+
+      playWaterPulse() {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(240, now);
+        osc.frequency.exponentialRampToValueAtTime(95, now + 0.35);
+        const gain = this.ctx.createGain();
+        gain.gain.setValueAtTime(0.12, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.38);
+        osc.connect(gain);
+        gain.connect(this.masterGain);
+        osc.start(now);
+        osc.stop(now + 0.4);
+      }
+    }
+
+    const sound = new SoundEngine();
+
+    // =========================================================================
+    // 3. SHARED GERSTNER WAVE PHYSICS (EXACT MATCH BETWEEN CPU & GLSL SHADER)
+    // =========================================================================
+    // Each wave: [dirX, dirZ, steepness, wavelength, speed]
+    const WAVES = [
+      { dx: 0.88, dz: 0.47, steep: 0.22, len: 58.0, speed: 1.15 },
+      { dx: 0.42, dz: -0.91, steep: 0.16, len: 34.0, speed: 1.35 },
+      { dx: -0.78, dz: 0.62, steep: 0.12, len: 21.0, speed: 1.65 },
+      { dx: 0.25, dz: 0.96, steep: 0.08, len: 12.5, speed: 1.95 }
+    ];
+
+    function sampleOceanHeight(x, z, time, swellScale) {
+      let y = 0;
+      for (let i = 0; i < WAVES.length; i++) {
+        const w = WAVES[i];
+        const k = (2.0 * Math.PI) / w.len;
+        const c = Math.sqrt(9.8 / k) * w.speed;
+        const a = (w.steep * swellScale) / k;
+        const f = k * (w.dx * x + w.dz * z - c * time);
+        y += a * Math.sin(f);
+      }
+      return y;
+    }
+
+    // =========================================================================
+    // 4. ENVIRONMENT PRESETS (SUNSET, NOON, STORM, NIGHT)
+    // =========================================================================
+    const ENVS = {
+      sunset: {
+        sunDir: new THREE.Vector3(-0.62, 0.17, -0.76).normalize(),
+        skyTop: new THREE.Color(0x0f2747),
+        skyMid: new THREE.Color(0x3a5a85),
+        skyHorizon: new THREE.Color(0xf29f67),
+        sunColor: new THREE.Color(0xffd29d),
+        waterDeep: new THREE.Color(0x051c33),
+        waterShallow: new THREE.Color(0x0e5b73),
+        fogColor: new THREE.Color(0xc98a6c),
+        fogDensity: 0.00072,
+        sunIntensity: 1.55,
+        hemiSky: 0xffc699,
+        hemiGround: 0x102840,
+        hemiIntensity: 0.85,
+        nightFactor: 0.05,
+        stormFactor: 0.0,
+        defaultSwell: 1.0
+      },
+      noon: {
+        sunDir: new THREE.Vector3(0.35, 0.78, -0.52).normalize(),
+        skyTop: new THREE.Color(0x1464b8),
+        skyMid: new THREE.Color(0x4fa3e3),
+        skyHorizon: new THREE.Color(0xbce3fa),
+        sunColor: new THREE.Color(0xfffbe8),
+        waterDeep: new THREE.Color(0x04294f),
+        waterShallow: new THREE.Color(0x0c88a8),
+        fogColor: new THREE.Color(0xa6d2ed),
+        fogDensity: 0.00058,
+        sunIntensity: 1.75,
+        hemiSky: 0xd8f0ff,
+        hemiGround: 0x164a6e,
+        hemiIntensity: 1.05,
+        nightFactor: 0.0,
+        stormFactor: 0.0,
+        defaultSwell: 0.85
+      },
+      storm: {
+        sunDir: new THREE.Vector3(-0.3, 0.35, -0.88).normalize(),
+        skyTop: new THREE.Color(0x131d29),
+        skyMid: new THREE.Color(0x283847),
+        skyHorizon: new THREE.Color(0x475c6e),
+        sunColor: new THREE.Color(0x9cb4c9),
+        waterDeep: new THREE.Color(0x061521),
+        waterShallow: new THREE.Color(0x1a4252),
+        fogColor: new THREE.Color(0x3a4d5e),
+        fogDensity: 0.00135,
+        sunIntensity: 0.75,
+        hemiSky: 0x7b95ab,
+        hemiGround: 0x0b1a26,
+        hemiIntensity: 0.75,
+        nightFactor: 0.35,
+        stormFactor: 1.0,
+        defaultSwell: 1.75
+      },
+      night: {
+        sunDir: new THREE.Vector3(0.45, 0.42, -0.78).normalize(),
+        skyTop: new THREE.Color(0x020610),
+        skyMid: new THREE.Color(0x071429),
+        skyHorizon: new THREE.Color(0x132a47),
+        sunColor: new THREE.Color(0xb8d8ff),
+        waterDeep: new THREE.Color(0x020a17),
+        waterShallow: new THREE.Color(0x082a45),
+        fogColor: new THREE.Color(0x0b1b30),
+        fogDensity: 0.00095,
+        sunIntensity: 0.55,
+        hemiSky: 0x456b9c,
+        hemiGround: 0x050e1c,
+        hemiIntensity: 0.55,
+        nightFactor: 1.0,
+        stormFactor: 0.0,
+        defaultSwell: 0.95
+      }
+    };
+
+    // =========================================================================
+    // 5. CUSTOM GLSL SHADERS (OCEAN + SKY DOME)
+    // =========================================================================
+    const SKY_VERTEX_SHADER = `
+      varying vec3 vWorldPos;
+      void main() {
+        vec4 wp = modelMatrix * vec4(position, 1.0);
+        vWorldPos = wp.xyz;
+        gl_Position = projectionMatrix * viewMatrix * wp;
+      }
+    `;
+
+    const SKY_FRAGMENT_SHADER = `
+      uniform vec3 uSunDir;
+      uniform vec3 uSkyTop;
+      uniform vec3 uSkyMid;
+      uniform vec3 uSkyHorizon;
+      uniform vec3 uSunColor;
+      uniform float uTime;
+      uniform float uNightFactor;
+      uniform float uStormFactor;
+      varying vec3 vWorldPos;
+
+      float hash(vec2 p) {
+        return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
+      }
+
+      float noise(vec2 p) {
+        vec2 i = floor(p);
+        vec2 f = fract(p);
+        f = f * f * (3.0 - 2.0 * f);
+        float a = hash(i);
+        float b = hash(i + vec2(1.0, 0.0));
+        float c = hash(i + vec2(0.0, 1.0));
+        float d = hash(i + vec2(1.0, 1.0));
+        return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+      }
+
+      float fbm(vec2 p) {
+        float v = 0.0;
+        float a = 0.5;
+        for (int i = 0; i < 4; i++) {
+          v += a * noise(p);
+          p *= 2.04;
+          a *= 0.5;
+        }
+        return v;
+      }
+
+      void main() {
+        vec3 dir = normalize(vWorldPos);
+        float h = clamp(dir.y, 0.0, 1.0);
+
+        // Multi-band atmospheric gradient
+        vec3 col = mix(uSkyHorizon, uSkyMid, smoothstep(0.0, 0.28, h));
+        col = mix(col, uSkyTop, smoothstep(0.22, 0.85, h));
+
+        // Sun / Moon disc & Mie scattering glow
+        float sunAmt = max(dot(dir, normalize(uSunDir)), 0.0);
+        float mie = pow(sunAmt, 10.0) * (0.45 - 0.3 * uStormFactor);
+        float disc = smoothstep(0.9985, 0.9996, sunAmt) * (1.0 - 0.85 * uStormFactor);
+        col += uSunColor * (mie + disc * 1.6);
+
+        // Soft drifting clouds
+        if (dir.y > 0.02) {
+          vec2 uv = dir.xz / (dir.y + 0.16) * 0.9 + vec2(uTime * 0.008, uTime * 0.004);
+          float c = fbm(uv);
+          float cloudMask = smoothstep(0.46 - uStormFactor * 0.22, 0.78, c) * smoothstep(0.02, 0.2, dir.y);
+          vec3 cloudBright = mix(vec3(0.95, 0.93, 0.92), uSkyHorizon * 1.15, 0.45);
+          vec3 cloudDark = mix(uSkyMid * 0.7, vec3(0.16, 0.21, 0.28), uStormFactor);
+          vec3 cloudCol = mix(cloudDark, cloudBright, 0.5 + 0.5 * pow(sunAmt, 3.0));
+          cloudCol = mix(cloudCol, vec3(0.1, 0.17, 0.28), uNightFactor * 0.75);
+          col = mix(col, cloudCol, cloudMask * (0.55 + 0.35 * uStormFactor));
+        }
+
+        // Subtle starfield at night
+        if (uNightFactor > 0.2 && dir.y > 0.08) {
+          vec2 starUV = floor(dir.xz / (dir.y + 0.15) * 180.0);
+          float s = hash(starUV);
+          if (s > 0.994) {
+            float twinkle = 0.65 + 0.35 * sin(uTime * 3.0 + s * 60.0);
+            col += vec3(0.85, 0.92, 1.0) * twinkle * uNightFactor * smoothstep(0.08, 0.35, dir.y);
+          }
+        }
+
+        gl_FragColor = vec4(col, 1.0);
+      }
+    `;
+
+    const OCEAN_VERTEX_SHADER = `
+      uniform float uTime;
+      uniform float uSwell;
+      uniform vec4 uRipples[4];
+      varying vec3 vWorldPos;
+      varying vec3 vNormal;
+      varying float vFoam;
+
+      vec3 gerstnerWave(vec2 dir, float steepness, float wavelength, float speed, vec3 p, inout vec3 tangent, inout vec3 binormal) {
+        float k = 6.2831853 / wavelength;
+        float c = sqrt(9.8 / k) * speed;
+        vec2 d = normalize(dir);
+        float f = k * (dot(d, p.xz) - c * uTime);
+        float a = (steepness * uSwell) / k;
+
+        tangent += vec3(
+          -d.x * d.x * (steepness * uSwell * sin(f)),
+          d.x * (steepness * uSwell * cos(f)),
+          -d.x * d.y * (steepness * uSwell * sin(f))
+        );
+        binormal += vec3(
+          -d.x * d.y * (steepness * uSwell * sin(f)),
+          d.y * (steepness * uSwell * cos(f)),
+          -d.y * d.y * (steepness * uSwell * sin(f))
+        );
+
+        return vec3(
+          d.x * (a * cos(f)),
+          a * sin(f),
+          d.y * (a * cos(f))
+        );
+      }
+
+      void main() {
+        vec3 basePos = (modelMatrix * vec4(position, 1.0)).xyz;
+        vec3 tangent = vec3(1.0, 0.0, 0.0);
+        vec3 binormal = vec3(0.0, 0.0, 1.0);
+        vec3 disp = vec3(0.0);
+
+        disp += gerstnerWave(vec2(0.88, 0.47), 0.22, 58.0, 1.15, basePos, tangent, binormal);
+        disp += gerstnerWave(vec2(0.42, -0.91), 0.16, 34.0, 1.35, basePos, tangent, binormal);
+        disp += gerstnerWave(vec2(-0.78, 0.62), 0.12, 21.0, 1.65, basePos, tangent, binormal);
+        disp += gerstnerWave(vec2(0.25, 0.96), 0.08, 12.5, 1.95, basePos, tangent, binormal);
+
+        // Interactive click ripples
+        float rippleFoam = 0.0;
+        for (int i = 0; i < 4; i++) {
+          vec4 rp = uRipples[i];
+          if (rp.w > 0.01) {
+            float age = uTime - rp.z;
+            if (age > 0.0 && age < 6.0) {
+              float dist = length(basePos.xz - rp.xy);
+              float radius = age * 28.0;
+              float band = exp(-pow((dist - radius) * 0.11, 2.0));
+              float decay = exp(-age * 0.55) * rp.w;
+              float wave = sin((dist - radius) * 0.65) * band * decay * 1.8;
+              disp.y += wave;
+              rippleFoam += band * decay * 0.85;
+            }
+          }
+        }
+
+        vec3 finalWorld = basePos + disp;
+        vWorldPos = finalWorld;
+        vNormal = normalize(cross(binormal, tangent));
+        vFoam = clamp((disp.y / max(uSwell * 1.4, 0.5)) * 0.55 + rippleFoam, 0.0, 1.0);
+
+        gl_Position = projectionMatrix * viewMatrix * vec4(finalWorld, 1.0);
+      }
+    `;
+
+    const OCEAN_FRAGMENT_SHADER = `
+      uniform float uTime;
+      uniform float uSwell;
+      uniform vec3 uSunDir;
+      uniform vec3 uSunColor;
+      uniform vec3 uSkyHorizon;
+      uniform vec3 uSkyTop;
+      uniform vec3 uWaterDeep;
+      uniform vec3 uWaterShallow;
+      uniform vec3 uFogColor;
+      uniform float uFogDensity;
+      uniform float uNightFactor;
+      uniform vec4 uShips[7]; // x, z, lengthScale, beamScale
+      varying vec3 vWorldPos;
+      varying vec3 vNormal;
+      varying float vFoam;
+
+      float hash(vec2 p) {
+        return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+      }
+
+      float noise(vec2 p) {
+        vec2 i = floor(p);
+        vec2 f = fract(p);
+        f = f * f * (3.0 - 2.0 * f);
+        return mix(
+          mix(hash(i), hash(i + vec2(1.0, 0.0)), f.x),
+          mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), f.x),
+          f.y
+        );
+      }
+
+      void main() {
+        // High-frequency micro-ripple normal perturbation (sailing forward along -Z)
+        vec2 p = vWorldPos.xz;
+        vec2 flow = vec2(0.0, -uTime * 6.5);
+        float n1 = noise((p + flow) * 0.22 + vec2(uTime * 0.35, -uTime * 0.25));
+        float n2 = noise((p + flow) * 0.52 - vec2(uTime * 0.22, uTime * 0.41));
+        vec3 detailNorm = normalize(vec3((n1 - 0.5) * 0.26, 1.0, (n2 - 0.5) * 0.26));
+        vec3 N = normalize(mix(vNormal, detailNorm, 0.35));
+
+        vec3 V = normalize(cameraPosition - vWorldPos);
+        vec3 L = normalize(uSunDir);
+
+        // Fresnel reflection
+        float fresnel = pow(1.0 - max(dot(N, V), 0.0), 4.0);
+        fresnel = clamp(0.04 + 0.96 * fresnel, 0.0, 1.0);
+
+        // Subsurface scattering turquoise glow on backlit wave crests
+        float sss = pow(max(dot(V, -L + N * 0.45), 0.0), 3.0) * (0.4 + 0.6 * vFoam) * (1.0 - uNightFactor * 0.8);
+        vec3 baseWater = mix(uWaterDeep, uWaterShallow, clamp(0.25 + vFoam * 0.45, 0.0, 1.0));
+        baseWater += vec3(0.04, 0.38, 0.42) * sss;
+
+        // Sky reflection color
+        vec3 R = reflect(-V, N);
+        vec3 skyRefl = mix(uSkyHorizon, uSkyTop, clamp(R.y * 1.4, 0.0, 1.0));
+        vec3 color = mix(baseWater, skyRefl, fresnel * 0.78);
+
+        // Crisp sun / moon specular glitter
+        vec3 H = normalize(L + V);
+        float specTight = pow(max(dot(N, H), 0.0), 260.0) * 2.2;
+        float specBroad = pow(max(dot(N, H), 0.0), 24.0) * 0.22;
+        color += uSunColor * (specTight + specBroad);
+
+        // Dynamic Kelvin V-wakes & long turquoise-tinted stern prop-wash trails (Carrier + 6 Escorts)
+        float wakeFoam = 0.0;
+        float wakeTurquoise = 0.0;
+        for (int i = 0; i < 7; i++) {
+          vec4 sh = uShips[i];
+          float dx = vWorldPos.x - sh.x;
+          float dz = vWorldPos.z - sh.y; // > 0 is behind the ship
+          float halfLen = sh.z;
+          float halfBeam = sh.w;
+
+          // Bow wave & hull collar
+          float bowDist = length(vec2(dx / (halfBeam * 1.25), (dz + halfLen * 0.85) / (halfBeam * 1.5)));
+          float bowFoam = smoothstep(1.35, 0.52, bowDist) * 0.82;
+
+          // Long trailing stern turbulent prop wash + Kelvin V-arms
+          if (dz > -halfLen * 0.4 && dz < halfLen * 14.0) {
+            float behind = max(dz + halfLen * 0.2, 0.0);
+            float fade = exp(-behind / (halfLen * 6.5));
+            float centerWidth = halfBeam * (0.78 + behind * 0.015);
+            float centerTrail = exp(-pow(dx / centerWidth, 2.0)) * fade;
+            float coreTurq = exp(-pow(dx / (centerWidth * 1.45), 2.0)) * exp(-behind / (halfLen * 8.5));
+
+            // V-wake arms (~19.5 deg Kelvin angle)
+            float armOffset = halfBeam * 0.88 + behind * 0.26;
+            float armWidth = halfBeam * 0.36 + behind * 0.032;
+            float vArm = exp(-pow((abs(dx) - armOffset) / armWidth, 2.0)) * exp(-behind / (halfLen * 4.2)) * 0.65;
+
+            float foamNoise = noise(vec2(dx * 0.26, (dz - uTime * 9.5) * 0.15));
+            wakeFoam = max(wakeFoam, (centerTrail * 0.92 + vArm) * (0.52 + 0.68 * foamNoise));
+            wakeTurquoise = max(wakeTurquoise, coreTurq * (0.5 + 0.5 * foamNoise));
+          }
+          wakeFoam = max(wakeFoam, bowFoam * (0.65 + 0.35 * n2));
+        }
+
+        // Blend aerated turquoise subsurface bubble wake before white foam
+        vec3 turqColor = mix(vec3(0.14, 0.58, 0.68), vec3(0.05, 0.20, 0.30), uNightFactor * 0.8);
+        color = mix(color, turqColor, clamp(wakeTurquoise * 0.58, 0.0, 0.65));
+
+        // Whitecap foam on high crests + ship wakes
+        float crestFoam = smoothstep(0.56, 0.92, vFoam + n1 * 0.22) * (0.45 + 0.35 * uSwell);
+        float totalFoam = clamp(max(crestFoam, wakeFoam), 0.0, 1.0);
+        vec3 foamColor = mix(vec3(0.94, 0.97, 1.0), uSkyHorizon * 0.82 + vec3(0.28), 0.32);
+        foamColor = mix(foamColor, vec3(0.32, 0.45, 0.6), uNightFactor * 0.75);
+        color = mix(color, foamColor, totalFoam * 0.86);
+
+        // Distance exponential fog matching sky horizon
+        float dist = length(cameraPosition - vWorldPos);
+        float fogFactor = 1.0 - exp(-pow(dist * uFogDensity, 2.0));
+        color = mix(color, uFogColor, clamp(fogFactor, 0.0, 1.0));
+
+        gl_FragColor = vec4(color, 1.0);
+      }
+    `;
+
+    // =========================================================================
+    // 6. PROCEDURAL TEXTURES & 3D MODELS (CVN-78, ESCORTS, FIGHTER JETS)
+    // =========================================================================
+    function createFlightDeckTexture() {
+      const c = document.createElement('canvas');
+      c.width = 1024;
+      c.height = 2048;
+      const ctx = c.getContext('2d');
+
+      // Deep charcoal non-skid flight deck (matches CVN-78 reference)
+      ctx.fillStyle = '#23282e';
+      ctx.fillRect(0, 0, 1024, 2048);
+
+      // Subtle weathered rubber/deck grain
+      for (let i = 0; i < 6500; i++) {
+        const x = Math.random() * 1024;
+        const y = Math.random() * 2048;
+        const v = 30 + Math.floor(Math.random() * 20);
+        ctx.fillStyle = `rgba(${v},${v + 3},${v + 6},0.26)`;
+        ctx.fillRect(x, y, 2, 8);
+      }
+
+      // Outer deck perimeter white line
+      ctx.strokeStyle = 'rgba(241, 245, 249, 0.72)';
+      ctx.lineWidth = 6;
+      ctx.strokeRect(42, 42, 940, 1964);
+
+      // Bow EMALS Catapults (Cat 1 starboard bow, Cat 2 port bow)
+      const drawCatapult = (x1, y1, x2, y2) => {
+        ctx.strokeStyle = '#cbd5e1';
+        ctx.lineWidth = 6;
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+
+        // Flanking dashed foul/guide lines
+        ctx.strokeStyle = 'rgba(255,255,255,0.55)';
+        ctx.lineWidth = 3;
+        ctx.setLineDash([18, 16]);
+        ctx.beginPath();
+        ctx.moveTo(x1 - 24, y1);
+        ctx.lineTo(x2 - 24, y2);
+        ctx.moveTo(x1 + 24, y1);
+        ctx.lineTo(x2 + 24, y2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Pale-tan JBD blast deflector plate at aft end of catapult
+        ctx.fillStyle = '#b9b49f';
+        ctx.fillRect(x2 - 20, y2 + 6, 40, 26);
+        ctx.strokeStyle = '#facc15';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(x2 - 20, y2 + 6, 40, 26);
+      };
+
+      drawCatapult(620, 130, 646, 760); // Cat 1 (starboard bow)
+      drawCatapult(475, 130, 502, 760); // Cat 2 (port bow)
+
+      // Starboard deck-edge elevator yellow safety outlines (2 forward of island on Ford-class)
+      ctx.strokeStyle = '#eab308';
+      ctx.lineWidth = 4;
+      ctx.setLineDash([14, 10]);
+      ctx.strokeRect(770, 640, 190, 210);
+      ctx.strokeRect(770, 990, 190, 210);
+      // Port aft elevator outline
+      ctx.strokeRect(60, 1480, 180, 200);
+      ctx.setLineDash([]);
+
+      // Angled Landing Runway (Port side, canted ~9.5 degrees)
+      ctx.save();
+      ctx.translate(365, 1260);
+      ctx.rotate(-0.155);
+
+      // Slightly darker rubber-scuffed landing strip
+      ctx.fillStyle = 'rgba(15, 19, 24, 0.52)';
+      ctx.fillRect(-155, -670, 310, 1340);
+
+      // Solid outer red/white foul lines
+      ctx.strokeStyle = '#f8fafc';
+      ctx.lineWidth = 9;
+      ctx.strokeRect(-148, -660, 296, 1320);
+
+      // Thick white dashed inner runway edge stripes (iconic CVN-78 look)
+      ctx.strokeStyle = '#f8fafc';
+      ctx.lineWidth = 10;
+      ctx.setLineDash([54, 42]);
+      ctx.beginPath();
+      ctx.moveTo(-116, -630);
+      ctx.lineTo(-116, 610);
+      ctx.moveTo(116, -630);
+      ctx.lineTo(116, 610);
+      ctx.stroke();
+
+      // Bold yellow & white dashed centerline
+      ctx.strokeStyle = '#facc15';
+      ctx.lineWidth = 10;
+      ctx.setLineDash([48, 36]);
+      ctx.beginPath();
+      ctx.moveTo(0, -630);
+      ctx.lineTo(0, 590);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Waist Catapults (Cat 3 & Cat 4) along angled deck forward section
+      ctx.strokeStyle = '#cbd5e1';
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.moveTo(-64, -620);
+      ctx.lineTo(-64, -90);
+      ctx.moveTo(64, -560);
+      ctx.lineTo(64, -30);
+      ctx.stroke();
+      // Waist JBDs
+      ctx.fillStyle = '#b9b49f';
+      ctx.fillRect(-82, -82, 36, 24);
+      ctx.fillRect(46, -22, 36, 24);
+
+      // Aft landing threshold piano-key stripes
+      ctx.fillStyle = '#f8fafc';
+      for (let i = -3; i <= 3; i++) {
+        ctx.fillRect(i * 34 - 10, 515, 20, 82);
+      }
+
+      // 4 AAG Arrestor Cables across landing zone
+      ctx.strokeStyle = '#d1d5db';
+      ctx.lineWidth = 5;
+      for (let w = 0; w < 4; w++) {
+        const wy = 405 - w * 74;
+        ctx.beginPath();
+        ctx.moveTo(-128, wy);
+        ctx.lineTo(128, wy);
+        ctx.stroke();
+      }
+      ctx.restore();
+
+      // Crisp outlined white Bow Hull Number "78"
+      ctx.save();
+      ctx.font = 'bold 148px Inter, Arial, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.lineWidth = 8;
+      ctx.strokeStyle = '#f8fafc';
+      ctx.strokeText('78', 548, 235);
+      ctx.fillStyle = 'rgba(248, 250, 252, 0.18)';
+      ctx.fillText('78', 548, 235);
+      ctx.restore();
+
+      const tex = new THREE.CanvasTexture(c);
+      tex.anisotropy = 8;
+      return tex;
+    }
+
+    function createIslandNumberTexture() {
+      const c = document.createElement('canvas');
+      c.width = 256;
+      c.height = 128;
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = '#8b96a1';
+      ctx.fillRect(0, 0, 256, 128);
+      ctx.fillStyle = '#f8fafc';
+      ctx.font = 'bold 92px Inter, Arial, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('78', 128, 66);
+      const tex = new THREE.CanvasTexture(c);
+      tex.anisotropy = 4;
+      return tex;
+    }
+
+    // Seamless lofted naval hull geometry (watertight, zero detached bow pieces)
+    function createLoftedHullGeometry(stations) {
+      const positions = [];
+      const indices = [];
+      const ringSize = 5;
+
+      for (let i = 0; i < stations.length; i++) {
+        const st = stations[i];
+        const z = st.z;
+        const yb = st.yBottom;
+        const yt = st.yTop;
+        const wb = st.halfBeamBottom;
+        const wt = st.halfBeamTop;
+        positions.push(
+          wt, yt, z,       // 0: starboard deck edge
+          wb, yb, z,       // 1: starboard bilge
+          0, yb - 0.15, z, // 2: keel
+          -wb, yb, z,      // 3: port bilge
+          -wt, yt, z       // 4: port deck edge
+        );
+      }
+
+      // Connect hull sides & bottom between stations (ordered stern +Z to bow -Z, CCW outward normals)
+      for (let i = 0; i < stations.length - 1; i++) {
+        const a = i * ringSize;
+        const b = (i + 1) * ringSize;
+        for (let k = 0; k < ringSize - 1; k++) {
+          indices.push(a + k, a + k + 1, b + k);
+          indices.push(a + k + 1, b + k + 1, b + k);
+        }
+        // Top deck strip between port-top (4) and starboard-top (0)
+        indices.push(a + 4, a + 0, b + 4);
+        indices.push(a + 0, b + 0, b + 4);
+      }
+
+      // Cap stern (station 0, outward +Z)
+      indices.push(0, 2, 1, 0, 3, 2, 0, 4, 3);
+      // Cap bow (last station, outward -Z)
+      const last = (stations.length - 1) * ringSize;
+      indices.push(last + 0, last + 1, last + 2, last + 0, last + 2, last + 3, last + 0, last + 3, last + 4);
+
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+      geo.setIndex(indices);
+      geo.computeVertexNormals();
+      return geo;
+    }
+
+    function createHelipadTexture() {
+      const c = document.createElement('canvas');
+      c.width = 256;
+      c.height = 256;
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = '#2d343d';
+      ctx.fillRect(0, 0, 256, 256);
+      ctx.strokeStyle = '#e2e8f0';
+      ctx.lineWidth = 8;
+      ctx.strokeRect(18, 18, 220, 220);
+      ctx.beginPath();
+      ctx.arc(128, 128, 72, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.fillStyle = '#f8fafc';
+      ctx.font = 'bold 92px Inter, Arial, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('H', 128, 132);
+      const tex = new THREE.CanvasTexture(c);
+      tex.anisotropy = 4;
+      return tex;
+    }
+
+    let sharedHelipadMat = null;
+    function getHelipadMat() {
+      if (!sharedHelipadMat) {
+        sharedHelipadMat = new THREE.MeshStandardMaterial({
+          map: createHelipadTexture(),
+          roughness: 0.85,
+          metalness: 0.1
+        });
+      }
+      return sharedHelipadMat;
+    }
+
+    function buildCarrier() {
+      const group = new THREE.Group();
+      // Authentic US Navy CVN-78 Haze Gray, Black waterline boot-top, Crimson anti-fouling bottom
+      const hullMat = new THREE.MeshStandardMaterial({ color: 0x8b96a1, roughness: 0.65, metalness: 0.22 });
+      const darkHullMat = new THREE.MeshStandardMaterial({ color: 0x525d68, roughness: 0.78, metalness: 0.22 });
+      const bootBlackMat = new THREE.MeshStandardMaterial({ color: 0x161b22, roughness: 0.85, metalness: 0.1 });
+      const redBottomMat = new THREE.MeshStandardMaterial({ color: 0x8e1e1e, roughness: 0.74, metalness: 0.12 });
+      const deckMat = new THREE.MeshStandardMaterial({
+        map: createFlightDeckTexture(),
+        roughness: 0.86,
+        metalness: 0.12
+      });
+      const domeMat = new THREE.MeshStandardMaterial({ color: 0xe6edf5, roughness: 0.35, metalness: 0.1 });
+      const railMat = new THREE.MeshStandardMaterial({ color: 0xb6c0ca, roughness: 0.6, metalness: 0.4 });
+
+      // 1. Haze Gray Upper Hull (above black boot-top stripe)
+      const upperHullGeo = createLoftedHullGeometry([
+        { z: 46.0,  yBottom: 0.9, yTop: 5.5, halfBeamBottom: 6.8, halfBeamTop: 9.4 },
+        { z: 30.0,  yBottom: 0.9, yTop: 5.5, halfBeamBottom: 7.9, halfBeamTop: 10.7 },
+        { z: 0.0,   yBottom: 0.9, yTop: 5.5, halfBeamBottom: 8.2, halfBeamTop: 11.2 },
+        { z: -26.0, yBottom: 0.9, yTop: 5.5, halfBeamBottom: 7.2, halfBeamTop: 9.8 },
+        { z: -42.0, yBottom: 0.9, yTop: 5.6, halfBeamBottom: 3.4, halfBeamTop: 6.2 },
+        { z: -51.5, yBottom: 1.0, yTop: 5.7, halfBeamBottom: 0.25, halfBeamTop: 0.55 }
+      ]);
+      group.add(new THREE.Mesh(upperHullGeo, hullMat));
+
+      // 2. Matte-Black Waterline Boot-Top Stripe (signature CVN-78 hull band)
+      const bootBandGeo = createLoftedHullGeometry([
+        { z: 45.6,  yBottom: -0.1, yTop: 1.0, halfBeamBottom: 6.3, halfBeamTop: 6.9 },
+        { z: 30.0,  yBottom: -0.1, yTop: 1.0, halfBeamBottom: 7.5, halfBeamTop: 8.0 },
+        { z: 0.0,   yBottom: -0.1, yTop: 1.0, halfBeamBottom: 7.8, halfBeamTop: 8.3 },
+        { z: -26.0, yBottom: -0.1, yTop: 1.0, halfBeamBottom: 6.8, halfBeamTop: 7.3 },
+        { z: -42.0, yBottom: -0.1, yTop: 1.0, halfBeamBottom: 3.1, halfBeamTop: 3.5 },
+        { z: -50.8, yBottom: -0.1, yTop: 1.05, halfBeamBottom: 0.25, halfBeamTop: 0.3 }
+      ]);
+      group.add(new THREE.Mesh(bootBandGeo, bootBlackMat));
+
+      // 3. Crimson-Red Lower Anti-Fouling Hull + Sculpted Bulbous Bow
+      const lowerHullGeo = createLoftedHullGeometry([
+        { z: 44.5,  yBottom: -3.4, yTop: 0.0, halfBeamBottom: 5.2, halfBeamTop: 6.4 },
+        { z: 30.0,  yBottom: -3.4, yTop: 0.0, halfBeamBottom: 6.6, halfBeamTop: 7.6 },
+        { z: 0.0,   yBottom: -3.4, yTop: 0.0, halfBeamBottom: 7.0, halfBeamTop: 7.9 },
+        { z: -26.0, yBottom: -3.4, yTop: 0.0, halfBeamBottom: 6.0, halfBeamTop: 6.9 },
+        { z: -42.0, yBottom: -3.1, yTop: 0.0, halfBeamBottom: 2.6, halfBeamTop: 3.2 },
+        { z: -50.2, yBottom: -2.4, yTop: 0.0, halfBeamBottom: 0.4, halfBeamTop: 0.35 }
+      ]);
+      group.add(new THREE.Mesh(lowerHullGeo, redBottomMat));
+
+      // Prominent Bulbous Bow protruding forward under the bow prow
+      const bulbGeo = new THREE.SphereGeometry(1.55, 14, 12);
+      bulbGeo.scale(0.85, 0.85, 2.8);
+      const bulb = new THREE.Mesh(bulbGeo, redBottomMat);
+      bulb.position.set(0, -1.35, -51.6);
+      group.add(bulb);
+
+      // 4. Recessed Hangar Bays & 3 Ford-Class Deck-Edge Aircraft Elevators (2 starboard, 1 port aft)
+      const hangarMat = new THREE.MeshStandardMaterial({ color: 0x1d232b, roughness: 0.92 });
+      [-10, 7].forEach((ez) => {
+        const bay = new THREE.Mesh(new THREE.BoxGeometry(0.7, 2.7, 8.8), hangarMat);
+        bay.position.set(10.6, 3.6, ez);
+        group.add(bay);
+
+        const elev = new THREE.Mesh(new THREE.BoxGeometry(3.4, 0.5, 9.0), darkHullMat);
+        elev.position.set(12.6, 5.42, ez);
+        group.add(elev);
+      });
+      // Port aft hangar bay & elevator
+      const portBay = new THREE.Mesh(new THREE.BoxGeometry(0.7, 2.7, 8.6), hangarMat);
+      portBay.position.set(-10.8, 3.6, 22);
+      group.add(portBay);
+      const portElev = new THREE.Mesh(new THREE.BoxGeometry(3.3, 0.5, 8.8), darkHullMat);
+      portElev.position.set(-12.7, 5.42, 22);
+      group.add(portElev);
+
+      // Hangar sponsons & stern transom gallery
+      const sponson = new THREE.Mesh(new THREE.BoxGeometry(21.4, 1.45, 70), darkHullMat);
+      sponson.position.set(-1.1, 4.88, 2.0);
+      group.add(sponson);
+
+      const sternGallery = new THREE.Mesh(new THREE.BoxGeometry(15.5, 1.3, 2.2), darkHullMat);
+      sternGallery.position.set(-0.5, 3.3, 46.8);
+      group.add(sternGallery);
+
+      // 5. Blueprint-Accurate Flight Deck Silhouette
+      const deckShape = new THREE.Shape();
+      deckShape.moveTo(-6.6, 50.5);   // Bow port
+      deckShape.lineTo(7.4, 50.5);    // Bow starboard
+      deckShape.lineTo(11.8, 22.0);   // Starboard forward flare
+      deckShape.lineTo(12.4, -37.0);  // Starboard aft
+      deckShape.lineTo(9.4, -47.5);   // Stern starboard
+      deckShape.lineTo(-10.6, -47.5); // Stern port
+      deckShape.lineTo(-15.8, -19.0); // Angled deck waist corner
+      deckShape.lineTo(-14.6, 14.5);  // Angled deck forward corner
+      deckShape.lineTo(-7.8, 24.5);   // Port bow step-in
+      deckShape.lineTo(-6.6, 50.5);
+
+      const deckGeo = new THREE.ExtrudeGeometry(deckShape, {
+        depth: 0.9,
+        bevelEnabled: false
+      });
+      const posAttr = deckGeo.attributes.position;
+      const uvAttr = deckGeo.attributes.uv;
+      for (let i = 0; i < posAttr.count; i++) {
+        const px = posAttr.getX(i);
+        const py = posAttr.getY(i);
+        uvAttr.setXY(i, (px + 16.0) / 30.0, (py + 48.0) / 100.0);
+      }
+      deckGeo.rotateX(-Math.PI / 2);
+      const flightDeck = new THREE.Mesh(deckGeo, deckMat);
+      flightDeck.position.set(0, 5.5, 0);
+      flightDeck.name = 'carrier-deck';
+      group.add(flightDeck);
+
+      // Forward Starboard Whip Antenna Mast (visible on blueprint & isometric render)
+      const bowWhip = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.14, 5.2, 6), railMat);
+      bowWhip.position.set(10.8, 8.6, -24.5);
+      group.add(bowWhip);
+
+      // Phalanx CIWS / RAM Defense Sponsons
+      [
+        [12.4, 5.35, -28],
+        [-14.2, 5.35, -18],
+        [10.4, 5.35, 44.5],
+        [-11.0, 5.35, 44.5]
+      ].forEach((p) => {
+        const plat = new THREE.Mesh(new THREE.BoxGeometry(2.1, 0.4, 2.2), darkHullMat);
+        plat.position.set(p[0], p[1], p[2]);
+        group.add(plat);
+        const ciws = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.36, 1.15, 8), domeMat);
+        ciws.position.set(p[0], p[1] + 0.78, p[2]);
+        group.add(ciws);
+      });
+
+      // Twin White SATCOM Radomes on Aft Starboard Sponson (behind island, per isometric reference)
+      [34.5, 37.2].forEach((sz, idx) => {
+        const ped = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.55, 1.6, 8), darkHullMat);
+        ped.position.set(11.3, 6.2, sz);
+        group.add(ped);
+        const satDome = new THREE.Mesh(new THREE.SphereGeometry(idx === 0 ? 0.65 : 0.85, 12, 10), domeMat);
+        satDome.position.set(11.3, 7.35, sz);
+        group.add(satDome);
+      });
+
+      // 6. MUSEUM-GRADE SCULPTED FORD-CLASS AFT ISLAND (matching scale model reference!)
+      const island = new THREE.Group();
+      island.position.set(9.7, 6.4, 22.8);
+
+      // Base block (rectangular lower deckhouse)
+      const baseMesh = new THREE.Mesh(new THREE.BoxGeometry(4.6, 3.6, 10.6), hullMat);
+      baseMesh.position.set(0, 1.8, 0);
+      island.add(baseMesh);
+
+      // Crisp white "78" painted on port & forward walls of the island
+      const islandNumMat = new THREE.MeshStandardMaterial({
+        map: createIslandNumberTexture(),
+        roughness: 0.65,
+        metalness: 0.2
+      });
+      const numPlatePort = new THREE.Mesh(new THREE.PlaneGeometry(3.4, 1.8), islandNumMat);
+      numPlatePort.rotation.y = -Math.PI / 2;
+      numPlatePort.position.set(-2.33, 1.9, -1.2);
+      island.add(numPlatePort);
+
+      // Sloped stealth-faceted mid tower (4-sided tapered frustum matching the pyramidal silhouette)
+      const midTowerGeo = new THREE.CylinderGeometry(2.1, 3.2, 4.6, 4);
+      midTowerGeo.rotateY(Math.PI / 4);
+      const midTower = new THREE.Mesh(midTowerGeo, hullMat);
+      midTower.scale.set(0.95, 1.0, 2.05);
+      midTower.position.set(0, 5.7, 0.2);
+      island.add(midTower);
+
+      // Upper tapered sensor deckhouse
+      const topTowerGeo = new THREE.CylinderGeometry(1.5, 2.15, 2.5, 4);
+      topTowerGeo.rotateY(Math.PI / 4);
+      const topTower = new THREE.Mesh(topTowerGeo, hullMat);
+      topTower.scale.set(0.92, 1.0, 1.85);
+      topTower.position.set(0, 9.1, 0.3);
+      island.add(topTower);
+
+      // 3 Stepped Cantilevered Bridge / Flag Bridge / Pri-Fly Balconies on Forward Face!
+      const bridgeWinMat = new THREE.MeshStandardMaterial({
+        color: 0x0f172a,
+        emissive: 0x38bdf8,
+        emissiveIntensity: 0.28,
+        roughness: 0.14,
+        metalness: 0.9
+      });
+      [
+        { y: 3.7, w: 4.5, d: 2.2, z: -5.1 }, // Navigation Bridge balcony
+        { y: 5.2, w: 4.1, d: 2.0, z: -4.9 }, // Flag Bridge balcony
+        { y: 6.7, w: 3.7, d: 1.9, z: -4.6 }  // Pri-Fly Air Boss balcony
+      ].forEach((lvl) => {
+        const deckSlab = new THREE.Mesh(new THREE.BoxGeometry(lvl.w, 0.26, lvl.d), darkHullMat);
+        deckSlab.position.set(-0.2, lvl.y, lvl.z);
+        island.add(deckSlab);
+
+        // Balcony safety railing rim
+        const rail = new THREE.Mesh(new THREE.BoxGeometry(lvl.w + 0.08, 0.28, lvl.d + 0.08), railMat);
+        rail.position.set(-0.2, lvl.y + 0.25, lvl.z);
+        island.add(rail);
+
+        // Wrap-around dark bridge glass band
+        const win = new THREE.Mesh(new THREE.BoxGeometry(lvl.w - 0.5, 0.72, lvl.d - 0.35), bridgeWinMat);
+        win.position.set(-0.15, lvl.y + 0.55, lvl.z + 0.35);
+        island.add(win);
+      });
+
+      // Flush-Mounted Dual Band Radar Panels (Lower large SPY-4 + Upper SPY-3 on canted walls)
+      const radarMat = new THREE.MeshStandardMaterial({ color: 0xa0acb8, roughness: 0.45, metalness: 0.3 });
+      const radarBorderMat = new THREE.MeshStandardMaterial({ color: 0x5c6773, roughness: 0.6 });
+      const addRadarFace = (x, y, z, rotY, tiltZ, w, h) => {
+        const grp = new THREE.Group();
+        grp.position.set(x, y, z);
+        grp.rotation.y = rotY;
+        const border = new THREE.Mesh(new THREE.BoxGeometry(0.18, h + 0.2, w + 0.2), radarBorderMat);
+        border.rotation.z = tiltZ;
+        grp.add(border);
+        const face = new THREE.Mesh(new THREE.BoxGeometry(0.22, h, w), radarMat);
+        face.rotation.z = tiltZ;
+        grp.add(face);
+        island.add(grp);
+      };
+      // Lower large SPY-4 S-band panels (port-fwd, port-aft, stbd-fwd)
+      addRadarFace(-2.05, 5.2, -1.6, 0.18, -0.18, 1.9, 2.2);
+      addRadarFace(-2.05, 5.2, 2.3, -0.18, -0.18, 1.9, 2.2);
+      addRadarFace(2.05, 5.2, -1.6, -0.18, 0.18, 1.9, 2.2);
+      // Upper SPY-3 X-band panels
+      addRadarFace(-1.58, 8.6, -1.1, 0.18, -0.18, 1.35, 1.45);
+      addRadarFace(-1.58, 8.6, 1.8, -0.18, -0.18, 1.35, 1.45);
+      addRadarFace(1.58, 8.6, -1.1, -0.18, 0.18, 1.35, 1.45);
+
+      // Twin White Hemispherical Radomes on Cylindrical Pedestals flanking the Mast Base (iconic scale model detail!)
+      [
+        { x: -1.15, z: -1.25 },
+        { x: 1.15,  z: 1.55 }
+      ].forEach((rd) => {
+        const ped = new THREE.Mesh(new THREE.CylinderGeometry(0.58, 0.68, 1.1, 12), darkHullMat);
+        ped.position.set(rd.x, 10.75, rd.z);
+        island.add(ped);
+        const dome = new THREE.Mesh(new THREE.SphereGeometry(0.72, 14, 10), domeMat);
+        dome.position.set(rd.x, 11.45, rd.z);
+        island.add(dome);
+      });
+
+      // Central Tiered Mast with Gallery Platforms
+      const mastCore = new THREE.Mesh(new THREE.BoxGeometry(1.05, 5.4, 1.15), hullMat);
+      mastCore.position.set(0, 12.9, 0.25);
+      island.add(mastCore);
+
+      [11.8, 13.1, 14.3].forEach((py, idx) => {
+        const plat = new THREE.Mesh(new THREE.BoxGeometry(2.4 - idx * 0.25, 0.18, 2.6 - idx * 0.25), darkHullMat);
+        plat.position.set(0, py, 0.25);
+        island.add(plat);
+      });
+
+      // Faceted Octagonal Upper Sensor Housing (directly below giant top radome)
+      const octHousing = new THREE.Mesh(new THREE.CylinderGeometry(1.45, 1.75, 1.55, 8), hullMat);
+      octHousing.position.set(0, 15.65, 0.25);
+      island.add(octHousing);
+
+      // Large White Capsule-Domed Top Radome (signature crown of the CVN-78 mast!)
+      const topRadomeCyl = new THREE.Mesh(new THREE.CylinderGeometry(0.98, 1.02, 1.15, 14), domeMat);
+      topRadomeCyl.position.set(0, 16.9, 0.25);
+      island.add(topRadomeCyl);
+      const topRadomeCap = new THREE.Mesh(new THREE.SphereGeometry(0.98, 14, 10), domeMat);
+      topRadomeCap.position.set(0, 17.45, 0.25);
+      island.add(topRadomeCap);
+
+      // Offset Slender Lattice Topmast + Aft Yardarm + Aviation Beacon
+      const topPole = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.2, 3.6, 6), railMat);
+      topPole.position.set(0.55, 17.9, 1.35);
+      island.add(topPole);
+      const aftBoom = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.16, 3.2), railMat);
+      aftBoom.position.set(0.2, 16.2, 2.3);
+      island.add(aftBoom);
+      const crossYard = new THREE.Mesh(new THREE.BoxGeometry(2.8, 0.14, 0.14), railMat);
+      crossYard.position.set(0.55, 18.8, 1.35);
+      island.add(crossYard);
+
+      // Red aircraft warning beacon atop mast
+      const beaconMat = new THREE.MeshBasicMaterial({ color: 0xff2a2a });
+      const beacon = new THREE.Mesh(new THREE.SphereGeometry(0.28, 8, 8), beaconMat);
+      beacon.position.set(0.55, 19.85, 1.35);
+      island.add(beacon);
+
+      group.add(island);
+
+      // Jet Blast Deflectors (JBDs) for Catapult 1 & Catapult 2 (animated on launch!)
+      const jbdMat = new THREE.MeshStandardMaterial({ color: 0xb0aa96, roughness: 0.65, metalness: 0.35 });
+      const jbd1 = new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.2, 2.2), jbdMat);
+      jbd1.position.set(3.2, 6.45, -13.5);
+      group.add(jbd1);
+
+      const jbd2 = new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.2, 2.2), jbdMat);
+      jbd2.position.set(-2.6, 6.45, -13.5);
+      group.add(jbd2);
+
+      // Deck-edge runway lights & IFLOLS optical landing aid ("meatball")
+      const deckLightsGroup = new THREE.Group();
+      const lightGeo = new THREE.SphereGeometry(0.22, 6, 6);
+      const amberLightMat = new THREE.MeshBasicMaterial({ color: 0xfbbf24 });
+      const greenLightMat = new THREE.MeshBasicMaterial({ color: 0x34d399 });
+      const redLightMat = new THREE.MeshBasicMaterial({ color: 0xf87171 });
+
+      for (let i = 0; i < 12; i++) {
+        const z = -42 + i * 7.8;
+        const l1 = new THREE.Mesh(lightGeo, amberLightMat);
+        l1.position.set(9.8, 6.55, z);
+        deckLightsGroup.add(l1);
+
+        const l2 = new THREE.Mesh(lightGeo, i > 5 ? greenLightMat : amberLightMat);
+        l2.position.set(-12.2 + (i < 5 ? (5 - i) * 1.1 : 0), 6.55, z);
+        deckLightsGroup.add(l2);
+      }
+      const meatball = new THREE.Mesh(new THREE.BoxGeometry(0.5, 1.1, 1.4), greenLightMat);
+      meatball.position.set(-14.6, 7.2, 4.0);
+      deckLightsGroup.add(meatball);
+      const sternL = new THREE.Mesh(lightGeo, redLightMat);
+      sternL.position.set(-9.5, 6.5, 46.5);
+      deckLightsGroup.add(sternL);
+      const sternR = new THREE.Mesh(lightGeo, redLightMat);
+      sternR.position.set(8.5, 6.5, 46.5);
+      deckLightsGroup.add(sternR);
+      group.add(deckLightsGroup);
+
+      // Deck floodlight (illuminates flight deck during Night Ops & Storm)
+      const deckFlood = new THREE.PointLight(0xffeed6, 0.0, 95, 1.5);
+      deckFlood.position.set(6, 17, 14);
+      group.add(deckFlood);
+
+      // Animated deck crew silhouettes (yellow shooters, green catapult crew, purple fuelers)
+      const crewList = [];
+      const crewColors = [0xfacc15, 0x22c55e, 0xa855f7, 0xf8fafc];
+      const crewGeo = new THREE.CylinderGeometry(0.16, 0.2, 0.95, 6);
+      const crewSpots = [
+        [5.2, -22], [1.2, -24], [-4.8, -20], [5.8, 2], [6.5, 10], [-9.2, 16]
+      ];
+      crewSpots.forEach((pt, idx) => {
+        const mat = new THREE.MeshStandardMaterial({ color: crewColors[idx % crewColors.length], roughness: 0.7 });
+        const m = new THREE.Mesh(crewGeo, mat);
+        m.position.set(pt[0], 6.88, pt[1]);
+        group.add(m);
+        crewList.push({ mesh: m, baseX: pt[0], baseZ: pt[1], phase: idx * 1.3 });
+      });
+
+      // Static parked deck fighters along non-active deck edges (authentic CVW bustle, clear of catapults & runway)
+      const staticWingSpecs = [
+        { x: 8.6,  z: -16.5, rotY: 1.95 },
+        { x: 9.0,  z: -24.5, rotY: 2.05 },
+        { x: 8.4,  z: -32.5, rotY: 1.92 },
+        { x: 7.4,  z: 40.5,  rotY: -2.45 },
+        { x: -7.8, z: 42.5,  rotY: 2.55 }
+      ];
+      staticWingSpecs.forEach((sp, idx) => {
+        const parkedJet = buildFighterJet('Static-' + idx);
+        parkedJet.root.position.set(sp.x, 6.45, sp.z);
+        parkedJet.root.rotation.y = sp.rotY;
+        parkedJet.root.scale.set(0.92, 0.92, 0.92);
+        group.add(parkedJet.root);
+      });
+
+      // Compact white & yellow flight-deck tow tractors / mobile power carts (near island & elevators)
+      const tugWhiteMat = new THREE.MeshStandardMaterial({ color: 0xf1f5f9, roughness: 0.55 });
+      const tugYellowMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.55 });
+      const wheelMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.85 });
+      [
+        { x: 7.2, z: 12.2, rotY: 0.15, yellow: false },
+        { x: 8.2, z: 4.5,  rotY: -0.4, yellow: true },
+        { x: 6.4, z: 29.0, rotY: 1.2,  yellow: false }
+      ].forEach((tg) => {
+        const tug = new THREE.Group();
+        const body = new THREE.Mesh(new THREE.BoxGeometry(1.15, 0.65, 2.2), tg.yellow ? tugYellowMat : tugWhiteMat);
+        body.position.y = 0.42;
+        tug.add(body);
+        const cab = new THREE.Mesh(new THREE.BoxGeometry(1.05, 0.35, 0.85), wheelMat);
+        cab.position.set(0, 0.88, -0.3);
+        tug.add(cab);
+        tug.position.set(tg.x, 6.4, tg.z);
+        tug.rotation.y = tg.rotY;
+        group.add(tug);
+      });
+
+      return {
+        group,
+        flightDeck,
+        bridgeWinMat,
+        deckLightsGroup,
+        deckFlood,
+        beacon,
+        jbd1,
+        jbd2,
+        crewList
+      };
+    }
+
+    function buildDestroyer() {
+      // Arleigh Burke-class Guided-Missile Destroyer (DDG) with seamless lofted stealth hull
+      const g = new THREE.Group();
+      const hullMat = new THREE.MeshStandardMaterial({ color: 0x87939f, roughness: 0.65, metalness: 0.24 });
+      const darkMat = new THREE.MeshStandardMaterial({ color: 0x39424d, roughness: 0.82, metalness: 0.2 });
+      const redMat = new THREE.MeshStandardMaterial({ color: 0x7c2525, roughness: 0.78 });
+      const radarMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.5, metalness: 0.3 });
+      const winMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, emissive: 0x38bdf8, emissiveIntensity: 0.35, roughness: 0.18, metalness: 0.85 });
+      const domeMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.4 });
+
+      // Continuous flared naval hull (stern +21 to razor-sharp raked bow -24)
+      const upperHull = createLoftedHullGeometry([
+        { z: 21.0,  yBottom: 0.1, yTop: 2.35, halfBeamBottom: 2.1, halfBeamTop: 2.65 },
+        { z: 10.0,  yBottom: 0.1, yTop: 2.55, halfBeamBottom: 2.65, halfBeamTop: 3.1 },
+        { z: -4.0,  yBottom: 0.1, yTop: 2.75, halfBeamBottom: 2.6, halfBeamTop: 3.1 },
+        { z: -14.0, yBottom: 0.1, yTop: 3.15, halfBeamBottom: 1.5, halfBeamTop: 2.15 },
+        { z: -21.0, yBottom: 0.2, yTop: 3.55, halfBeamBottom: 0.45, halfBeamTop: 0.85 },
+        { z: -24.5, yBottom: 0.4, yTop: 3.85, halfBeamBottom: 0.06, halfBeamTop: 0.1 }
+      ]);
+      g.add(new THREE.Mesh(upperHull, hullMat));
+
+      // Red lower boot hull below waterline
+      const lowerHull = createLoftedHullGeometry([
+        { z: 20.5,  yBottom: -2.0, yTop: 0.25, halfBeamBottom: 1.6, halfBeamTop: 2.15 },
+        { z: 10.0,  yBottom: -2.0, yTop: 0.25, halfBeamBottom: 2.1, halfBeamTop: 2.7 },
+        { z: -4.0,  yBottom: -2.0, yTop: 0.25, halfBeamBottom: 2.0, halfBeamTop: 2.65 },
+        { z: -14.0, yBottom: -1.9, yTop: 0.25, halfBeamBottom: 1.1, halfBeamTop: 1.55 },
+        { z: -21.0, yBottom: -1.6, yTop: 0.35, halfBeamBottom: 0.25, halfBeamTop: 0.5 },
+        { z: -23.6, yBottom: -1.3, yTop: 0.5,  halfBeamBottom: 0.08, halfBeamTop: 0.12 }
+      ]);
+      g.add(new THREE.Mesh(lowerHull, redMat));
+
+      // Forward Mk 45 5-inch Stealth Gun Turret
+      const turret = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.82, 0.9, 6), hullMat);
+      turret.position.set(0, 3.45, -15.6);
+      g.add(turret);
+      const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.09, 2.5, 6), darkMat);
+      barrel.rotation.x = Math.PI / 2 - 0.16;
+      barrel.position.set(0, 3.65, -17.1);
+      g.add(barrel);
+
+      // Forward Mk 41 VLS Missile Launcher Grid
+      const vls = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.22, 3.0), darkMat);
+      vls.position.set(0, 3.02, -11.8);
+      g.add(vls);
+
+      // Stepped Stealth Aegis Superstructure (forward bridge block)
+      const fwdHouse = new THREE.Mesh(new THREE.BoxGeometry(4.5, 2.5, 8.8), hullMat);
+      fwdHouse.position.set(0, 3.85, -5.2);
+      g.add(fwdHouse);
+
+      const bridgeBlock = new THREE.Mesh(new THREE.BoxGeometry(3.6, 2.1, 5.2), hullMat);
+      bridgeBlock.position.set(0, 5.8, -6.0);
+      g.add(bridgeBlock);
+
+      // Wrap-around Bridge Windows
+      const bWin = new THREE.Mesh(new THREE.BoxGeometry(3.75, 0.55, 2.6), winMat);
+      bWin.position.set(0, 5.85, -7.2);
+      g.add(bWin);
+
+      // 4 SPY-1D Octagonal Phased-Array Radar Panels
+      [
+        [-1.9, 5.4, -7.8, Math.PI / 4],
+        [1.9, 5.4, -7.8, -Math.PI / 4],
+        [-1.9, 5.4, -4.1, -Math.PI / 4],
+        [1.9, 5.4, -4.1, Math.PI / 4]
+      ].forEach((r) => {
+        const panel = new THREE.Mesh(new THREE.CylinderGeometry(0.62, 0.62, 0.16, 8), radarMat);
+        panel.rotation.z = Math.PI / 2;
+        panel.rotation.y = r[3];
+        panel.position.set(r[0], r[1], r[2]);
+        g.add(panel);
+      });
+
+      // Slanted Aegis Tripod Main Mast with Yardarms
+      const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.36, 6.2, 6), hullMat);
+      mast.rotation.x = 0.24;
+      mast.position.set(0, 9.2, -4.5);
+      g.add(mast);
+      const yard = new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.15, 0.15), darkMat);
+      yard.position.set(0, 10.6, -4.1);
+      g.add(yard);
+
+      // Forward & Aft Angled Stealth Exhaust Stacks
+      const stack1 = new THREE.Mesh(new THREE.BoxGeometry(2.3, 2.4, 3.2), hullMat);
+      stack1.position.set(0, 4.9, -0.5);
+      stack1.rotation.x = 0.14;
+      g.add(stack1);
+      const cap1 = new THREE.Mesh(new THREE.BoxGeometry(2.1, 0.35, 2.8), darkMat);
+      cap1.position.set(0, 6.15, -0.35);
+      g.add(cap1);
+
+      const stack2 = new THREE.Mesh(new THREE.BoxGeometry(2.3, 2.1, 3.0), hullMat);
+      stack2.position.set(0, 4.6, 4.5);
+      stack2.rotation.x = 0.14;
+      g.add(stack2);
+      const cap2 = new THREE.Mesh(new THREE.BoxGeometry(2.1, 0.35, 2.6), darkMat);
+      cap2.position.set(0, 5.7, 4.65);
+      g.add(cap2);
+
+      // Dual Helicopter Hangar Structure + Aft CIWS
+      const hangar = new THREE.Mesh(new THREE.BoxGeometry(4.2, 2.2, 6.8), hullMat);
+      hangar.position.set(0, 3.55, 7.6);
+      g.add(hangar);
+      const hangarDoor = new THREE.Mesh(new THREE.BoxGeometry(3.2, 1.5, 0.2), darkMat);
+      hangarDoor.position.set(0, 3.25, 11.0);
+      g.add(hangarDoor);
+      const ciws = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.32, 0.9, 8), domeMat);
+      ciws.position.set(0, 5.1, 9.8);
+      g.add(ciws);
+
+      // Aft Helipad with painted "H" marking
+      const helipad = new THREE.Mesh(new THREE.BoxGeometry(4.6, 0.16, 7.2), getHelipadMat());
+      helipad.position.set(0, 2.55, 15.8);
+      g.add(helipad);
+
+      // Navigation Lights (Port Red, Starboard Green, Mast White)
+      const redL = new THREE.Mesh(new THREE.SphereGeometry(0.2, 6, 6), new THREE.MeshBasicMaterial({ color: 0xff3b3b }));
+      redL.position.set(-2.1, 6.4, -6.5);
+      g.add(redL);
+      const grnL = new THREE.Mesh(new THREE.SphereGeometry(0.2, 6, 6), new THREE.MeshBasicMaterial({ color: 0x34d399 }));
+      grnL.position.set(2.1, 6.4, -6.5);
+      g.add(grnL);
+      const topL = new THREE.Mesh(new THREE.SphereGeometry(0.22, 6, 6), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+      topL.position.set(0, 12.2, -3.7);
+      g.add(topL);
+
+      return g;
+    }
+
+    function buildCruiser() {
+      // Ticonderoga-class Guided-Missile Cruiser (CG-71) — longer hull, taller two-tier Aegis superstructure, dual 5" guns
+      const g = new THREE.Group();
+      const hullMat = new THREE.MeshStandardMaterial({ color: 0x83909c, roughness: 0.65, metalness: 0.24 });
+      const darkMat = new THREE.MeshStandardMaterial({ color: 0x353e49, roughness: 0.82, metalness: 0.2 });
+      const redMat = new THREE.MeshStandardMaterial({ color: 0x7c2525, roughness: 0.78 });
+      const radarMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.5, metalness: 0.3 });
+      const winMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, emissive: 0x38bdf8, emissiveIntensity: 0.35, roughness: 0.18, metalness: 0.85 });
+      const domeMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.4 });
+
+      // Continuous longer cruiser hull (stern +24 to sharp raked bow -27)
+      const upperHull = createLoftedHullGeometry([
+        { z: 24.0,  yBottom: 0.1, yTop: 2.5,  halfBeamBottom: 2.2, halfBeamTop: 2.75 },
+        { z: 12.0,  yBottom: 0.1, yTop: 2.7,  halfBeamBottom: 2.85, halfBeamTop: 3.35 },
+        { z: -4.0,  yBottom: 0.1, yTop: 2.9,  halfBeamBottom: 2.8, halfBeamTop: 3.35 },
+        { z: -16.0, yBottom: 0.1, yTop: 3.35, halfBeamBottom: 1.65, halfBeamTop: 2.3 },
+        { z: -23.5, yBottom: 0.2, yTop: 3.75, halfBeamBottom: 0.45, halfBeamTop: 0.85 },
+        { z: -27.2, yBottom: 0.4, yTop: 4.05, halfBeamBottom: 0.06, halfBeamTop: 0.1 }
+      ]);
+      g.add(new THREE.Mesh(upperHull, hullMat));
+
+      const lowerHull = createLoftedHullGeometry([
+        { z: 23.4,  yBottom: -2.2, yTop: 0.25, halfBeamBottom: 1.7, halfBeamTop: 2.25 },
+        { z: 12.0,  yBottom: -2.2, yTop: 0.25, halfBeamBottom: 2.3, halfBeamTop: 2.9 },
+        { z: -4.0,  yBottom: -2.2, yTop: 0.25, halfBeamBottom: 2.2, halfBeamTop: 2.85 },
+        { z: -16.0, yBottom: -2.0, yTop: 0.25, halfBeamBottom: 1.2, halfBeamTop: 1.7 },
+        { z: -23.5, yBottom: -1.7, yTop: 0.35, halfBeamBottom: 0.25, halfBeamTop: 0.5 },
+        { z: -26.2, yBottom: -1.4, yTop: 0.5,  halfBeamBottom: 0.08, halfBeamTop: 0.12 }
+      ]);
+      g.add(new THREE.Mesh(lowerHull, redMat));
+
+      // Forward & Aft 5-inch Gun Turrets (hallmark of Ticonderoga-class!)
+      const fwdTurret = new THREE.Mesh(new THREE.BoxGeometry(1.25, 0.95, 1.55), hullMat);
+      fwdTurret.position.set(0, 3.65, -18.2);
+      g.add(fwdTurret);
+      const fwdBarrel = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.09, 2.7, 6), darkMat);
+      fwdBarrel.rotation.x = Math.PI / 2 - 0.15;
+      fwdBarrel.position.set(0, 3.85, -19.8);
+      g.add(fwdBarrel);
+
+      const aftTurret = new THREE.Mesh(new THREE.BoxGeometry(1.25, 0.95, 1.55), hullMat);
+      aftTurret.position.set(0, 3.05, 20.6);
+      g.add(aftTurret);
+      const aftBarrel = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.09, 2.5, 6), darkMat);
+      aftBarrel.rotation.x = Math.PI / 2 + 0.15;
+      aftBarrel.position.set(0, 3.25, 22.1);
+      g.add(aftBarrel);
+
+      // Forward VLS Deck
+      const vlsF = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.22, 3.6), darkMat);
+      vlsF.position.set(0, 3.2, -14.2);
+      g.add(vlsF);
+
+      // Signature Tall Boxy Forward & Aft Ticonderoga Deckhouses
+      const fwdTower = new THREE.Mesh(new THREE.BoxGeometry(4.8, 4.6, 9.6), hullMat);
+      fwdTower.position.set(0, 5.1, -6.2);
+      g.add(fwdTower);
+
+      const bridgeWin = new THREE.Mesh(new THREE.BoxGeometry(4.95, 0.6, 2.8), winMat);
+      bridgeWin.position.set(0, 6.45, -9.2);
+      g.add(bridgeWin);
+
+      // Forward SPY-1A radar faces (front & starboard)
+      const spyFwd = new THREE.Mesh(new THREE.CylinderGeometry(0.75, 0.75, 0.16, 8), radarMat);
+      spyFwd.rotation.x = Math.PI / 2;
+      spyFwd.position.set(0, 5.1, -11.05);
+      g.add(spyFwd);
+      const spyStbd = new THREE.Mesh(new THREE.CylinderGeometry(0.75, 0.75, 0.16, 8), radarMat);
+      spyStbd.rotation.z = Math.PI / 2;
+      spyStbd.position.set(2.45, 5.1, -7.0);
+      g.add(spyStbd);
+
+      // Aft Deckhouse & Hangar
+      const aftHouse = new THREE.Mesh(new THREE.BoxGeometry(4.6, 3.6, 9.2), hullMat);
+      aftHouse.position.set(0, 4.5, 5.6);
+      g.add(aftHouse);
+
+      const spyPort = new THREE.Mesh(new THREE.CylinderGeometry(0.75, 0.75, 0.16, 8), radarMat);
+      spyPort.rotation.z = Math.PI / 2;
+      spyPort.position.set(-2.35, 4.9, 5.0);
+      g.add(spyPort);
+
+      // Twin Tall Masts (Fore & Aft) + SPS-49 Air-Search Radar Bar
+      const foreMast = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.42, 7.6, 6), hullMat);
+      foreMast.position.set(0, 11.1, -5.8);
+      g.add(foreMast);
+      const foreYard = new THREE.Mesh(new THREE.BoxGeometry(3.6, 0.16, 0.16), darkMat);
+      foreYard.position.set(0, 12.2, -5.8);
+      g.add(foreYard);
+
+      const aftMast = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.34, 6.2, 6), hullMat);
+      aftMast.position.set(0, 9.2, 4.8);
+      g.add(aftMast);
+      const sps49 = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.7, 0.25), domeMat);
+      sps49.position.set(0, 11.5, 4.8);
+      g.add(sps49);
+
+      // Midships Helipad
+      const helipad = new THREE.Mesh(new THREE.BoxGeometry(4.8, 0.16, 7.4), getHelipadMat());
+      helipad.position.set(0, 2.72, 14.6);
+      g.add(helipad);
+
+      // Navigation Lights
+      const redL = new THREE.Mesh(new THREE.SphereGeometry(0.22, 6, 6), new THREE.MeshBasicMaterial({ color: 0xff3b3b }));
+      redL.position.set(-2.5, 7.2, -8.5);
+      g.add(redL);
+      const grnL = new THREE.Mesh(new THREE.SphereGeometry(0.22, 6, 6), new THREE.MeshBasicMaterial({ color: 0x34d399 }));
+      grnL.position.set(2.5, 7.2, -8.5);
+      g.add(grnL);
+      const topL = new THREE.Mesh(new THREE.SphereGeometry(0.24, 6, 6), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+      topL.position.set(0, 15.0, -5.8);
+      g.add(topL);
+
+      return g;
+    }
+
+    // Seamless chined stealth fighter fuselage loft (watertight, zero gaps between nose & body)
+    function createFighterFuselageGeometry(stations) {
+      // Each station: { z, yBot, yChine, yTop, wBot, wChine, wTop }
+      // 6-vertex ring around cross-section (starboard-top -> stbd-chine -> stbd-bot -> port-bot -> port-chine -> port-top)
+      const positions = [];
+      const indices = [];
+      const ring = 6;
+
+      for (let i = 0; i < stations.length; i++) {
+        const st = stations[i];
+        positions.push(
+          st.wTop,   st.yTop,   st.z, // 0: stbd spine
+          st.wChine, st.yChine, st.z, // 1: stbd chine
+          st.wBot,   st.yBot,   st.z, // 2: stbd belly
+          -st.wBot,  st.yBot,   st.z, // 3: port belly
+          -st.wChine,st.yChine, st.z, // 4: port chine
+          -st.wTop,  st.yTop,   st.z  // 5: port spine
+        );
+      }
+
+      // Connect stations from tail (+Z) to nose (-Z) with outward CCW normals
+      for (let i = 0; i < stations.length - 1; i++) {
+        const a = i * ring;
+        const b = (i + 1) * ring;
+        for (let k = 0; k < ring; k++) {
+          const kn = (k + 1) % ring;
+          indices.push(a + k, a + kn, b + k);
+          indices.push(a + kn, b + kn, b + k);
+        }
+      }
+
+      // Cap aft (+Z)
+      indices.push(0, 2, 1, 0, 3, 2, 0, 4, 3, 0, 5, 4);
+      // Cap nose (-Z)
+      const last = (stations.length - 1) * ring;
+      indices.push(last + 0, last + 1, last + 2, last + 0, last + 2, last + 3, last + 0, last + 3, last + 4, last + 0, last + 4, last + 5);
+
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+      geo.setIndex(indices);
+      geo.computeVertexNormals();
+      return geo;
+    }
+
+    function buildFighterJet(callsign) {
+      // Seamless stealth carrier strike fighter (F-35C silhouette) with continuous chined fuselage & swept tails
+      const root = new THREE.Group();
+      root.name = 'fighter-' + callsign;
+
+      const bodyMat = new THREE.MeshStandardMaterial({
+        color: 0x6f7c8a,
+        roughness: 0.42,
+        metalness: 0.48
+      });
+      const accentMat = new THREE.MeshStandardMaterial({
+        color: 0x4c5664,
+        roughness: 0.48,
+        metalness: 0.52
+      });
+      const darkMat = new THREE.MeshStandardMaterial({
+        color: 0x1f262e,
+        roughness: 0.5,
+        metalness: 0.68
+      });
+      const canopyMat = new THREE.MeshStandardMaterial({
+        color: 0x1a2838,
+        emissive: 0x38bdf8,
+        emissiveIntensity: 0.2,
+        roughness: 0.08,
+        metalness: 0.94
+      });
+
+      // 1. Single continuous lofted stealth fuselage (tail +2.85 seamlessly to sharp radome nose -4.75)
+      const fuseGeo = createFighterFuselageGeometry([
+        { z: 2.85,  yBot: 0.16, yChine: 0.36, yTop: 0.58, wBot: 0.34, wChine: 0.56, wTop: 0.30 },
+        { z: 1.55,  yBot: 0.10, yChine: 0.38, yTop: 0.70, wBot: 0.58, wChine: 0.92, wTop: 0.46 },
+        { z: -0.15, yBot: 0.08, yChine: 0.38, yTop: 0.74, wBot: 0.68, wChine: 1.06, wTop: 0.50 },
+        { z: -1.45, yBot: 0.10, yChine: 0.37, yTop: 0.68, wBot: 0.54, wChine: 0.88, wTop: 0.42 },
+        { z: -2.65, yBot: 0.14, yChine: 0.35, yTop: 0.58, wBot: 0.36, wChine: 0.58, wTop: 0.28 },
+        { z: -3.75, yBot: 0.22, yChine: 0.34, yTop: 0.46, wBot: 0.18, wChine: 0.30, wTop: 0.14 },
+        { z: -4.75, yBot: 0.31, yChine: 0.33, yTop: 0.35, wBot: 0.02, wChine: 0.03, wTop: 0.02 }
+      ]);
+      root.add(new THREE.Mesh(fuseGeo, bodyMat));
+
+      // 2. Blended Diverterless Side Air Intakes (flush against fuselage chines)
+      const intakeGeo = new THREE.BoxGeometry(0.36, 0.36, 2.3);
+      const intakeL = new THREE.Mesh(intakeGeo, accentMat);
+      intakeL.position.set(-0.76, 0.36, -0.35);
+      intakeL.rotation.y = 0.08;
+      root.add(intakeL);
+
+      const intakeR = new THREE.Mesh(intakeGeo, accentMat);
+      intakeR.position.set(0.76, 0.36, -0.35);
+      intakeR.rotation.y = -0.08;
+      root.add(intakeR);
+
+      // 3. Flush Bubble Cockpit Canopy nestled cleanly into forward spine
+      const canopy = new THREE.Mesh(new THREE.SphereGeometry(0.42, 14, 10), canopyMat);
+      canopy.scale.set(0.84, 0.62, 2.35);
+      canopy.position.set(0, 0.66, -1.75);
+      root.add(canopy);
+
+      // 4. Swept Trapezoid Carrier Wings (blended into mid-fuselage)
+      const wingShape = new THREE.Shape();
+      wingShape.moveTo(0, -1.45);
+      wingShape.lineTo(3.65, 0.88);
+      wingShape.lineTo(3.65, 1.75);
+      wingShape.lineTo(0, 1.48);
+      wingShape.lineTo(-3.65, 1.75);
+      wingShape.lineTo(-3.65, 0.88);
+      wingShape.closePath();
+
+      const wingGeo = new THREE.ExtrudeGeometry(wingShape, { depth: 0.09, bevelEnabled: false });
+      wingGeo.rotateX(Math.PI / 2);
+      const wings = new THREE.Mesh(wingGeo, bodyMat);
+      wings.position.set(0, 0.40, -0.15);
+      root.add(wings);
+
+      // Wingtip launch rails
+      const railGeo = new THREE.BoxGeometry(0.09, 0.11, 1.45);
+      const railL = new THREE.Mesh(railGeo, darkMat);
+      railL.position.set(-3.65, 0.37, 1.15);
+      root.add(railL);
+      const railR = new THREE.Mesh(railGeo, darkMat);
+      railR.position.set(3.65, 0.37, 1.15);
+      root.add(railR);
+
+      // 5. Swept Horizontal Stabilizers
+      const hStabShape = new THREE.Shape();
+      hStabShape.moveTo(0, -0.45);
+      hStabShape.lineTo(1.82, 0.35);
+      hStabShape.lineTo(1.82, 0.88);
+      hStabShape.lineTo(0, 0.56);
+      hStabShape.lineTo(-1.82, 0.88);
+      hStabShape.lineTo(-1.82, 0.35);
+      hStabShape.closePath();
+      const hStabGeo = new THREE.ExtrudeGeometry(hStabShape, { depth: 0.07, bevelEnabled: false });
+      hStabGeo.rotateX(Math.PI / 2);
+      const hStab = new THREE.Mesh(hStabGeo, bodyMat);
+      hStab.position.set(0, 0.38, 2.22);
+      root.add(hStab);
+
+      // 6. Sculpted Swept Canted Twin Vertical Stabilizers (trapezoid stealth fins)
+      const finShape = new THREE.Shape();
+      finShape.moveTo(0, 0);
+      finShape.lineTo(1.32, 0);
+      finShape.lineTo(1.58, 1.12);
+      finShape.lineTo(0.76, 1.12);
+      finShape.closePath();
+      const finGeo = new THREE.ExtrudeGeometry(finShape, { depth: 0.07, bevelEnabled: false });
+      finGeo.rotateY(-Math.PI / 2);
+
+      const tailL = new THREE.Mesh(finGeo, accentMat);
+      tailL.position.set(-0.56, 0.52, 1.38);
+      tailL.rotation.z = 0.32;
+      root.add(tailL);
+
+      const tailR = new THREE.Mesh(finGeo, accentMat);
+      tailR.position.set(0.62, 0.52, 1.38);
+      tailR.rotation.z = -0.32;
+      root.add(tailR);
+
+      // 7. Flush Engine Exhaust Nozzle & Dynamic Afterburner Cone
+      const nozzle = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.36, 0.55, 12), darkMat);
+      nozzle.rotation.x = Math.PI / 2;
+      nozzle.position.set(0, 0.36, 3.0);
+      root.add(nozzle);
+
+      const burnerMat = new THREE.MeshBasicMaterial({
+        color: 0xff8a2b,
+        transparent: true,
+        opacity: 0.0
+      });
+      const burner = new THREE.Mesh(new THREE.ConeGeometry(0.3, 2.8, 10), burnerMat);
+      burner.rotation.x = Math.PI / 2;
+      burner.position.set(0, 0.36, 4.45);
+      root.add(burner);
+
+      const burnerCoreMat = new THREE.MeshBasicMaterial({
+        color: 0xfff3c4,
+        transparent: true,
+        opacity: 0.0
+      });
+      const burnerCore = new THREE.Mesh(new THREE.ConeGeometry(0.16, 1.6, 8), burnerCoreMat);
+      burnerCore.rotation.x = Math.PI / 2;
+      burnerCore.position.set(0, 0.36, 3.9);
+      root.add(burnerCore);
+
+      // Wingtip Navigation Lights
+      const navL = new THREE.Mesh(new THREE.SphereGeometry(0.11, 6, 6), new THREE.MeshBasicMaterial({ color: 0xff3b3b }));
+      navL.position.set(-3.65, 0.39, 1.35);
+      root.add(navL);
+      const navR = new THREE.Mesh(new THREE.SphereGeometry(0.11, 6, 6), new THREE.MeshBasicMaterial({ color: 0x22c55e }));
+      navR.position.set(3.65, 0.39, 1.35);
+      root.add(navR);
+
+      return { root, burner, burnerMat, burnerCore, burnerCoreMat };
+    }
+
+    function buildHawkeye() {
+      // E-2D Hawkeye Carrier Airborne Early Warning aircraft with spinning white rotodome & twin props
+      const root = new THREE.Group();
+      const bodyMat = new THREE.MeshStandardMaterial({ color: 0xd0d7de, roughness: 0.45, metalness: 0.28 });
+      const darkMat = new THREE.MeshStandardMaterial({ color: 0x262e38, roughness: 0.6, metalness: 0.5 });
+      const domeMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.35, metalness: 0.12 });
+      const propMat = new THREE.MeshBasicMaterial({ color: 0x94a3b8, transparent: true, opacity: 0.38, side: THREE.DoubleSide });
+
+      // Cylindrical fuselage + tapered nose & tail
+      const fuse = new THREE.Mesh(new THREE.CylinderGeometry(0.46, 0.44, 5.2, 12), bodyMat);
+      fuse.rotation.x = Math.PI / 2;
+      fuse.position.set(0, 0.55, 0.1);
+      root.add(fuse);
+
+      const nose = new THREE.Mesh(new THREE.SphereGeometry(0.46, 12, 10), bodyMat);
+      nose.scale.set(1.0, 0.9, 2.2);
+      nose.position.set(0, 0.52, -2.5);
+      root.add(nose);
+
+      // Cockpit windshield
+      const glass = new THREE.Mesh(new THREE.BoxGeometry(0.76, 0.3, 0.75), darkMat);
+      glass.position.set(0, 0.78, -2.15);
+      root.add(glass);
+
+      // High straight wings
+      const wing = new THREE.Mesh(new THREE.BoxGeometry(8.6, 0.12, 1.35), bodyMat);
+      wing.position.set(0, 0.92, -0.35);
+      root.add(wing);
+
+      // Twin turboprop engine nacelles + spinning propeller discs
+      const props = [];
+      [-1.75, 1.75].forEach((ex) => {
+        const nac = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.22, 1.8, 10), bodyMat);
+        nac.rotation.x = Math.PI / 2;
+        nac.position.set(ex, 0.78, -0.65);
+        root.add(nac);
+
+        const disc = new THREE.Mesh(new THREE.CircleGeometry(0.78, 14), propMat);
+        disc.position.set(ex, 0.78, -1.62);
+        root.add(disc);
+        props.push(disc);
+      });
+
+      // Iconic large circular white AEW Radar Rotodome on dorsal pylons
+      const pylon = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.75, 0.9), darkMat);
+      pylon.position.set(0, 1.3, 0.55);
+      root.add(pylon);
+
+      const rotodome = new THREE.Group();
+      rotodome.position.set(0, 1.75, 0.55);
+      const domeDisc = new THREE.Mesh(new THREE.CylinderGeometry(1.75, 1.75, 0.24, 20), domeMat);
+      rotodome.add(domeDisc);
+      const stripe = new THREE.Mesh(new THREE.BoxGeometry(3.4, 0.26, 0.26), darkMat);
+      rotodome.add(stripe);
+      root.add(rotodome);
+
+      // 4-fin tailplane
+      const hTail = new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.1, 0.95), bodyMat);
+      hTail.position.set(0, 0.92, 2.55);
+      root.add(hTail);
+      [-1.55, -0.55, 0.55, 1.55].forEach((fx) => {
+        const fin = new THREE.Mesh(new THREE.BoxGeometry(0.08, 1.05, 0.85), bodyMat);
+        fin.position.set(fx, 1.05, 2.55);
+        root.add(fin);
+      });
+
+      return { root, rotodome, props };
+    }
+
+    function buildSeahawk() {
+      // MH-60R Seahawk naval helicopter with spinning main & tail rotors
+      const root = new THREE.Group();
+      const bodyMat = new THREE.MeshStandardMaterial({ color: 0x6c7885, roughness: 0.52, metalness: 0.35 });
+      const darkMat = new THREE.MeshStandardMaterial({ color: 0x1e252e, roughness: 0.5, metalness: 0.65 });
+      const rotorMat = new THREE.MeshBasicMaterial({ color: 0x334155, transparent: true, opacity: 0.55 });
+
+      const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.15, 0.95, 3.2), bodyMat);
+      cabin.position.set(0, 0.68, -0.2);
+      root.add(cabin);
+
+      const nose = new THREE.Mesh(new THREE.SphereGeometry(0.56, 10, 8), bodyMat);
+      nose.scale.set(1.0, 0.85, 1.45);
+      nose.position.set(0, 0.58, -1.85);
+      root.add(nose);
+
+      const cockpit = new THREE.Mesh(new THREE.BoxGeometry(1.06, 0.45, 0.95), darkMat);
+      cockpit.position.set(0, 0.85, -1.55);
+      root.add(cockpit);
+
+      // Tapered tail boom
+      const boom = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.34, 3.1, 8), bodyMat);
+      boom.rotation.x = Math.PI / 2;
+      boom.position.set(0, 0.78, 2.65);
+      root.add(boom);
+
+      const tailFin = new THREE.Mesh(new THREE.BoxGeometry(0.1, 1.05, 0.65), bodyMat);
+      tailFin.position.set(0, 1.15, 4.05);
+      tailFin.rotation.x = -0.22;
+      root.add(tailFin);
+
+      // Spinning 4-blade Main Rotor
+      const mainRotor = new THREE.Group();
+      mainRotor.position.set(0, 1.38, -0.35);
+      const b1 = new THREE.Mesh(new THREE.BoxGeometry(5.8, 0.04, 0.16), rotorMat);
+      const b2 = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.04, 5.8), rotorMat);
+      mainRotor.add(b1, b2);
+      root.add(mainRotor);
+
+      // Spinning Tail Rotor
+      const tailRotor = new THREE.Group();
+      tailRotor.position.set(0.18, 1.45, 4.12);
+      const tb1 = new THREE.Mesh(new THREE.BoxGeometry(0.04, 1.15, 0.1), rotorMat);
+      const tb2 = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.1, 1.15), rotorMat);
+      tailRotor.add(tb1, tb2);
+      root.add(tailRotor);
+
+      return { root, mainRotor, tailRotor };
+    }
+
+    // =========================================================================
+    // 7. MAIN SIMULATION STATE & SCENE SETUP
+    // =========================================================================
+    let scene, camera, renderer;
+    let oceanMat, skyMat, hemiLight, sunLight;
+    let carrierObj;
+    const escorts = [];
+    const fighters = [];
+    const particles = [];
+    let rainSystem = null;
+    let rainMat = null;
+    let hawkeyeObj = null;
+    let seahawkGuard = null;
+
+    // App State
+    let currentEnv = 'sunset';
+    let targetEnv = ENVS.sunset;
+    let swellScale = 1.0;
+    let autoOps = true;
+    let cameraMode = 'orbit'; // 'orbit' | 'bridge' | 'chase' | 'convoy'
+    let trackedFighter = null;
+    let launchCount = 0;
+    let trapCount = 0;
+    let autoTimer = 4.0;
+    let nextCatapult = 1;
+    let lightningFlash = 0;
+
+    // Orbit Camera Spherical Coordinates
+    const orbit = {
+      theta: 0.72,
+      phi: 1.18,
+      radius: 132,
+      targetTheta: 0.72,
+      targetPhi: 1.18,
+      targetRadius: 132,
+      targetPos: new THREE.Vector3(0, 8, 0)
+    };
+
+    // Interactive Ripples Ring Buffer
+    const ripples = [
+      new THREE.Vector4(0, 0, -99, 0),
+      new THREE.Vector4(0, 0, -99, 0),
+      new THREE.Vector4(0, 0, -99, 0),
+      new THREE.Vector4(0, 0, -99, 0)
+    ];
+    let rippleIdx = 0;
+
+    // UI Helpers
+    let toastTimer = null;
+    function showToast(msg) {
+      const bar = document.getElementById('toast-bar');
+      const txt = document.getElementById('toast-text');
+      if (!bar || !txt) return;
+      txt.textContent = msg;
+      bar.style.opacity = '1';
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        bar.style.opacity = '0';
+      }, 2800);
+    }
+
+    function updateStatsUI() {
+      const airborne = fighters.filter(
+        (f) => f.state === 'LAUNCHING' || f.state === 'CLIMBING' || f.state === 'PATROL' || f.state === 'APPROACH'
+      ).length;
+      document.getElementById('stat-launches').textContent = String(launchCount);
+      document.getElementById('stat-traps').textContent = String(trapCount);
+      document.getElementById('stat-airborne').textContent = String(airborne);
+    }
+
+    function applyLanguage() {
+      const t = I18N[lang];
+      document.getElementById('ui-title').textContent = t.title;
+      document.getElementById('ui-subtitle').textContent = t.subtitle;
+      document.getElementById('lbl-launches').textContent = t.launches;
+      document.getElementById('lbl-traps').textContent = t.traps;
+      document.getElementById('lbl-airborne').textContent = t.airborne;
+      document.getElementById('lbl-auto').textContent = t.autoOps;
+      document.getElementById('lbl-sound').textContent = sound.enabled ? t.soundOn : t.soundOff;
+      document.getElementById('btn-lang').textContent = t.langBtn;
+      document.getElementById('lbl-hud').textContent = t.hideUi;
+      document.getElementById('btn-show-hud').textContent = t.showUi;
+      document.getElementById('ui-hint').textContent = t.hint;
+      document.getElementById('lbl-launch').textContent = t.launch;
+      document.getElementById('lbl-recover').textContent = t.recover;
+      document.getElementById('lbl-scramble').textContent = t.scramble;
+      document.getElementById('cam-orbit').textContent = t.camOrbit;
+      document.getElementById('cam-bridge').textContent = t.camBridge;
+      document.getElementById('cam-chase').textContent = t.camChase;
+      document.getElementById('cam-convoy').textContent = t.camConvoy;
+      document.getElementById('env-sunset').textContent = t.envSunset;
+      document.getElementById('env-noon').textContent = t.envNoon;
+      document.getElementById('env-storm').textContent = t.envStorm;
+      document.getElementById('env-night').textContent = t.envNight;
+      document.getElementById('lbl-waves').textContent = t.waves;
+    }
+
+    // =========================================================================
+    // 8. PARTICLE EFFECTS (CATAPULT VAPOR, TIRE SMOKE, AFTERBURNER TRAIL)
+    // =========================================================================
+    const particleGeo = new THREE.SphereGeometry(0.6, 6, 6);
+    function spawnSmoke(pos, vel, colorHex, size, life) {
+      if (particles.length > 140) return;
+      const mat = new THREE.MeshBasicMaterial({
+        color: colorHex,
+        transparent: true,
+        opacity: 0.65
+      });
+      const mesh = new THREE.Mesh(particleGeo, mat);
+      mesh.position.copy(pos);
+      mesh.scale.setScalar(size);
+      scene.add(mesh);
+      particles.push({ mesh, mat, vel: vel.clone(), life, maxLife: life, grow: 2.2 });
+    }
+
+    function updateParticles(dt) {
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.life -= dt;
+        if (p.life <= 0) {
+          scene.remove(p.mesh);
+          p.mat.dispose();
+          particles.splice(i, 1);
+          continue;
+        }
+        p.mesh.position.addScaledVector(p.vel, dt);
+        p.mesh.scale.addScalar(p.grow * dt);
+        p.mat.opacity = (p.life / p.maxLife) * 0.58;
+      }
+    }
+
+    // =========================================================================
+    // 9. FIGHTER JET FLIGHT & DECK PHYSICS CONTROLLER
+    // =========================================================================
+    const PARKING_SLOTS = [
+      { x: 5.4, z: 34.0, rotY: 0.35 },
+      { x: 5.8, z: 24.5, rotY: 0.42 },
+      { x: 6.2, z: -2.0, rotY: -0.25 },
+      { x: -10.8, z: -6.0, rotY: 0.2 },
+      { x: -9.8, z: 34.0, rotY: -0.3 }
+    ];
+
+    const CALLSIGNS = ['Viper 1', 'Falcon 2', 'Maverick 3', 'Knight 4', 'Ghost 5'];
+
+    function createFighters() {
+      for (let i = 0; i < CALLSIGNS.length; i++) {
+        const cs = CALLSIGNS[i];
+        const model = buildFighterJet(cs);
+        scene.add(model.root);
+
+        const slot = PARKING_SLOTS[i];
+        const isInitialPatrol = i < 2; // Start with 2 jets already soaring in CAP!
+        const fighter = {
+          id: i,
+          callsign: cs,
+          model,
+          slotIndex: i,
+          state: isInitialPatrol ? 'PATROL' : 'PARKED',
+          catapult: (i % 2) + 1,
+          stateTimer: 0,
+          speed: isInitialPatrol ? 56 : 0,
+          orbitAngle: i * Math.PI + 0.6,
+          orbitRadius: 125 + i * 28,
+          orbitAlt: 42 + i * 12,
+          localPos: new THREE.Vector3(slot.x, 6.45, slot.z),
+          worldPos: new THREE.Vector3(
+            Math.cos(i * Math.PI) * 130,
+            42 + i * 12,
+            Math.sin(i * Math.PI) * 130
+          ),
+          vel: new THREE.Vector3(0, 0, -56),
+          afterburner: 0
+        };
+        fighters.push(fighter);
+      }
+      trackedFighter = fighters[0];
+      updateStatsUI();
+    }
+
+    function launchFighter(specificFighter) {
+      const f = specificFighter || fighters.find((j) => j.state === 'PARKED');
+      if (!f) {
+        showToast(I18N[lang].msgNoDeckJet);
+        return false;
+      }
+      f.catapult = nextCatapult;
+      nextCatapult = nextCatapult === 1 ? 2 : 1;
+      f.state = 'TAXI_TO_CAT';
+      f.stateTimer = 0;
+      showToast(I18N[lang].msgLaunch(f.callsign, f.catapult));
+      updateStatsUI();
+      return true;
+    }
+
+    function recoverFighter() {
+      // Only allow 1 jet on final approach at a time for clean deck traffic
+      const busy = fighters.some((j) => j.state === 'APPROACH' || j.state === 'LANDING');
+      if (busy) return false;
+      const f = fighters.find((j) => j.state === 'PATROL');
+      if (!f) {
+        showToast(I18N[lang].msgNoAirJet);
+        return false;
+      }
+      f.state = 'APPROACH';
+      f.stateTimer = 0;
+      showToast(I18N[lang].msgRecover(f.callsign));
+      updateStatsUI();
+      return true;
+    }
+
+    function scrambleWing() {
+      let launched = 0;
+      fighters.forEach((f, idx) => {
+        if (f.state === 'PARKED' && launched < 3) {
+          launched++;
+          setTimeout(() => {
+            if (f.state === 'PARKED') {
+              f.catapult = (idx % 2) + 1;
+              f.state = 'TAXI_TO_CAT';
+              f.stateTimer = 0;
+              updateStatsUI();
+            }
+          }, (launched - 1) * 1350);
+        }
+      });
+      if (launched > 0) {
+        showToast(I18N[lang].msgScramble);
+      } else {
+        showToast(I18N[lang].msgNoDeckJet);
+      }
+    }
+
+    // Helper: transform carrier-local point to world space
+    const tmpVec = new THREE.Vector3();
+    const tmpVec2 = new THREE.Vector3();
+
+    function carrierToWorld(localVec, out) {
+      out.copy(localVec).applyMatrix4(carrierObj.group.matrixWorld);
+      return out;
+    }
+
+    function updateFighters(dt, elapsed) {
+      let cat1Active = false;
+      let cat2Active = false;
+
+      for (let i = 0; i < fighters.length; i++) {
+        const f = fighters[i];
+        const m = f.model;
+        f.stateTimer += dt;
+        const catX = f.catapult === 1 ? 3.2 : -2.6;
+
+        if (f.state === 'PARKED') {
+          const slot = PARKING_SLOTS[f.slotIndex];
+          f.localPos.set(slot.x, 6.45, slot.z);
+          carrierToWorld(f.localPos, f.worldPos);
+          m.root.position.copy(f.worldPos);
+          m.root.rotation.copy(carrierObj.group.rotation);
+          m.root.rotateY(slot.rotY);
+          f.afterburner = THREE.MathUtils.lerp(f.afterburner, 0, dt * 6);
+        } else if (f.state === 'TAXI_TO_CAT') {
+          const target = new THREE.Vector3(catX, 6.45, -16.5);
+          f.localPos.lerp(target, Math.min(1, dt * 1.9));
+          carrierToWorld(f.localPos, f.worldPos);
+          m.root.position.copy(f.worldPos);
+          m.root.rotation.copy(carrierObj.group.rotation);
+          f.afterburner = THREE.MathUtils.lerp(f.afterburner, 0.2, dt * 4);
+
+          if (f.catapult === 1) cat1Active = true;
+          else cat2Active = true;
+
+          if (f.localPos.distanceTo(target) < 0.8 || f.stateTimer > 2.4) {
+            f.localPos.copy(target);
+            f.state = 'CAT_READY';
+            f.stateTimer = 0;
+          }
+        } else if (f.state === 'CAT_READY') {
+          if (f.catapult === 1) cat1Active = true;
+          else cat2Active = true;
+
+          f.localPos.set(catX, 6.45, -16.5);
+          carrierToWorld(f.localPos, f.worldPos);
+          m.root.position.copy(f.worldPos);
+          m.root.rotation.copy(carrierObj.group.rotation);
+          // Engine spool-up vibration & afterburner ramp
+          m.root.position.x += (Math.random() - 0.5) * 0.06;
+          f.afterburner = THREE.MathUtils.lerp(f.afterburner, 0.95, dt * 4);
+
+          if (Math.random() < 0.35) {
+            carrierToWorld(new THREE.Vector3(catX, 6.8, -13.0), tmpVec);
+            spawnSmoke(tmpVec, new THREE.Vector3((Math.random() - 0.5) * 2, 1.6, 5), 0xe2e8f0, 0.8, 0.9);
+          }
+
+          if (f.stateTimer > 1.15) {
+            f.state = 'LAUNCHING';
+            f.stateTimer = 0;
+            f.speed = 6.0;
+            launchCount++;
+            sound.playCatapultLaunch();
+            updateStatsUI();
+          }
+        } else if (f.state === 'LAUNCHING') {
+          if (f.catapult === 1) cat1Active = true;
+          else cat2Active = true;
+
+          // EMALS electromagnetic catapult acceleration (a = 48 m/s^2)
+          f.speed += 52.0 * dt;
+          f.localPos.z -= f.speed * dt;
+          carrierToWorld(f.localPos, f.worldPos);
+          m.root.position.copy(f.worldPos);
+          m.root.rotation.copy(carrierObj.group.rotation);
+          f.afterburner = 1.0;
+
+          // Steam/vapor trail along catapult track
+          if (Math.random() < 0.7) {
+            spawnSmoke(
+              f.worldPos.clone().add(new THREE.Vector3(0, 0.2, 2.5)),
+              new THREE.Vector3((Math.random() - 0.5) * 2, 1.4, 3.0),
+              0xf1f5f9,
+              0.7,
+              1.1
+            );
+          }
+
+          if (f.localPos.z < -49.5) {
+            f.state = 'CLIMBING';
+            f.stateTimer = 0;
+            f.vel.set(f.catapult === 1 ? 6 : -6, 10, -f.speed);
+          }
+        } else if (f.state === 'CLIMBING') {
+          f.afterburner = THREE.MathUtils.lerp(f.afterburner, 0.85, dt * 2);
+          // Smooth aerodynamic pitch-up and banking turn into patrol orbit
+          const targetAlt = f.orbitAlt;
+          const climbY = THREE.MathUtils.clamp((targetAlt - f.worldPos.y) * 0.55, 2.0, 22.0);
+          const turnDir = f.catapult === 1 ? 1 : -1;
+          f.vel.x = THREE.MathUtils.lerp(f.vel.x, turnDir * 24, dt * 0.7);
+          f.vel.y = THREE.MathUtils.lerp(f.vel.y, climbY, dt * 1.4);
+          f.vel.z = THREE.MathUtils.lerp(f.vel.z, -52, dt * 1.0);
+          f.worldPos.addScaledVector(f.vel, dt);
+
+          m.root.position.copy(f.worldPos);
+          tmpVec.copy(f.worldPos).sub(f.vel);
+          m.root.lookAt(tmpVec);
+          m.root.rotateZ(-turnDir * 0.42);
+
+          if (f.worldPos.y >= targetAlt - 3 || f.stateTimer > 4.2) {
+            f.state = 'PATROL';
+            f.stateTimer = 0;
+            f.orbitAngle = Math.atan2(f.worldPos.z, f.worldPos.x);
+          }
+        } else if (f.state === 'PATROL') {
+          f.afterburner = THREE.MathUtils.lerp(f.afterburner, 0.35, dt * 2);
+          const angSpeed = 0.36;
+          f.orbitAngle += angSpeed * dt;
+          const targetX = Math.cos(f.orbitAngle) * f.orbitRadius;
+          const targetZ = Math.sin(f.orbitAngle) * (f.orbitRadius * 1.25);
+          const targetY = f.orbitAlt + Math.sin(elapsed * 0.7 + f.id) * 4.5;
+
+          tmpVec.set(targetX, targetY, targetZ);
+          const desired = tmpVec.sub(f.worldPos).normalize().multiplyScalar(58);
+          f.vel.lerp(desired, dt * 2.2);
+          f.worldPos.addScaledVector(f.vel, dt);
+
+          m.root.position.copy(f.worldPos);
+          tmpVec2.copy(f.worldPos).sub(f.vel);
+          m.root.lookAt(tmpVec2);
+          // Realistic bank into circular CAP orbit
+          m.root.rotateZ(0.45);
+        } else if (f.state === 'APPROACH') {
+          // Line up aft of the angled flight deck (port-canted glideslope)
+          f.afterburner = THREE.MathUtils.lerp(f.afterburner, 0.25, dt * 3);
+          const progress = Math.min(1, f.stateTimer / 5.2);
+          // Approach corridor from stern-starboard toward port-angled touchdown point
+          const startLocal = new THREE.Vector3(14, 34, 170);
+          const touchLocal = new THREE.Vector3(-4.2, 6.55, 22.0);
+          tmpVec.lerpVectors(startLocal, touchLocal, progress);
+          carrierToWorld(tmpVec, tmpVec2);
+
+          const toTarget = tmpVec2.clone().sub(f.worldPos);
+          const step = Math.min(toTarget.length(), (62 - progress * 24) * dt);
+          if (toTarget.length() > 0.01) {
+            toTarget.normalize();
+            f.vel.lerp(toTarget.multiplyScalar(48), dt * 4.5);
+          }
+          f.worldPos.addScaledVector(f.vel, dt * 0.9);
+          // Gently blend toward exact glideslope near touchdown
+          if (progress > 0.55) {
+            f.worldPos.lerp(tmpVec2, (progress - 0.55) * 0.18);
+          }
+
+          m.root.position.copy(f.worldPos);
+          const lookPt = f.worldPos.clone().sub(f.vel);
+          m.root.lookAt(lookPt);
+          // Nose-up carrier flare attitude on final approach
+          m.root.rotateX(0.11);
+
+          if (progress >= 0.98 || f.worldPos.distanceTo(carrierToWorld(touchLocal, tmpVec)) < 3.5) {
+            f.state = 'LANDING';
+            f.stateTimer = 0;
+            f.localPos.copy(touchLocal);
+            f.speed = 36.0;
+            trapCount++;
+            sound.playTrapLanding();
+            showToast(I18N[lang].msgTrap(f.callsign));
+            updateStatsUI();
+
+            // Tire smoke burst on touchdown
+            carrierToWorld(touchLocal, tmpVec);
+            for (let s = 0; s < 5; s++) {
+              spawnSmoke(
+                tmpVec.clone().add(new THREE.Vector3((Math.random() - 0.5) * 1.4, 0.2, 0)),
+                new THREE.Vector3((Math.random() - 0.5) * 3, 1.5 + Math.random(), 2),
+                0xdbeafe,
+                0.75,
+                1.0
+              );
+            }
+          }
+        } else if (f.state === 'LANDING') {
+          // Arrestor wire rapid deceleration along angled deck (~9 deg port angle)
+          f.afterburner = THREE.MathUtils.lerp(f.afterburner, 0.0, dt * 6);
+          f.speed = Math.max(0, f.speed - 24.0 * dt);
+          f.localPos.z -= f.speed * Math.cos(0.155) * dt;
+          f.localPos.x -= f.speed * Math.sin(0.155) * dt;
+          f.localPos.y = 6.45;
+          carrierToWorld(f.localPos, f.worldPos);
+
+          m.root.position.copy(f.worldPos);
+          m.root.rotation.copy(carrierObj.group.rotation);
+          m.root.rotateY(0.155);
+
+          if (f.speed <= 0.5) {
+            f.state = 'TAXI_PARK';
+            f.stateTimer = 0;
+          }
+        } else if (f.state === 'TAXI_PARK') {
+          const slot = PARKING_SLOTS[f.slotIndex];
+          const target = new THREE.Vector3(slot.x, 6.45, slot.z);
+          f.localPos.lerp(target, Math.min(1, dt * 1.6));
+          carrierToWorld(f.localPos, f.worldPos);
+          m.root.position.copy(f.worldPos);
+          m.root.rotation.copy(carrierObj.group.rotation);
+          m.root.rotateY(slot.rotY);
+
+          if (f.localPos.distanceTo(target) < 0.7 || f.stateTimer > 3.2) {
+            f.state = 'PARKED';
+            f.stateTimer = 0;
+            updateStatsUI();
+          }
+        }
+
+        // Update afterburner visual glow
+        const ab = f.afterburner;
+        const flicker = 0.85 + Math.random() * 0.3;
+        m.burnerMat.opacity = ab * 0.82;
+        m.burnerCoreMat.opacity = ab * 0.92;
+        m.burner.scale.set(0.8 + ab * 0.35, 0.7 + ab * 0.9 * flicker, 0.8 + ab * 0.35);
+        m.burnerCore.scale.set(0.7 + ab * 0.3, 0.7 + ab * 0.8 * flicker, 0.7 + ab * 0.3);
+      }
+
+      // Animate Jet Blast Deflectors (JBDs) up when a catapult is hot
+      carrierObj.jbd1.rotation.x = THREE.MathUtils.lerp(carrierObj.jbd1.rotation.x, cat1Active ? -0.82 : 0, dt * 5);
+      carrierObj.jbd2.rotation.x = THREE.MathUtils.lerp(carrierObj.jbd2.rotation.x, cat2Active ? -0.82 : 0, dt * 5);
+    }
+
+    // =========================================================================
+    // 10. INITIALIZE THREE.JS WORLD
+    // =========================================================================
+    function initScene() {
+      const container = document.getElementById('canvas-container');
+      scene = new THREE.Scene();
+      scene.fog = new THREE.FogExp2(targetEnv.fogColor.getHex(), targetEnv.fogDensity);
+
+      camera = new THREE.PerspectiveCamera(48, container.clientWidth / container.clientHeight, 0.5, 2600);
+
+      renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      renderer.setSize(container.clientWidth, container.clientHeight);
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.08;
+      container.appendChild(renderer.domElement);
+
+      // Lights
+      hemiLight = new THREE.HemisphereLight(targetEnv.hemiSky, targetEnv.hemiGround, targetEnv.hemiIntensity);
+      scene.add(hemiLight);
+
+      sunLight = new THREE.DirectionalLight(targetEnv.sunColor.getHex(), targetEnv.sunIntensity);
+      sunLight.position.copy(targetEnv.sunDir).multiplyScalar(300);
+      scene.add(sunLight);
+
+      // Sky Dome
+      const skyGeo = new THREE.SphereGeometry(1400, 32, 20);
+      skyMat = new THREE.ShaderMaterial({
+        vertexShader: SKY_VERTEX_SHADER,
+        fragmentShader: SKY_FRAGMENT_SHADER,
+        side: THREE.BackSide,
+        depthWrite: false,
+        uniforms: {
+          uSunDir: { value: targetEnv.sunDir.clone() },
+          uSkyTop: { value: targetEnv.skyTop.clone() },
+          uSkyMid: { value: targetEnv.skyMid.clone() },
+          uSkyHorizon: { value: targetEnv.skyHorizon.clone() },
+          uSunColor: { value: targetEnv.sunColor.clone() },
+          uTime: { value: 0 },
+          uNightFactor: { value: targetEnv.nightFactor },
+          uStormFactor: { value: targetEnv.stormFactor }
+        }
+      });
+      scene.add(new THREE.Mesh(skyGeo, skyMat));
+
+      // Custom GLSL Ocean
+      const oceanGeo = new THREE.PlaneGeometry(2200, 2200, 160, 160);
+      oceanGeo.rotateX(-Math.PI / 2);
+      oceanMat = new THREE.ShaderMaterial({
+        vertexShader: OCEAN_VERTEX_SHADER,
+        fragmentShader: OCEAN_FRAGMENT_SHADER,
+        uniforms: {
+          uTime: { value: 0 },
+          uSwell: { value: swellScale },
+          uSunDir: { value: targetEnv.sunDir.clone() },
+          uSunColor: { value: targetEnv.sunColor.clone() },
+          uSkyHorizon: { value: targetEnv.skyHorizon.clone() },
+          uSkyTop: { value: targetEnv.skyTop.clone() },
+          uWaterDeep: { value: targetEnv.waterDeep.clone() },
+          uWaterShallow: { value: targetEnv.waterShallow.clone() },
+          uFogColor: { value: targetEnv.fogColor.clone() },
+          uFogDensity: { value: targetEnv.fogDensity },
+          uNightFactor: { value: targetEnv.nightFactor },
+          uShips: {
+            value: [
+              new THREE.Vector4(0, 0, 48.0, 10.5),
+              new THREE.Vector4(-92, -62, 22.0, 3.5),
+              new THREE.Vector4(98, -48, 22.0, 3.5),
+              new THREE.Vector4(-82, 86, 25.0, 3.8),
+              new THREE.Vector4(88, 92, 25.0, 3.8),
+              new THREE.Vector4(-168, 12, 22.0, 3.5),
+              new THREE.Vector4(172, 24, 22.0, 3.5)
+            ]
+          },
+          uRipples: { value: ripples }
+        }
+      });
+      const oceanMesh = new THREE.Mesh(oceanGeo, oceanMat);
+      oceanMesh.name = 'ocean-surface';
+      scene.add(oceanMesh);
+
+      // Build CVN-78 Aircraft Carrier
+      carrierObj = buildCarrier();
+      scene.add(carrierObj.group);
+
+      // Build 3 Escort Destroyers in Carrier Strike Group Formation
+      const escortSpecs = [
+        { x: -92,  z: -62, name: 'DDG-115', type: 'ddg' },
+        { x: 98,   z: -48, name: 'DDG-118', type: 'ddg' },
+        { x: -82,  z: 86,  name: 'CG-71',   type: 'cg'  },
+        { x: 88,   z: 92,  name: 'CG-68',   type: 'cg'  },
+        { x: -168, z: 12,  name: 'DDG-119', type: 'ddg' },
+        { x: 172,  z: 24,  name: 'DDG-121', type: 'ddg' }
+      ];
+      escortSpecs.forEach((sp) => {
+        const ship = sp.type === 'cg' ? buildCruiser() : buildDestroyer();
+        ship.position.set(sp.x, 0, sp.z);
+        scene.add(ship);
+        escorts.push({ group: ship, baseX: sp.x, baseZ: sp.z, name: sp.name });
+      });
+
+      // Storm Rain Streaks (only visible during Storm preset)
+      const rainCount = 900;
+      const rainGeo = new THREE.BufferGeometry();
+      const rainPos = new Float32Array(rainCount * 3);
+      for (let i = 0; i < rainCount; i++) {
+        rainPos[i * 3] = (Math.random() - 0.5) * 280;
+        rainPos[i * 3 + 1] = Math.random() * 120;
+        rainPos[i * 3 + 2] = (Math.random() - 0.5) * 280;
+      }
+      rainGeo.setAttribute('position', new THREE.BufferAttribute(rainPos, 3));
+      rainMat = new THREE.PointsMaterial({
+        color: 0xcbe4f9,
+        size: 0.75,
+        transparent: true,
+        opacity: 0.0
+      });
+      rainSystem = new THREE.Points(rainGeo, rainMat);
+      scene.add(rainSystem);
+
+      // Create Carrier Air Wing Fighters
+      createFighters();
+
+      // Add high-altitude orbiting E-2D Hawkeye AEW & Plane Guard MH-60R Seahawk
+      hawkeyeObj = buildHawkeye();
+      scene.add(hawkeyeObj.root);
+
+      seahawkGuard = buildSeahawk();
+      scene.add(seahawkGuard.root);
+
+      // Park a Seahawk on CG-71's aft helipad
+      const cgShip = escorts.find((e) => e.name === 'CG-71');
+      if (cgShip) {
+        const deckHelo = buildSeahawk();
+        deckHelo.root.position.set(0, 2.82, 14.6);
+        deckHelo.root.scale.set(0.88, 0.88, 0.88);
+        cgShip.group.add(deckHelo.root);
+      }
+
+      // Resize Handler
+      window.addEventListener('resize', onResize);
+      setupPointerControls(renderer.domElement, oceanMesh);
+    }
+
+    function onResize() {
+      const container = document.getElementById('canvas-container');
+      if (!container || !camera || !renderer) return;
+      camera.aspect = container.clientWidth / container.clientHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(container.clientWidth, container.clientHeight);
+    }
+
+    // =========================================================================
+    // 11. INTERACTIVE ORBIT, ZOOM & 3D RAYCASTING (CLICK DECK / OCEAN / JETS)
+    // =========================================================================
+    function setupPointerControls(domEl, oceanMesh) {
+      const raycaster = new THREE.Raycaster();
+      const pointer = new THREE.Vector2();
+      let isDown = false;
+      let moved = false;
+      let startX = 0, startY = 0;
+      let lastX = 0, lastY = 0;
+      let pinchStartDist = 0;
+
+      domEl.addEventListener('pointerdown', (e) => {
+        isDown = true;
+        moved = false;
+        startX = lastX = e.clientX;
+        startY = lastY = e.clientY;
+      });
+
+      window.addEventListener('pointermove', (e) => {
+        if (!isDown) return;
+        const dx = e.clientX - lastX;
+        const dy = e.clientY - lastY;
+        if (Math.hypot(e.clientX - startX, e.clientY - startY) > 6) {
+          moved = true;
+        }
+        lastX = e.clientX;
+        lastY = e.clientY;
+
+        if (cameraMode !== 'orbit') {
+          setCameraMode('orbit');
+        }
+        orbit.targetTheta -= dx * 0.0065;
+        orbit.targetPhi = THREE.MathUtils.clamp(orbit.targetPhi - dy * 0.0055, 0.22, 1.48);
+      });
+
+      window.addEventListener('pointerup', (e) => {
+        if (!isDown) return;
+        isDown = false;
+        if (moved) return;
+
+        // Handle clean tap / click in 3D world
+        const rect = domEl.getBoundingClientRect();
+        pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+        pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+        raycaster.setFromCamera(pointer, camera);
+
+        // 1. Check Fighter Jets first
+        const jetRoots = fighters.map((f) => f.model.root);
+        const jetHits = raycaster.intersectObjects(jetRoots, true);
+        if (jetHits.length > 0) {
+          let obj = jetHits[0].object;
+          while (obj.parent && !obj.name.startsWith('fighter-')) obj = obj.parent;
+          const hitJet = fighters.find((f) => 'fighter-' + f.callsign === obj.name);
+          if (hitJet) {
+            trackedFighter = hitJet;
+            setCameraMode('chase');
+            showToast(I18N[lang].msgFollow(hitJet.callsign));
+            return;
+          }
+        }
+
+        // 2. Check Carrier Deck -> Launch Jet!
+        const deckHits = raycaster.intersectObject(carrierObj.flightDeck, false);
+        if (deckHits.length > 0) {
+          launchFighter();
+          return;
+        }
+
+        // 3. Check Ocean -> Create interactive physical wave ripple!
+        const oceanHits = raycaster.intersectObject(oceanMesh, false);
+        if (oceanHits.length > 0) {
+          const pt = oceanHits[0].point;
+          ripples[rippleIdx].set(pt.x, pt.z, oceanMat.uniforms.uTime.value, 1.0);
+          rippleIdx = (rippleIdx + 1) % ripples.length;
+          sound.playWaterPulse();
+          showToast(I18N[lang].msgRipple);
+        }
+      });
+
+      domEl.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        if (cameraMode !== 'orbit') setCameraMode('orbit');
+        orbit.targetRadius = THREE.MathUtils.clamp(orbit.targetRadius + e.deltaY * 0.12, 42, 340);
+      }, { passive: false });
+
+      // Touch pinch-to-zoom support
+      domEl.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 2) {
+          pinchStartDist = Math.hypot(
+            e.touches[0].clientX - e.touches[1].clientX,
+            e.touches[0].clientY - e.touches[1].clientY
+          );
+        }
+      }, { passive: true });
+
+      domEl.addEventListener('touchmove', (e) => {
+        if (e.touches.length === 2 && pinchStartDist > 0) {
+          const dist = Math.hypot(
+            e.touches[0].clientX - e.touches[1].clientX,
+            e.touches[0].clientY - e.touches[1].clientY
+          );
+          const delta = pinchStartDist - dist;
+          pinchStartDist = dist;
+          if (cameraMode !== 'orbit') setCameraMode('orbit');
+          orbit.targetRadius = THREE.MathUtils.clamp(orbit.targetRadius + delta * 0.45, 42, 340);
+        }
+      }, { passive: true });
+    }
+
+    // =========================================================================
+    // 12. SHIP BUOYANCY PHYSICS & CAMERA MODES
+    // =========================================================================
+    function applyShipBuoyancy(shipGroup, x, z, halfLen, halfBeam, time, damping) {
+      const hBow = sampleOceanHeight(x, z - halfLen * 0.7, time, swellScale);
+      const hStern = sampleOceanHeight(x, z + halfLen * 0.7, time, swellScale);
+      const hPort = sampleOceanHeight(x - halfBeam, z, time, swellScale);
+      const hStbd = sampleOceanHeight(x + halfBeam, z, time, swellScale);
+
+      const avgY = (hBow + hStern + hPort + hStbd) * 0.25;
+      const pitch = Math.atan2(hBow - hStern, halfLen * 1.4) * damping;
+      const roll = Math.atan2(hPort - hStbd, halfBeam * 2.0) * damping;
+
+      shipGroup.position.set(x, avgY, z);
+      shipGroup.rotation.x = pitch;
+      shipGroup.rotation.z = roll;
+    }
+
+    function updateCamera(dt, elapsed) {
+      if (cameraMode === 'orbit') {
+        orbit.theta = THREE.MathUtils.lerp(orbit.theta, orbit.targetTheta, dt * 6);
+        orbit.phi = THREE.MathUtils.lerp(orbit.phi, orbit.targetPhi, dt * 6);
+        orbit.radius = THREE.MathUtils.lerp(orbit.radius, orbit.targetRadius, dt * 6);
+
+        const sinPhi = Math.sin(orbit.phi);
+        const cx = orbit.targetPos.x + orbit.radius * sinPhi * Math.sin(orbit.theta);
+        const cy = Math.max(4.5, orbit.targetPos.y + orbit.radius * Math.cos(orbit.phi));
+        const cz = orbit.targetPos.z + orbit.radius * sinPhi * Math.cos(orbit.theta);
+
+        camera.position.lerp(tmpVec.set(cx, cy, cz), dt * 7);
+        camera.lookAt(orbit.targetPos);
+      } else if (cameraMode === 'bridge') {
+        // Dramatic Flight Deck Tower view right beside the island looking down the bow & angled runway
+        const towerPos = carrierToWorld(new THREE.Vector3(11.5, 16.5, 18.0), tmpVec);
+        const lookAtDeck = carrierToWorld(new THREE.Vector3(-2.5, 7.2, -32.0), tmpVec2);
+        camera.position.lerp(towerPos, dt * 5);
+        camera.lookAt(lookAtDeck);
+      } else if (cameraMode === 'chase') {
+        // Follow an active fighter (prefer an airborne jet if tracked jet is parked)
+        if (!trackedFighter || trackedFighter.state === 'PARKED') {
+          const active = fighters.find((f) => f.state !== 'PARKED');
+          if (active) trackedFighter = active;
+        }
+        const f = trackedFighter || fighters[0];
+        const backDir = f.vel.lengthSq() > 1 ? f.vel.clone().normalize().multiplyScalar(-18) : new THREE.Vector3(0, 0, 18);
+        const desiredPos = f.worldPos.clone().add(backDir).add(new THREE.Vector3(0, 6.2, 0));
+        desiredPos.y = Math.max(5.5, desiredPos.y);
+        camera.position.lerp(desiredPos, dt * 4.5);
+        camera.lookAt(f.worldPos);
+      } else if (cameraMode === 'convoy') {
+        // Wide cinematic sweeping view showing the entire Carrier Strike Group
+        const sweepAngle = 0.55 + Math.sin(elapsed * 0.12) * 0.35;
+        const cx = Math.sin(sweepAngle) * 275;
+        const cz = Math.cos(sweepAngle) * 245 - 10;
+        camera.position.lerp(tmpVec.set(cx, 84, cz), dt * 3.5);
+        camera.lookAt(0, 6, 8);
+      }
+    }
+
+    // =========================================================================
+    // 13. MAIN ANIMATION LOOP
+    // =========================================================================
+    let animId = null;
+    let lastTime = 0;
+    let simTime = 0;
+
+    function animate(now) {
+      animId = requestAnimationFrame(animate);
+      const dt = Math.min(0.05, lastTime ? (now - lastTime) / 1000 : 0.016);
+      lastTime = now;
+      simTime += dt;
+
+      // Smoothly interpolate environment lighting & shader uniforms
+      const lerpRate = dt * 2.2;
+      skyMat.uniforms.uTime.value = simTime;
+      skyMat.uniforms.uSunDir.value.lerp(targetEnv.sunDir, lerpRate).normalize();
+      skyMat.uniforms.uSkyTop.value.lerp(targetEnv.skyTop, lerpRate);
+      skyMat.uniforms.uSkyMid.value.lerp(targetEnv.skyMid, lerpRate);
+      skyMat.uniforms.uSkyHorizon.value.lerp(targetEnv.skyHorizon, lerpRate);
+      skyMat.uniforms.uSunColor.value.lerp(targetEnv.sunColor, lerpRate);
+      skyMat.uniforms.uNightFactor.value = THREE.MathUtils.lerp(skyMat.uniforms.uNightFactor.value, targetEnv.nightFactor, lerpRate);
+      skyMat.uniforms.uStormFactor.value = THREE.MathUtils.lerp(skyMat.uniforms.uStormFactor.value, targetEnv.stormFactor, lerpRate);
+
+      oceanMat.uniforms.uTime.value = simTime;
+      oceanMat.uniforms.uSwell.value = THREE.MathUtils.lerp(oceanMat.uniforms.uSwell.value, swellScale, dt * 3.5);
+      oceanMat.uniforms.uSunDir.value.copy(skyMat.uniforms.uSunDir.value);
+      oceanMat.uniforms.uSunColor.value.copy(skyMat.uniforms.uSunColor.value);
+      oceanMat.uniforms.uSkyHorizon.value.copy(skyMat.uniforms.uSkyHorizon.value);
+      oceanMat.uniforms.uSkyTop.value.copy(skyMat.uniforms.uSkyTop.value);
+      oceanMat.uniforms.uWaterDeep.value.lerp(targetEnv.waterDeep, lerpRate);
+      oceanMat.uniforms.uWaterShallow.value.lerp(targetEnv.waterShallow, lerpRate);
+      oceanMat.uniforms.uFogColor.value.lerp(targetEnv.fogColor, lerpRate);
+      oceanMat.uniforms.uFogDensity.value = THREE.MathUtils.lerp(oceanMat.uniforms.uFogDensity.value, targetEnv.fogDensity, lerpRate);
+      oceanMat.uniforms.uNightFactor.value = skyMat.uniforms.uNightFactor.value;
+
+      scene.fog.color.copy(oceanMat.uniforms.uFogColor.value);
+      scene.fog.density = oceanMat.uniforms.uFogDensity.value;
+
+      // Occasional storm lightning flash
+      if (currentEnv === 'storm' && Math.random() < 0.004) {
+        lightningFlash = 1.0;
+      }
+      lightningFlash = Math.max(0, lightningFlash - dt * 4.5);
+
+      sunLight.position.copy(skyMat.uniforms.uSunDir.value).multiplyScalar(300);
+      sunLight.color.copy(skyMat.uniforms.uSunColor.value);
+      sunLight.intensity = THREE.MathUtils.lerp(sunLight.intensity, targetEnv.sunIntensity, lerpRate) + lightningFlash * 2.2;
+      hemiLight.intensity = THREE.MathUtils.lerp(hemiLight.intensity, targetEnv.hemiIntensity, lerpRate) + lightningFlash * 0.6;
+
+      // Carrier night / storm deck lights & island glow
+      const glowStrength = Math.max(skyMat.uniforms.uNightFactor.value, skyMat.uniforms.uStormFactor.value * 0.7);
+      carrierObj.deckFlood.intensity = glowStrength * 2.6;
+      carrierObj.bridgeWinMat.emissiveIntensity = 0.25 + glowStrength * 1.4;
+      carrierObj.beacon.visible = Math.sin(simTime * 5.0) > 0.0;
+
+      // Subtle deck crew movement
+      for (let i = 0; i < carrierObj.crewList.length; i++) {
+        const c = carrierObj.crewList[i];
+        c.mesh.position.z = c.baseZ + Math.sin(simTime * 0.9 + c.phase) * 0.65;
+      }
+
+      // Rain animation in Storm mode
+      if (rainSystem && rainMat) {
+        rainMat.opacity = THREE.MathUtils.lerp(rainMat.opacity, currentEnv === 'storm' ? 0.55 : 0.0, dt * 3);
+        if (rainMat.opacity > 0.02) {
+          const pos = rainSystem.geometry.attributes.position.array;
+          for (let i = 0; i < pos.length; i += 3) {
+            pos[i + 1] -= 95 * dt;
+            pos[i + 2] += 18 * dt;
+            if (pos[i + 1] < 0) {
+              pos[i + 1] = 115;
+              pos[i + 2] = (Math.random() - 0.5) * 280;
+            }
+          }
+          rainSystem.geometry.attributes.position.needsUpdate = true;
+        }
+      }
+
+      // Ship Buoyancy Physics (Carrier is heavy & stable; Destroyers pitch/roll more)
+      applyShipBuoyancy(carrierObj.group, 0, 0, 48, 11, simTime, 0.42);
+      carrierObj.group.updateMatrixWorld();
+
+      escorts.forEach((es, idx) => {
+        const swayX = es.baseX + Math.sin(simTime * 0.22 + idx * 2.0) * 1.8;
+        const swayZ = es.baseZ + Math.cos(simTime * 0.18 + idx) * 2.2;
+        applyShipBuoyancy(es.group, swayX, swayZ, 19, 3.2, simTime, 0.85);
+        oceanMat.uniforms.uShips.value[idx + 1].x = swayX;
+        oceanMat.uniforms.uShips.value[idx + 1].y = swayZ;
+      });
+
+      // Autonomous Relaxed Flight Operations Cycle
+      if (autoOps) {
+        autoTimer -= dt;
+        if (autoTimer <= 0) {
+          autoTimer = 6.2;
+          const airborneCount = fighters.filter(
+            (f) => f.state === 'PATROL' || f.state === 'CLIMBING' || f.state === 'LAUNCHING'
+          ).length;
+          if (airborneCount < 3 && Math.random() < 0.62) {
+            const parked = fighters.find((f) => f.state === 'PARKED');
+            if (parked) launchFighter(parked);
+          } else if (airborneCount >= 2) {
+            recoverFighter();
+          }
+        }
+      }
+
+      updateFighters(dt, simTime);
+
+      // Animate E-2D Hawkeye high AEW overwatch orbit + spinning rotodome
+      if (hawkeyeObj) {
+        const hAng = simTime * 0.16 + 1.2;
+        const hx = Math.cos(hAng) * 185;
+        const hz = Math.sin(hAng) * 215;
+        const hy = 78 + Math.sin(simTime * 0.4) * 2.5;
+        const nextHx = Math.cos(hAng + 0.05) * 185;
+        const nextHz = Math.sin(hAng + 0.05) * 215;
+        hawkeyeObj.root.position.set(hx, hy, hz);
+        // Remember: Object3D.lookAt aligns +Z to target, nose is -Z, so look behind heading
+        hawkeyeObj.root.lookAt(hx - (nextHx - hx), hy, hz - (nextHz - hz));
+        hawkeyeObj.root.rotateZ(0.18);
+        hawkeyeObj.rotodome.rotation.y += dt * 2.6;
+        hawkeyeObj.props.forEach((p) => { p.rotation.z += dt * 18.0; });
+      }
+
+      // Animate MH-60R Seahawk Plane Guard hovering/cruising alongside CVN-78 starboard beam
+      if (seahawkGuard) {
+        const sAng = simTime * 0.25;
+        const sx = 34 + Math.cos(sAng) * 14;
+        const sz = 12 + Math.sin(sAng) * 32;
+        const sy = 15.5 + Math.sin(simTime * 1.3) * 1.2;
+        seahawkGuard.root.position.set(sx, sy, sz);
+        seahawkGuard.root.rotation.set(0.06, Math.sin(sAng) * 0.18, -Math.cos(sAng) * 0.08);
+        seahawkGuard.mainRotor.rotation.y += dt * 22.0;
+        seahawkGuard.tailRotor.rotation.x += dt * 28.0;
+      }
+
+      updateParticles(dt);
+      updateCamera(dt, simTime);
+      sound.updateAmbience(swellScale, currentEnv === 'storm');
+
+      renderer.render(scene, camera);
+    }
+
+    // =========================================================================
+    // 14. UI BINDINGS
+    // =========================================================================
+    function setCameraMode(mode) {
+      cameraMode = mode;
+      document.querySelectorAll('.cam-btn').forEach((btn) => {
+        btn.classList.toggle('btn-active', btn.dataset.cam === mode);
+      });
+    }
+
+    function setEnvironment(envKey) {
+      if (!ENVS[envKey]) return;
+      currentEnv = envKey;
+      targetEnv = ENVS[envKey];
+      swellScale = targetEnv.defaultSwell;
+      const slider = document.getElementById('slider-swell');
+      if (slider) slider.value = String(swellScale);
+      document.querySelectorAll('.env-btn').forEach((btn) => {
+        btn.classList.toggle('btn-active', btn.dataset.env === envKey);
+      });
+    }
+
+    function bindUI() {
+      document.getElementById('btn-launch').addEventListener('click', () => launchFighter());
+      document.getElementById('btn-recover').addEventListener('click', () => recoverFighter());
+      document.getElementById('btn-scramble').addEventListener('click', () => scrambleWing());
+
+      document.querySelectorAll('.cam-btn').forEach((btn) => {
+        btn.addEventListener('click', () => setCameraMode(btn.dataset.cam));
+      });
+
+      document.querySelectorAll('.env-btn').forEach((btn) => {
+        btn.addEventListener('click', () => setEnvironment(btn.dataset.env));
+      });
+
+      document.getElementById('slider-swell').addEventListener('input', (e) => {
+        swellScale = parseFloat(e.target.value) || 1.0;
+      });
+
+      document.getElementById('btn-auto').addEventListener('click', () => {
+        autoOps = !autoOps;
+        const btn = document.getElementById('btn-auto');
+        const dot = document.getElementById('auto-dot');
+        btn.classList.toggle('btn-active', autoOps);
+        dot.classList.toggle('bg-emerald-400', autoOps);
+        dot.classList.toggle('animate-pulse', autoOps);
+        dot.classList.toggle('bg-slate-500', !autoOps);
+      });
+
+      document.getElementById('btn-sound').addEventListener('click', () => {
+        const next = !sound.enabled;
+        sound.setEnabled(next);
+        document.getElementById('sound-icon').textContent = next ? '🔊' : '🔇';
+        document.getElementById('btn-sound').classList.toggle('btn-active', next);
+        applyLanguage();
+      });
+
+      document.getElementById('btn-lang').addEventListener('click', () => {
+        lang = lang === 'en' ? 'zh' : 'en';
+        try { localStorage.setItem('cvn78_lang', lang); } catch (e) {}
+        applyLanguage();
+      });
+
+      const bottomHud = document.getElementById('bottom-hud');
+      const headerEl = document.querySelector('header');
+      const showBtn = document.getElementById('btn-show-hud');
+
+      document.getElementById('btn-hud').addEventListener('click', () => {
+        bottomHud.classList.add('opacity-0', 'pointer-events-none', 'translate-y-4');
+        headerEl.classList.add('opacity-0', 'pointer-events-none');
+        showBtn.classList.remove('hidden');
+      });
+
+      showBtn.addEventListener('click', () => {
+        bottomHud.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-4');
+        headerEl.classList.remove('opacity-0', 'pointer-events-none');
+        showBtn.classList.add('hidden');
+      });
+
+      // Keyboard shortcuts for desktop convenience
+      window.addEventListener('keydown', (e) => {
+        if (e.code === 'Space') {
+          e.preventDefault();
+          launchFighter();
+        } else if (e.key === 'l' || e.key === 'L') {
+          recoverFighter();
+        } else if (e.key === '1') {
+          setCameraMode('orbit');
+        } else if (e.key === '2') {
+          setCameraMode('bridge');
+        } else if (e.key === '3') {
+          setCameraMode('chase');
+        } else if (e.key === '4') {
+          setCameraMode('convoy');
+        }
+      });
+    }
+
+    window.onload = function () {
+      if (animId) cancelAnimationFrame(animId);
+      initScene();
+      bindUI();
+      applyLanguage();
+      animate(0);
+    };
+  })();
+  </script>
+</body>
+</html>

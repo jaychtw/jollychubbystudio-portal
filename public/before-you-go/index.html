@@ -1,0 +1,85 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="referrer" content="strict-origin-when-cross-origin"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><title>Before You Go · 出門看看</title><style>
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#f8f5ec;color:#1e3934;font:16px/1.5 "DM Sans",system-ui,sans-serif}header,main,footer{width:min(1180px,92%);margin:auto}header{height:74px;display:flex;align-items:center;justify-content:space-between}.brand{font: bold 23px Georgia,serif;display:flex;align-items:center;gap:11px}.mark{width:33px;height:33px;border-radius:50%;background:linear-gradient(147deg,transparent 49%,#164e47 50% 64%,transparent 65%),linear-gradient(28deg,#759484 44%,transparent 45%),radial-gradient(circle at 65% 30%,#e97643 14%,transparent 15%),#e8debc}button,select,a{font:inherit}button,select{cursor:pointer;color:inherit}button:focus-visible,select:focus-visible,a:focus-visible{outline:3px solid #b74a19;outline-offset:3px}.lang{border:1px solid #b9bfb0;border-radius:20px;padding:6px 15px;background:transparent;font-size:14px}.hero{position:relative;isolation:isolate;background:#d7ddba url('landscape.webp') center 55%/cover no-repeat;min-height:270px;display:flex;align-items:center;border-radius:16px;overflow:hidden;padding:36px 5%}.hero:before{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(90deg,rgba(250,241,212,.98),rgba(250,241,212,.78) 37%,transparent 70%)}h1,h2,h3{font-family:"Gloock",Georgia,"Noto Serif TC",serif;margin:0;font-weight:500;letter-spacing:-.035em}h1{font-size:clamp(44px,5vw,74px);line-height:1.04}.hero p{max-width:370px;margin:14px 0 0}.geo{font-size:11px;font-weight:750;letter-spacing:.17em;margin-bottom:12px;text-transform:uppercase}.toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:28px 0 12px}.toolbar h2,section>h2{font-size:28px}.action{border:0;border-radius:24px;padding:10px 20px;background:#195449;color:white;font-weight:650;font-size:15px}.action:disabled{background:#cfd4c7;color:#46594d;cursor:default}.choices,.columns{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.choice{text-align:left;display:flex;align-items:center;gap:12px;min-width:0;border:1px solid #c4c7b9;border-radius:12px;background:#fffdf7;padding:10px;font-size:15px}.choice[aria-pressed=true]{box-shadow:inset 0 0 0 1px #236354;border-color:#236354;background:#eaf0e6}.thumb{width:64px;height:52px;border-radius:7px;object-fit:cover}.choice b,.choice small{display:block}.choice small{font-size:12px;color:#526459}.check{margin-left:auto;border:1px solid #acb8a9;border-radius:50%;width:23px;height:23px;display:grid;place-items:center;flex:none}.choice[aria-pressed=true] .check{background:#195449;color:white}.comp{margin-top:32px;padding:18px 0;border-top:1px solid #c6cabb}.comp h2{margin-bottom:12px}.columns{grid-template-columns:repeat(var(--n),minmax(0,1fr))}.view{min-width:0;background:#fffdf7;border:1px solid #d4d4c6;border-radius:12px;overflow:hidden}.pad{padding:12px 16px}.pad h3{font-size:25px}.minor,footer{font-size:13px;color:#526358}.media{position:relative;aspect-ratio:16/9;background:#203c35}.media iframe{width:100%;height:100%;border:0}.controls{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;padding:11px 15px}.controls button{border:1px solid #c4c7b9;border-radius:20px;background:transparent;padding:4px 11px}.controls a,a{color:#185c50;text-underline-offset:3px}.controls,.note{font-size:13px}.note{margin:0 15px 10px;color:#526358}.weather{border-top:1px solid #d4d4c6;padding:12px 15px}.weather strong,.weather small{display:block}.wx{width:100%;height:215px;border:0;background:white}.empty{padding:24px;background:#e9ede2;border-radius:12px}.wide{grid-column:1/-1}.wide .media{max-height:70vh}.wide .wx{height:175px}footer{padding:16px 0 36px}footer a{margin:0 4px}.status{font-size:13px;color:#526358;margin:8px 0}.status:empty{display:none}
+@media(max-width:700px){header{height:58px}.hero{min-height:205px;padding:22px 5%;background-position:60% center}.hero p{max-width:230px;font-size:14px}.hero:before{background:linear-gradient(90deg,#f4e8cdee,#f4e8cda6 47%,transparent)}.choices{gap:6px}.choice{position:relative;display:block;padding:6px}.thumb{width:100%;height:48px}.choice .check{position:absolute;right:9px;top:9px;background:#fffdf7}.choice b{font-size:13px}.choice small{font-size:11px}.toolbar{margin-top:18px}.toolbar h2,section>h2{font-size:22px}.action{padding:9px 13px}.columns{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.pad,.controls,.weather{padding:9px}.pad h3{font-size:19px}.minor,.controls,.note,.weather small{font-size:12px}.note{margin:0 9px 8px}.media{aspect-ratio:1.35}.view.wide .media{aspect-ratio:16/9}.comp{margin-top:18px}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+@media(min-width:701px){.choice{display:grid;grid-template-columns:1fr auto;padding:0;gap:0;overflow:hidden}.thumb{grid-column:1/-1;width:100%;height:clamp(84px,9vw,138px);border-radius:0;object-position:center 62%}.choice>span:nth-child(2){padding:10px 15px}.choice .check{margin-right:15px}}
+[data-observation]{margin:8px 0}[data-observation] b{font-size:22px}.watch{display:grid;place-items:center;height:100%;color:white}#launchHelp{padding:12px;background:#e8edde;border-radius:8px}.category{display:flex;flex-direction:column;gap:10px;min-width:0}.category h3{font:600 16px/1.3 system-ui;margin:0 0 4px}.postcard{display:block;width:100%;aspect-ratio:12/5;background-image:url(postcards.webp);background-size:300% 700%;grid-column:1/-1}.choice{width:100%}.choice:disabled{cursor:default}.choice:disabled .check{opacity:.28}.toolbar{position:sticky;top:0;z-index:2;padding:10px 0;background:#f8f5ec}.comp{scroll-margin-top:12px}#empty{background:#e9ede2;padding:18px;border-radius:10px}.choices{align-items:start}
+@media(max-width:700px){.choices{grid-template-columns:1fr;gap:20px}.category{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.category h3{grid-column:1/-1}.choice{padding:0;overflow:hidden;display:flex;flex-direction:column;align-items:flex-start;gap:0}.choice>span:nth-child(2){padding:6px 8px}.choice .check{top:6px;right:6px}}
+</style></head><body><header><div class="brand"><span class="mark" aria-hidden="true"></span>Before You Go</div><button class="lang" id="language"></button></header><main><div class="hero"><div><div class="geo" id="geo"></div><h1 id="headline"></h1><p id="intro"></p></div></div><section class="comp" id="comparison"><h2 id="compareTitle" tabindex="-1"></h2><p id="empty"></p><div class="columns" id="columns"></div></section><section><div class="toolbar"><h2 id="choose"></h2><button class="action" id="compare"></button></div><p id="launchHelp" hidden></p><div class="choices" id="choices"></div><p class="status" aria-live="polite" id="status"></p></section></main><footer id="credits"></footer>
+<script src="catalog.js"></script>
+<script>
+const by=id=>document.getElementById(id);
+let lang=navigator.language.toLowerCase().startsWith('zh')?1:0;
+try{const saved=localStorage.getItem('byg-language');if(saved==='0'||saved==='1')lang=Number(saved)}catch{}
+const t=(en,zh)=>lang?zh:en;
+let picked=new Set(),shown=[],large=null;
+function refreshPicker(){
+ const categories=[t('Waterfronts & old streets','水岸與老街'),t('Lakes, wetlands & countryside','湖泊、濕地與田野'),t('Beaches & coastal views','沙灘與海岸')];
+ by('choices').innerHTML=categories.map((label,group)=>{
+   const cards=places.map((p,i)=>{
+     if(p.group!==group)return '';
+     const selected=picked.has(i);
+     return `<button class="choice" data-place="${i}" aria-pressed="${selected}" ${!selected&&picked.size>=3?'disabled':''}><span aria-hidden="true" class="postcard" style="background-position:${group*50}% ${(i%7)*100/6}%"></span><span><b>${p.name[lang]}</b><small>${p.angle[lang]}</small></span><span class="check" aria-hidden="true">${selected?'✓':'+'}</span></button>`;
+   }).join('');
+   return `<section class="category"><h3>${label}</h3>${cards}</section>`;
+ }).join('');
+ by('compare').disabled=picked.size<2;by('compare').textContent=t('Compare','比較')+(picked.size?' ('+picked.size+')':'');
+ by('status').textContent=picked.size===3?t('Three selected. Deselect a place to choose another.','已選三處，先取消一處即可更換。'):picked.size===1?t('Choose one more destination.','再選一個目的地即可比較。'):'';
+}
+
+const stationIds=places.map(p=>p.station);
+let readings=places.map(()=>null);
+function paintWeather(){
+ document.querySelectorAll('[data-observation]').forEach(el=>{
+ const observation=readings[Number(el.dataset.observation)];
+ if(!observation){el.textContent=t('Observation unavailable','暫無觀測資料');return}
+ const [stamp,temp,rain]=observation;
+ const time=new Intl.DateTimeFormat(lang?'zh-TW':'en-GB',{timeZone:'Asia/Taipei',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit',hour12:false}).format(new Date(stamp));
+ const valid=(v,min)=>v!=null && v!=='' && Number.isFinite(Number(v)) && Number(v)>=min;
+ const older=Date.now()-Date.parse(stamp)>2*3600000;
+ el.innerHTML='<b>'+ (valid(temp,-50)?Number(temp)+' °C':'—')+'</b> · '+t('Rain today','今日雨量')+' '+(valid(rain,0)?Number(rain)+' mm':'—')+'<small>'+ (older?t('Older observation','較早觀測'):t('Observed','觀測時間'))+' · '+time+' (UTC+8)</small>';
+ });
+}
+async function updateWeather(){
+ try{
+ const response=await fetch('https://cwaopendata.s3.ap-northeast-1.amazonaws.com/Observation/O-A0001-001.json');
+ if(!response.ok)return;
+ const stations=(await response.json()).cwaopendata.dataset.Station;
+ stationIds.forEach((id,i)=>{const row=stations.find(x=>x.StationId===id);if(row && (!readings[i] || Date.parse(row.ObsTime.DateTime)>=Date.parse(readings[i][0])))readings[i]=[row.ObsTime.DateTime,row.WeatherElement.AirTemperature,row.WeatherElement.Now.Precipitation]});
+ paintWeather();
+ }catch{}
+}
+
+const localFile=location.protocol==='file:';
+function renderViews(){
+ by('empty').hidden=!!shown.length;by('empty').textContent=t('Select two or three destinations below to compare their cameras here.','從下方選擇兩到三個地點，即可在這裡並排觀看。');by('columns').style.setProperty('--n',shown.length);
+ by('columns').innerHTML=shown.map(i=>{
+ const p=places[i];
+ return `<article class="view"><div class="pad"><h3>${p.name[lang]}</h3><div class="minor">${p.angle[lang]} · ${p.viewpoint[lang]}</div></div><div class="media">${localFile ? `<a class="watch" href="https://www.youtube.com/watch?v=${p.video}" target="_blank" rel="noopener">${t('Watch on YouTube','在 YouTube 觀看')} ↗</a>` : `<iframe title="${p.name[lang]} · ${p.viewpoint[lang]} · YouTube" src="https://www.youtube.com/embed/${p.video}?origin=${encodeURIComponent(location.origin)}&amp;playsinline=1&amp;mute=1&amp;rel=0&amp;enablejsapi=1&amp;autoplay=1" allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>`}</div><div class="controls"><button data-large="${i}">${t('Enlarge','放大')}</button><a target="_blank" rel="noopener" href="${p.url}">${t('Camera source','影像來源')} ↗</a>${p.approach?`<a target="_blank" rel="noopener" href="${p.approach}">${t('Approach view','周邊路況')} ↗</a>`:''}</div><p class="note"><strong class="feedState" aria-live="polite"></strong>${t('Live stream · See player for current status. Capture time is supplied only by the broadcaster.','直播串流 · 播放狀態請見播放器。畫面拍攝時間依來源標示。')}<br>${p.credit}</p><div class="weather"><strong>${t('Local weather','當地天氣')}</strong><div data-observation="${i}"></div><div class="minor">CWA · <a target="_blank" rel="noopener" href="https://www.cwa.gov.tw/V8/${lang?'C':'E'}/W/OBS_Station.html?ID=${p.station.slice(0,5)}">${p.stationName} ${t('station','測站')} ↗</a></div></div></article>`}).join('');paintWeather();
+}
+window.addEventListener('message',event=>{
+ if(event.origin!=='https://www.youtube.com')return;
+ const frame=[...document.querySelectorAll('.media iframe')].find(f=>f.contentWindow===event.source);
+ if(!frame)return;
+ let msg;try{msg=JSON.parse(event.data)}catch{return}
+ if(msg.event==='onError'){frame.closest('article').querySelector('.feedState').textContent=t('Player unavailable. Open the official camera. ','播放器無法使用，請開啟官方影像。 ')}
+});
+document.addEventListener('load',event=>{
+ const frame=event.target;if(!frame.matches?.('.media iframe'))return;
+ for(const message of [{event:'listening'},{event:'command',func:'addEventListener',args:['onError']}]){
+ frame.contentWindow.postMessage(JSON.stringify(message),'https://www.youtube.com');
+ }
+},true);
+function render(){
+ by('launchHelp').hidden=!localFile;
+ by('launchHelp').textContent=t('For side-by-side video on Mac, open “Start Before You Go.command” in the extracted folder. Or run python3 start.py in that folder. This file view offers direct camera links.','若要並排播放，請在 Mac 解壓縮後開啟「Start Before You Go.command」，或在該資料夾執行 python3 start.py。直接開啟此檔可使用攝影機連結。');
+ document.documentElement.lang=lang?'zh-Hant':'en';by('language').textContent=lang?'English':'繁體中文';
+ by('geo').textContent=t('Taiwan  /  Destination comparison','臺灣  /  目的地比較');by('headline').textContent=t('Where to today?','今天，想去哪裡？');
+ by('intro').textContent=t('Pick two or three places. See the view and the weather before you head out.','選兩到三個地方，看看此刻的風景和天氣，再決定往哪裡走。');by('choose').textContent=t('Choose your destinations','選擇目的地');by('compareTitle').textContent=t('Your comparison','並排看看');by('credits').textContent=t('Landscape illustrations are for browsing. Open a comparison to see the cameras.','選擇區為風景插畫。開啟比較即可觀看各地攝影機。');refreshPicker();renderViews();
+}
+by('language').onclick=()=>{lang=1-lang;large=null;try{localStorage.setItem('byg-language',lang)}catch{}render()};
+by('choices').onclick=e=>{const b=e.target.closest('[data-place]');if(!b)return;const i=Number(b.dataset.place);if(picked.has(i))picked.delete(i);else if(picked.size<3)picked.add(i);refreshPicker();by('choices').querySelector('[data-place="'+i+'"]').focus()};
+by('compare').onclick=()=>{if(picked.size<2)return;shown=[...picked];large=null;renderViews();by('compareTitle').focus({preventScroll:true});by('comparison').scrollIntoView({block:'start'})};
+by('columns').onclick=e=>{const b=e.target.closest('[data-large]');if(!b)return;const i=Number(b.dataset.large);large=large===i?null:i;by('columns').querySelectorAll('[data-large]').forEach(el=>{const expanded=Number(el.dataset.large)===large;el.closest('article').classList.toggle('wide',expanded);el.setAttribute('aria-expanded',String(expanded));el.textContent=expanded?t('Reduce','縮小'):t('Enlarge','放大')});b.closest('article').scrollIntoView({block:'start'})};
+render();updateWeather();setInterval(()=>{if(!document.hidden)updateWeather()},900000);
+</script></body></html>

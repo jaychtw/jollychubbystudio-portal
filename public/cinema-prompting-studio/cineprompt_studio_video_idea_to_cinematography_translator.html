@@ -1,0 +1,1678 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CinePrompt Studio — Video Idea to Cinematography Translator</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+            mono: ['JetBrains Mono', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'monospace']
+          },
+          colors: {
+            cinema: {
+              bg: '#090b10',
+              panel: '#11151f',
+              card: '#161b28',
+              border: '#252c3d',
+              amber: '#f59e0b',
+              amberSoft: '#fbbf24'
+            }
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    :root {
+      color-scheme: dark;
+    }
+    body {
+      background-color: #090b10;
+      color: #e2e8f0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      overflow-x: hidden;
+    }
+    /* Subtle film grain & scrollbar styling */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0d1018;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #283146;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #3b4764;
+    }
+    .option-chip {
+      transition: all 0.16s ease;
+    }
+    .option-chip:hover {
+      border-color: #475569;
+      background-color: #1c2333;
+    }
+    .option-chip.active {
+      border-color: #f59e0b;
+      background-color: rgba(245, 158, 11, 0.14);
+      color: #fef3c7;
+      box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.25);
+    }
+    .tab-btn {
+      transition: all 0.16s ease;
+    }
+    .tab-btn.active {
+      background-color: #f59e0b;
+      color: #090b10;
+      font-weight: 600;
+    }
+    .model-btn.active {
+      background-color: rgba(245, 158, 11, 0.18);
+      border-color: #f59e0b;
+      color: #fde68a;
+    }
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      background: #1e2536;
+      height: 6px;
+      border-radius: 9999px;
+      outline: none;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #f59e0b;
+      cursor: pointer;
+      border: 2px solid #090b10;
+      box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.3);
+    }
+    @keyframes recPulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.25; }
+    }
+    .rec-dot {
+      animation: recPulse 1.8s infinite;
+    }
+    .viewfinder-grid {
+      background-image: radial-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+      background-size: 16px 16px;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+  <!-- Top Navigation Bar -->
+  <header class="sticky top-0 z-30 border-b border-cinema-border bg-cinema-bg/90 backdrop-blur-md">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
+      <div class="flex items-center gap-3 min-w-0">
+        <div class="w-9 h-9 rounded-lg bg-amber-500/15 border border-amber-500/40 flex items-center justify-center shrink-0">
+          <i data-lucide="clapperboard" class="w-5 h-5 text-amber-400"></i>
+        </div>
+        <div class="min-w-0">
+          <div class="flex items-center gap-2">
+            <h1 class="text-base sm:text-lg font-bold tracking-tight text-slate-100 truncate">CinePrompt Studio</h1>
+            <span class="hidden sm:inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono uppercase tracking-wider bg-amber-500/15 text-amber-300 border border-amber-500/30">Director's Translator</span>
+          </div>
+          <p class="text-xs text-slate-400 truncate hidden md:block">Translate raw video concepts into production-grade cinematography prompts</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2 shrink-0">
+        <div class="relative">
+          <select id="presetSelect" aria-label="Load sample vision preset" class="appearance-none bg-cinema-card hover:bg-slate-800 border border-cinema-border text-slate-200 text-xs sm:text-sm rounded-lg pl-3 pr-8 py-2 focus:outline-none focus:border-amber-500 cursor-pointer">
+            <option value="">Load Sample Vision...</option>
+            <option value="noir">Neon Rain Detective (Noir)</option>
+            <option value="golden">Golden Hour Wanderer (Drama)</option>
+            <option value="scifi">Sci-Fi Corridor Tension (Thriller)</option>
+            <option value="macro">Artisan Espresso Pour (Commercial)</option>
+            <option value="aerial">Alpine Summit Reveal (Epic Aerial)</option>
+            <option value="retro">1980s Nostalgic Skate (Super 8)</option>
+          </select>
+          <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2"></i>
+        </div>
+
+        <button id="openShotlistBtn" type="button" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-cinema-card hover:bg-slate-800 border border-cinema-border text-xs sm:text-sm font-medium text-slate-200 transition">
+          <i data-lucide="film" class="w-4 h-4 text-amber-400"></i>
+          <span class="hidden sm:inline">Shotlist</span>
+          <span id="shotlistCount" class="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[11px] font-mono bg-amber-500/20 text-amber-300">0</span>
+        </button>
+
+        <button id="resetBtn" type="button" title="Reset all settings" class="p-2 rounded-lg bg-cinema-card hover:bg-slate-800 border border-cinema-border text-slate-400 hover:text-slate-200 transition">
+          <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Workspace -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-5 sm:py-6">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+      <!-- LEFT COLUMN: Idea Input & Cinematography Controls -->
+      <div class="lg:col-span-7 space-y-5">
+
+        <!-- Step 1: Video Idea Input -->
+        <section class="rounded-2xl bg-cinema-panel border border-cinema-border p-4 sm:p-5 shadow-lg">
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+            <div class="flex items-center gap-2">
+              <span class="w-6 h-6 rounded-md bg-amber-500/20 text-amber-400 font-mono text-xs font-bold flex items-center justify-center">01</span>
+              <h2 class="text-sm sm:text-base font-semibold text-slate-100">Your Video Vision</h2>
+            </div>
+            <button id="autoAnalyzeBtn" type="button" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-cinema-bg text-xs font-semibold transition shadow-sm">
+              <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+              <span>Auto-Detect Cinematography</span>
+            </button>
+          </div>
+
+          <textarea id="rawIdeaInput" rows="3" placeholder="Describe your video idea in plain English... e.g., A lone violinist plays on a misty cobblestone bridge at dawn while streetlights slowly flicker off" class="w-full rounded-xl bg-cinema-bg border border-cinema-border focus:border-amber-500 focus:ring-1 focus:ring-amber-500/40 px-3.5 py-3 text-sm text-slate-100 placeholder-slate-500 outline-none resize-y leading-relaxed"></textarea>
+
+          <div class="mt-3 flex flex-wrap items-center justify-between gap-2">
+            <button id="toggleBreakdownBtn" type="button" class="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-amber-300 transition">
+              <i data-lucide="sliders-horizontal" class="w-3.5 h-3.5"></i>
+              <span id="breakdownToggleLabel">Show structured Subject / Action / Setting overrides</span>
+            </button>
+            <div id="detectedMoodBadges" class="flex flex-wrap items-center gap-1.5"></div>
+          </div>
+
+          <!-- Optional Structured Overrides -->
+          <div id="structuredBreakdown" class="hidden mt-4 pt-4 border-t border-cinema-border/70 grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label for="subjectInput" class="block text-[11px] font-mono uppercase tracking-wider text-slate-400 mb-1">Subject Focus</label>
+              <input id="subjectInput" type="text" placeholder="e.g., weary detective in trench coat" class="w-full rounded-lg bg-cinema-bg border border-cinema-border focus:border-amber-500 px-3 py-2 text-xs text-slate-100 placeholder-slate-500 outline-none" />
+            </div>
+            <div>
+              <label for="actionInput" class="block text-[11px] font-mono uppercase tracking-wider text-slate-400 mb-1">Motion / Beat</label>
+              <input id="actionInput" type="text" placeholder="e.g., lifts steaming cup, glances up" class="w-full rounded-lg bg-cinema-bg border border-cinema-border focus:border-amber-500 px-3 py-2 text-xs text-slate-100 placeholder-slate-500 outline-none" />
+            </div>
+            <div>
+              <label for="settingInput" class="block text-[11px] font-mono uppercase tracking-wider text-slate-400 mb-1">Environment</label>
+              <input id="settingInput" type="text" placeholder="e.g., rain-slicked Tokyo alley" class="w-full rounded-lg bg-cinema-bg border border-cinema-border focus:border-amber-500 px-3 py-2 text-xs text-slate-100 placeholder-slate-500 outline-none" />
+            </div>
+          </div>
+        </section>
+
+        <!-- Step 2: Cinematography Control Deck -->
+        <section class="rounded-2xl bg-cinema-panel border border-cinema-border p-4 sm:p-5 shadow-lg">
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+            <div class="flex items-center gap-2">
+              <span class="w-6 h-6 rounded-md bg-amber-500/20 text-amber-400 font-mono text-xs font-bold flex items-center justify-center">02</span>
+              <h2 class="text-sm sm:text-base font-semibold text-slate-100">Cinematography Deck</h2>
+            </div>
+            <button id="randomizeCineBtn" type="button" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-cinema-card hover:bg-slate-800 border border-cinema-border text-xs text-slate-300 transition">
+              <i data-lucide="shuffle" class="w-3.5 h-3.5 text-amber-400"></i>
+              <span>Inspire Look</span>
+            </button>
+          </div>
+
+          <!-- Category Tabs -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5 p-1 rounded-xl bg-cinema-bg border border-cinema-border mb-5" role="tablist">
+            <button type="button" data-tab="framing" class="tab-btn active flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-lg text-xs text-slate-300">
+              <i data-lucide="frame" class="w-3.5 h-3.5"></i>
+              <span>Framing & Motion</span>
+            </button>
+            <button type="button" data-tab="optics" class="tab-btn flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-lg text-xs text-slate-300">
+              <i data-lucide="aperture" class="w-3.5 h-3.5"></i>
+              <span>Lens & Camera</span>
+            </button>
+            <button type="button" data-tab="lighting" class="tab-btn flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-lg text-xs text-slate-300">
+              <i data-lucide="sun" class="w-3.5 h-3.5"></i>
+              <span>Lighting & FX</span>
+            </button>
+            <button type="button" data-tab="color" class="tab-btn flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-lg text-xs text-slate-300">
+              <i data-lucide="palette" class="w-3.5 h-3.5"></i>
+              <span>Color & Pacing</span>
+            </button>
+          </div>
+
+          <!-- TAB 1: FRAMING & MOTION -->
+          <div id="panel-framing" class="tab-panel space-y-5">
+            <div>
+              <div class="flex items-center justify-between mb-2">
+                <label class="text-xs font-mono uppercase tracking-wider text-slate-400">Shot Size</label>
+                <span id="shotSizeHint" class="text-[11px] text-amber-300/90"></span>
+              </div>
+              <div id="shotSizeGrid" class="grid grid-cols-2 sm:grid-cols-4 gap-2"></div>
+            </div>
+
+            <div>
+              <div class="flex items-center justify-between mb-2">
+                <label class="text-xs font-mono uppercase tracking-wider text-slate-400">Camera Angle</label>
+                <span id="angleHint" class="text-[11px] text-amber-300/90"></span>
+              </div>
+              <div id="angleGrid" class="grid grid-cols-2 sm:grid-cols-4 gap-2"></div>
+            </div>
+
+            <div>
+              <div class="flex items-center justify-between mb-2">
+                <label class="text-xs font-mono uppercase tracking-wider text-slate-400">Camera Movement</label>
+                <span id="movementHint" class="text-[11px] text-amber-300/90"></span>
+              </div>
+              <div id="movementGrid" class="grid grid-cols-2 sm:grid-cols-3 gap-2"></div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-cinema-border/60">
+              <div>
+                <div class="flex items-center justify-between mb-2">
+                  <label for="motionSpeedRange" class="text-xs font-mono uppercase tracking-wider text-slate-400">Movement Pace</label>
+                  <span id="motionSpeedLabel" class="text-xs font-mono text-amber-400">Slow & Deliberate</span>
+                </div>
+                <input id="motionSpeedRange" type="range" min="0" max="3" step="1" value="1" class="w-full" />
+                <div class="flex justify-between text-[10px] text-slate-500 mt-1 font-mono">
+                  <span>Micro</span><span>Slow</span><span>Fluid</span><span>Urgent</span>
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-xs font-mono uppercase tracking-wider text-slate-400 mb-2">Composition</label>
+                <div id="compositionGrid" class="grid grid-cols-2 gap-1.5"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB 2: LENS & CAMERA -->
+          <div id="panel-optics" class="tab-panel hidden space-y-5">
+            <div>
+              <div class="flex items-center justify-between mb-2">
+                <label for="focalLengthRange" class="text-xs font-mono uppercase tracking-wider text-slate-400">Focal Length</label>
+                <span id="focalLengthLabel" class="text-xs font-mono text-amber-400">35mm — Classic Narrative</span>
+              </div>
+              <input id="focalLengthRange" type="range" min="0" max="6" step="1" value="2" class="w-full" />
+              <div class="flex justify-between text-[10px] text-slate-500 mt-1 font-mono">
+                <span>14mm</span><span>24mm</span><span>35mm</span><span>50mm</span><span>85mm</span><span>135mm</span><span>200mm</span>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-mono uppercase tracking-wider text-slate-400 mb-2">Lens Glass & Character</label>
+              <div id="lensGrid" class="grid grid-cols-2 sm:grid-cols-3 gap-2"></div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-mono uppercase tracking-wider text-slate-400 mb-2">Aperture / Depth of Field</label>
+              <div id="apertureGrid" class="grid grid-cols-2 sm:grid-cols-4 gap-2"></div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-mono uppercase tracking-wider text-slate-400 mb-2">Camera Sensor & Film Stock</label>
+              <div id="stockGrid" class="grid grid-cols-2 sm:grid-cols-3 gap-2"></div>
+            </div>
+          </div>
+
+          <!-- TAB 3: LIGHTING & FX -->
+          <div id="panel-lighting" class="tab-panel hidden space-y-5">
+            <div>
+              <label class="block text-xs font-mono uppercase tracking-wider text-slate-400 mb-2">Lighting Mood & Setup</label>
+              <div id="lightingGrid" class="grid grid-cols-2 sm:grid-cols-3 gap-2"></div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-mono uppercase tracking-wider text-slate-400 mb-2">Key Light Direction</label>
+              <div id="lightDirGrid" class="grid grid-cols-2 sm:grid-cols-3 gap-2"></div>
+            </div>
+
+            <div>
+              <div class="flex items-center justify-between mb-2">
+                <label class="text-xs font-mono uppercase tracking-wider text-slate-400">Atmosphere & Optical FX</label>
+                <span class="text-[11px] text-slate-500">Multi-select</span>
+              </div>
+              <div id="fxGrid" class="grid grid-cols-2 sm:grid-cols-4 gap-2"></div>
+            </div>
+          </div>
+
+          <!-- TAB 4: COLOR & PACING -->
+          <div id="panel-color" class="tab-panel hidden space-y-5">
+            <div>
+              <label class="block text-xs font-mono uppercase tracking-wider text-slate-400 mb-2">Color Grade & Palette</label>
+              <div id="colorGradeGrid" class="grid grid-cols-2 sm:grid-cols-4 gap-2"></div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-mono uppercase tracking-wider text-slate-400 mb-2">Frame Rate & Temporal Feel</label>
+              <div id="fpsGrid" class="grid grid-cols-2 sm:grid-cols-3 gap-2"></div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-mono uppercase tracking-wider text-slate-400 mb-2">Aspect Ratio</label>
+              <div id="aspectGrid" class="grid grid-cols-3 sm:grid-cols-5 gap-2"></div>
+            </div>
+
+            <div class="pt-3 border-t border-cinema-border/60 flex items-center justify-between gap-3">
+              <div>
+                <p class="text-xs font-medium text-slate-200">Include Diegetic Soundscape Cues</p>
+                <p class="text-[11px] text-slate-400">Adds subtle ambient audio & foley descriptions for audio-native video models (e.g., Veo)</p>
+              </div>
+              <button id="audioToggleBtn" type="button" role="switch" aria-checked="true" class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent bg-amber-500 transition-colors focus:outline-none">
+                <span id="audioToggleKnob" class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-cinema-bg shadow ring-0 transition translate-x-5"></span>
+              </button>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- RIGHT COLUMN: Live Viewfinder & Translated Prompt Output -->
+      <div class="lg:col-span-5 space-y-5 lg:sticky lg:top-20">
+
+        <!-- Director's Live Viewfinder -->
+        <section class="rounded-2xl bg-cinema-panel border border-cinema-border p-4 shadow-lg">
+          <div class="flex items-center justify-between mb-2.5">
+            <div class="flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-red-500 rec-dot"></span>
+              <span class="text-[11px] font-mono uppercase tracking-widest text-slate-300">Live Viewfinder</span>
+            </div>
+            <div id="hudTelemetryTop" class="text-[11px] font-mono text-amber-400/90 truncate">24fps · 35mm · T1.4 · 2.39:1</div>
+          </div>
+
+          <div class="relative w-full h-48 sm:h-52 rounded-xl bg-black border border-slate-800 overflow-hidden flex items-center justify-center viewfinder-grid">
+            <svg id="viewfinderSvg" viewBox="0 0 400 225" class="w-full h-full" preserveAspectRatio="xMidYMid meet">
+              <defs>
+                <radialGradient id="vfLightGrad" cx="25%" cy="25%" r="75%">
+                  <stop id="vfColor1" offset="0%" stop-color="#f59e0b" stop-opacity="0.45" />
+                  <stop id="vfColor2" offset="55%" stop-color="#0f172a" stop-opacity="0.65" />
+                  <stop id="vfColor3" offset="100%" stop-color="#020617" stop-opacity="0.95" />
+                </radialGradient>
+                <filter id="vfGlow">
+                  <feGaussianBlur stdDeviation="4" result="coloredBlur" />
+                  <feMerge>
+                    <feMergeNode in="coloredBlur" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
+              </defs>
+
+              <!-- Background color grade + light direction simulation -->
+              <rect x="0" y="0" width="400" height="225" fill="url(#vfLightGrad)" />
+
+              <!-- Subject silhouette scaled by shot size & angle -->
+              <g id="vfSubjectGroup" transform="translate(200, 120)">
+                <ellipse cx="0" cy="48" rx="44" ry="26" fill="rgba(15,23,42,0.75)" stroke="rgba(255,255,255,0.18)" stroke-width="1" />
+                <circle cx="0" cy="-6" r="22" fill="rgba(15,23,42,0.82)" stroke="rgba(255,255,255,0.25)" stroke-width="1.2" />
+                <circle id="vfRimArc" cx="-6" cy="-10" r="18" fill="none" stroke="#fbbf24" stroke-opacity="0.5" stroke-width="1.5" stroke-dasharray="18 40" />
+              </g>
+
+              <!-- Composition Overlay -->
+              <g id="vfCompOverlay" stroke="rgba(255,255,255,0.22)" stroke-width="0.8" fill="none"></g>
+
+              <!-- Camera Movement Vector -->
+              <g id="vfMoveOverlay" filter="url(#vfGlow)"></g>
+
+              <!-- Key Light Indicator -->
+              <g id="vfLightSource">
+                <circle cx="65" cy="48" r="7" fill="#fbbf24" fill-opacity="0.9" filter="url(#vfGlow)" />
+                <circle cx="65" cy="48" r="13" fill="none" stroke="#fbbf24" stroke-opacity="0.45" stroke-width="1" stroke-dasharray="3 3" />
+              </g>
+
+              <!-- Aspect Ratio Letterbox / Pillarbox Masks -->
+              <g id="vfAspectMask" fill="#05070b"></g>
+
+              <!-- Viewfinder Corner Reticles -->
+              <g id="vfReticles" stroke="#f59e0b" stroke-width="1.5" stroke-opacity="0.85" fill="none"></g>
+            </svg>
+
+            <!-- Bottom HUD badges -->
+            <div class="absolute bottom-2 left-2.5 right-2.5 flex items-center justify-between text-[10px] font-mono text-slate-300/90 pointer-events-none">
+              <span id="vfHudLeft" class="px-1.5 py-0.5 rounded bg-black/60 backdrop-blur-sm border border-white/10">MEDIUM CLOSE-UP</span>
+              <span id="vfHudRight" class="px-1.5 py-0.5 rounded bg-black/60 backdrop-blur-sm border border-white/10">SLOW PUSH-IN</span>
+            </div>
+          </div>
+
+          <!-- Active Parameters Pill Strip -->
+          <div id="activeSummaryStrip" class="mt-3 flex flex-wrap gap-1.5"></div>
+        </section>
+
+        <!-- Step 3: Translated Prompt Output -->
+        <section class="rounded-2xl bg-cinema-panel border border-cinema-border p-4 sm:p-5 shadow-lg">
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+            <div class="flex items-center gap-2">
+              <span class="w-6 h-6 rounded-md bg-amber-500/20 text-amber-400 font-mono text-xs font-bold flex items-center justify-center">03</span>
+              <h2 class="text-sm sm:text-base font-semibold text-slate-100">Cinematography Prompt</h2>
+            </div>
+
+            <!-- Density Selector -->
+            <div class="inline-flex rounded-lg bg-cinema-bg border border-cinema-border p-0.5 text-[11px]">
+              <button type="button" data-density="concise" class="density-btn px-2 py-1 rounded-md text-slate-400 hover:text-slate-200 transition">Concise</button>
+              <button type="button" data-density="balanced" class="density-btn px-2 py-1 rounded-md bg-amber-500/20 text-amber-300 font-medium transition">Director's Cut</button>
+              <button type="button" data-density="detailed" class="density-btn px-2 py-1 rounded-md text-slate-400 hover:text-slate-200 transition">Ultra</button>
+            </div>
+          </div>
+
+          <!-- Target Video Model Selector -->
+          <div class="mb-3">
+            <label class="block text-[10px] font-mono uppercase tracking-wider text-slate-400 mb-1.5">Optimize Format For</label>
+            <div id="modelSelectorGrid" class="grid grid-cols-3 gap-1.5">
+              <button type="button" data-model="universal" class="model-btn active px-2 py-1.5 rounded-lg border border-cinema-border bg-cinema-bg text-[11px] font-medium text-slate-300 transition">Universal</button>
+              <button type="button" data-model="veo" class="model-btn px-2 py-1.5 rounded-lg border border-cinema-border bg-cinema-bg text-[11px] font-medium text-slate-300 transition">Veo 3</button>
+              <button type="button" data-model="sora" class="model-btn px-2 py-1.5 rounded-lg border border-cinema-border bg-cinema-bg text-[11px] font-medium text-slate-300 transition">Sora</button>
+              <button type="button" data-model="runway" class="model-btn px-2 py-1.5 rounded-lg border border-cinema-border bg-cinema-bg text-[11px] font-medium text-slate-300 transition">Runway Gen-4</button>
+              <button type="button" data-model="kling" class="model-btn px-2 py-1.5 rounded-lg border border-cinema-border bg-cinema-bg text-[11px] font-medium text-slate-300 transition">Kling / Hailuo</button>
+              <button type="button" data-model="json" class="model-btn px-2 py-1.5 rounded-lg border border-cinema-border bg-cinema-bg text-[11px] font-medium text-slate-300 transition">JSON Spec</button>
+            </div>
+          </div>
+
+          <!-- Generated Prompt Display -->
+          <div class="relative">
+            <textarea id="outputPrompt" readonly rows="8" class="w-full rounded-xl bg-cinema-bg border border-cinema-border px-3.5 py-3 text-xs sm:text-[13px] text-slate-100 font-sans leading-relaxed outline-none resize-y"></textarea>
+            <div class="mt-2 flex items-center justify-between text-[11px] font-mono text-slate-500">
+              <span id="wordCountDisplay">0 words · ~0 tokens</span>
+              <span id="modelTipDisplay" class="text-slate-400 truncate max-w-[60%]">Balanced cinematic prose</span>
+            </div>
+          </div>
+
+          <!-- Primary Action Buttons -->
+          <div class="mt-3.5 grid grid-cols-2 gap-2">
+            <button id="copyPromptBtn" type="button" class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-cinema-bg text-xs sm:text-sm font-semibold transition shadow">
+              <i data-lucide="copy" class="w-4 h-4"></i>
+              <span>Copy Prompt</span>
+            </button>
+            <button id="saveShotBtn" type="button" class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-cinema-card hover:bg-slate-800 border border-cinema-border text-slate-100 text-xs sm:text-sm font-medium transition">
+              <i data-lucide="bookmark-plus" class="w-4 h-4 text-amber-400"></i>
+              <span>Save to Shotlist</span>
+            </button>
+          </div>
+
+          <!-- Negative Prompt Collapsible -->
+          <div class="mt-4 pt-3.5 border-t border-cinema-border/70">
+            <div class="flex items-center justify-between mb-1.5">
+              <span class="text-[11px] font-mono uppercase tracking-wider text-slate-400">Recommended Negative Prompt</span>
+              <button id="copyNegBtn" type="button" class="inline-flex items-center gap-1 text-[11px] text-amber-400 hover:text-amber-300 font-medium">
+                <i data-lucide="copy" class="w-3 h-3"></i>
+                <span>Copy</span>
+              </button>
+            </div>
+            <p id="negativePromptText" class="text-[11px] text-slate-400 bg-cinema-bg/80 border border-cinema-border/70 rounded-lg px-3 py-2 leading-relaxed font-mono"></p>
+          </div>
+
+          <!-- Spec Readiness Meter -->
+          <div class="mt-4 pt-3.5 border-t border-cinema-border/70">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-[11px] font-mono uppercase tracking-wider text-slate-400">Director's Readiness Score</span>
+              <span id="readinessScore" class="text-xs font-mono font-semibold text-emerald-400">100%</span>
+            </div>
+            <div class="w-full h-1.5 rounded-full bg-cinema-bg overflow-hidden mb-2.5">
+              <div id="readinessBar" class="h-full bg-gradient-to-r from-amber-500 to-emerald-400 transition-all duration-300" style="width: 100%"></div>
+            </div>
+            <div id="readinessChecklist" class="grid grid-cols-2 gap-1.5 text-[11px]"></div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <!-- Shotlist Slide-Over Modal -->
+  <div id="shotlistModal" class="fixed inset-0 z-50 hidden">
+    <div id="shotlistBackdrop" class="absolute inset-0 bg-black/70 backdrop-blur-sm"></div>
+    <div class="absolute right-0 top-0 bottom-0 w-full max-w-md bg-cinema-panel border-l border-cinema-border shadow-2xl flex flex-col">
+      <div class="p-4 sm:p-5 border-b border-cinema-border flex items-center justify-between">
+        <div>
+          <h3 class="text-base font-semibold text-slate-100 flex items-center gap-2">
+            <i data-lucide="film" class="w-4 h-4 text-amber-400"></i>
+            <span>Production Shotlist</span>
+          </h3>
+          <p class="text-xs text-slate-400 mt-0.5">Saved shots for your storyboard sequence</p>
+        </div>
+        <button id="closeShotlistBtn" type="button" class="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-slate-200">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div id="shotlistItems" class="flex-1 overflow-y-auto p-4 space-y-3"></div>
+
+      <div class="p-4 border-t border-cinema-border bg-cinema-bg/60 flex items-center gap-2">
+        <button id="exportTxtBtn" type="button" class="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-cinema-bg text-xs font-semibold transition">
+          <i data-lucide="download" class="w-3.5 h-3.5"></i>
+          <span>Export .TXT</span>
+        </button>
+        <button id="exportJsonBtn" type="button" class="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-cinema-card hover:bg-slate-800 border border-cinema-border text-slate-200 text-xs font-medium transition">
+          <i data-lucide="braces" class="w-3.5 h-3.5 text-amber-400"></i>
+          <span>Export .JSON</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 pointer-events-none opacity-0 translate-y-2 transition-all duration-200">
+    <div class="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 border border-amber-500/40 text-slate-100 text-xs sm:text-sm shadow-xl">
+      <i data-lucide="check-circle-2" class="w-4 h-4 text-amber-400 shrink-0"></i>
+      <span id="toastMessage">Copied to clipboard</span>
+    </div>
+  </div>
+
+  <script>
+    // =========================================================
+    // CINEMATOGRAPHY KNOWLEDGE BASE
+    // =========================================================
+    const DATA = {
+      shotSizes: [
+        { id: 'ecu', label: 'Extreme Close-Up', short: 'ECU', desc: 'Eyes, textures, micro-expressions', prompt: 'An extreme close-up shot isolating intricate details and micro-expressions', scale: 1.75, yOff: 18 },
+        { id: 'cu', label: 'Close-Up', short: 'CU', desc: 'Intimate emotional focus', prompt: 'An intimate close-up shot framing the subject tightly to capture subtle emotion', scale: 1.4, yOff: 12 },
+        { id: 'mcu', label: 'Medium Close-Up', short: 'MCU', desc: 'Chest-up conversational framing', prompt: 'A medium close-up shot framing the subject from the chest up', scale: 1.15, yOff: 6 },
+        { id: 'ms', label: 'Medium Shot', short: 'MS', desc: 'Waist-up action & posture', prompt: 'A classic medium shot capturing body language and immediate surroundings', scale: 0.92, yOff: 2 },
+        { id: 'mws', label: 'Medium Wide', short: 'MWS', desc: 'Full subject within context', prompt: 'A medium wide shot showing the subject in full stride within the environment', scale: 0.72, yOff: 0 },
+        { id: 'ws', label: 'Wide Shot', short: 'WS', desc: 'Establishes space & scale', prompt: 'An expansive wide establishing shot situating the subject inside the broader landscape', scale: 0.52, yOff: -4 },
+        { id: 'ews', label: 'Extreme Wide', short: 'EWS', desc: 'Vast monumental scale', prompt: 'A breathtaking extreme wide shot emphasizing monumental scale and atmospheric depth', scale: 0.36, yOff: -8 },
+        { id: 'ots', label: 'Over-the-Shoulder', short: 'OTS', desc: 'Subjective foreground depth', prompt: 'An over-the-shoulder perspective shot with soft foreground framing for layered depth', scale: 1.05, yOff: 4 }
+      ],
+      angles: [
+        { id: 'eye', label: 'Eye-Level', desc: 'Natural & empathetic', prompt: 'positioned at natural eye-level', rot: 0, yShift: 0 },
+        { id: 'low', label: 'Low Angle', desc: 'Heroic & imposing', prompt: 'captured from a dramatic low angle looking upward to convey stature', rot: 0, yShift: -12 },
+        { id: 'high', label: 'High Angle', desc: 'Vulnerable or observational', prompt: 'angled from a high vantage point looking down over the scene', rot: 0, yShift: 14 },
+        { id: 'dutch', label: 'Dutch Tilt', desc: 'Uneasy tension', prompt: 'framed with a subtle canted Dutch angle to heighten psychological tension', rot: -11, yShift: 0 },
+        { id: 'birds', label: "Bird's-Eye", desc: 'Top-down geometry', prompt: 'shot from a direct top-down bird’s-eye perspective emphasizing spatial geometry', rot: 0, yShift: 18 },
+        { id: 'worm', label: "Worm's-Eye", desc: 'Towering scale', prompt: 'captured from an ultra-low ground-level worm’s-eye angle', rot: 0, yShift: -18 },
+        { id: 'pov', label: 'First-Person POV', desc: 'Immersive eyewitness', prompt: 'presented from an immersive first-person POV perspective', rot: 0, yShift: 0 },
+        { id: 'hip', label: 'Hip-Level', desc: 'Dynamic kinetic energy', prompt: 'held at hip-level for kinetic, grounded immediacy', rot: 0, yShift: -6 }
+      ],
+      movements: [
+        { id: 'static', label: 'Static / Locked-Off', desc: 'Composed stillness', prompt: 'locked off on a rock-steady tripod so internal motion drives the frame' },
+        { id: 'push', label: 'Dolly Push-In', desc: 'Draws viewer closer', prompt: 'executing a smooth dolly push-in that gradually draws focus deeper into the subject' },
+        { id: 'pull', label: 'Dolly Pull-Back', desc: 'Reveals wider context', prompt: 'gliding backward in a controlled dolly pull-out that steadily reveals the surrounding space' },
+        { id: 'track', label: 'Lateral Tracking', desc: 'Glides alongside motion', prompt: 'tracking laterally on precision dolly rails alongside the subject’s movement' },
+        { id: 'orbit', label: 'Arc / Orbit', desc: 'Wraps around subject', prompt: 'sweeping in a fluid curved arc orbit around the subject with rich parallax shift' },
+        { id: 'crane', label: 'Crane / Jib Rise', desc: 'Elevating reveal', prompt: 'rising smoothly on a cinema jib crane to unveil the wider horizon' },
+        { id: 'handheld', label: 'Handheld Organic', desc: 'Raw human immediacy', prompt: 'captured with tactile, breathing handheld micro-movements for documentary immediacy' },
+        { id: 'steadicam', label: 'Steadicam Follow', desc: 'Weightless immersion', prompt: 'following seamlessly on a stabilized Steadicam rig with floating spatial continuity' },
+        { id: 'fpv', label: 'FPV Aerial Swoop', desc: 'High-energy kinetic flight', prompt: 'swooping forward in a continuous, sweeping aerial cinema drone trajectory' }
+      ],
+      motionSpeeds: [
+        { label: 'Imperceptible / Micro', adj: 'barely perceptible, meditative' },
+        { label: 'Slow & Deliberate', adj: 'slow, deliberate, unhurried' },
+        { label: 'Fluid & Measured', adj: 'fluid, cinematic, well-paced' },
+        { label: 'Dynamic & Urgent', adj: 'brisk, kinetic, high-energy' }
+      ],
+      compositions: [
+        { id: 'thirds', label: 'Rule of Thirds', prompt: 'balanced along rule-of-thirds power points with generous headroom' },
+        { id: 'symmetry', label: 'Centered Symmetry', prompt: 'composed with crisp architectural symmetry and central vanishing point' },
+        { id: 'leading', label: 'Leading Lines', prompt: 'guided by strong environmental leading lines pulling the eye to the focal point' },
+        { id: 'negative', label: 'Negative Space', prompt: 'anchored by expansive negative space that accentuates isolation and mood' }
+      ],
+      focalLengths: [
+        { mm: '14mm', label: '14mm — Ultra-Wide', desc: 'Exaggerated perspective & vast scale', prompt: '14mm ultra-wide lens exaggerating foreground perspective and spatial scale' },
+        { mm: '24mm', label: '24mm — Wide Cinema', desc: 'Immersive environment + crisp depth', prompt: '24mm wide-angle cinema prime keeping environment palpable around the subject' },
+        { mm: '35mm', label: '35mm — Classic Narrative', desc: 'Natural cinema storytelling staple', prompt: '35mm narrative cinema prime delivering natural spatial perspective' },
+        { mm: '50mm', label: '50mm — Natural Eye', desc: 'Honest human proportions', prompt: '50mm standard prime mirroring natural human eye perspective' },
+        { mm: '85mm', label: '85mm — Portrait Compression', desc: 'Flattering subject separation', prompt: '85mm portrait telephoto lens compressing the background into soft separation' },
+        { mm: '135mm', label: '135mm — Telephoto Isolation', desc: 'Dreamy compressed layers', prompt: '135mm long telephoto lens flattening background planes into creamy bokeh' },
+        { mm: '200mm', label: '200mm — Extreme Compression / Macro', desc: 'Intimate tactile detail', prompt: '200mm telephoto macro optics isolating razor-fine textures against melted backgrounds' }
+      ],
+      lensChars: [
+        { id: 'anamorphic', label: 'Anamorphic Cinema', desc: 'Oval bokeh & subtle horizontal flares', prompt: 'vintage anamorphic glass producing subtle horizontal flares, oval bokeh, and gentle edge falloff' },
+        { id: 'cooke', label: 'Cooke S4 Warmth', desc: 'Organic skin tones & gentle roll-off', prompt: 'Cooke cinema glass renowned for warm skin-tone rendering and organic highlight roll-off' },
+        { id: 'zeiss', label: 'Zeiss Master Prime', desc: 'Clinical micro-contrast & clarity', prompt: 'modern Zeiss Master Prime optics with razor micro-contrast and crisp edge-to-edge clarity' },
+        { id: 'vintage70s', label: '1970s Vintage Prime', desc: 'Soft halation & dreamy bloom', prompt: '1970s vintage cinema lenses with delicate highlight bloom and nostalgic softness' },
+        { id: 'macro', label: 'Laowa Probe / Macro', desc: 'Ultra-close tactile focus', prompt: 'specialty macro cinema optics resolving microscopic surface textures' },
+        { id: 'super16', label: 'Vintage 16mm Zoom', desc: 'Raw indie texture & vignetting', prompt: 'classic 16mm cinema glass with organic corner vignetting and raw indie character' }
+      ],
+      apertures: [
+        { id: 't14', label: 'T1.4', desc: 'Razor-thin bokeh', prompt: 'shot wide open at T1.4 for a razor-thin focal plane and dreamy background falloff' },
+        { id: 't28', label: 'T2.8', desc: 'Cinematic separation', prompt: 'exposed at T2.8 balancing crisp subject definition with soft background bokeh' },
+        { id: 't56', label: 'T5.6', desc: 'Contextual clarity', prompt: 'stopped down to T5.6 preserving clear environmental storytelling behind the subject' },
+        { id: 't11', label: 'T11', desc: 'Deep focus', prompt: 'captured in deep focus at T11 keeping foreground, midground, and horizon sharply legible' }
+      ],
+      stocks: [
+        { id: 'alexa', label: 'ARRI Alexa 35', desc: 'Modern Hollywood latitude', prompt: 'captured on ARRI Alexa 35 digital cinema sensor with rich 17-stop dynamic range and filmic highlight roll-off' },
+        { id: 'vision500t', label: 'Kodak Vision3 500T', desc: '35mm tungsten night film', prompt: 'shot on Kodak Vision3 500T 35mm motion picture film with fine organic silver-halide grain and luminous shadow detail' },
+        { id: 'imax', label: 'IMAX 70mm', desc: 'Monumental clarity & depth', prompt: 'captured on 65mm IMAX large-format film stock delivering extraordinary tonal depth and lifelike scale' },
+        { id: 'portra', label: '35mm Daylight 250D', desc: 'Warm, sunlit photochemical look', prompt: 'shot on Kodak Vision3 250D daylight 35mm film with warm highlights and velvety midtones' },
+        { id: 'super8', label: 'Super 8mm Retro', desc: 'Nostalgic jitter & coarse grain', prompt: 'filmed on authentic Super 8mm celluloid with tactile grain, gentle gate weave, and nostalgic warmth' },
+        { id: 'bw', label: 'Ilford HP5 B&W', desc: 'Sculptural monochrome', prompt: 'shot on monochrome 35mm silver-gelatin film with sculpted tonal contrast and velvety blacks' }
+      ],
+      lightingStyles: [
+        { id: 'noir', label: 'Chiaroscuro Noir', desc: 'Deep shadows & pools of light', prompt: 'sculpted chiaroscuro lighting with deep inky shadows, motivated practical pools, and gleaming wet specular highlights', c1: '#38bdf8', c2: '#1e1b4b', c3: '#020617' },
+        { id: 'golden', label: 'Golden Hour', desc: 'Low warm amber sunlight', prompt: 'bathed in low-angle golden hour sunlight casting long warm shadows and glowing amber rim light', c1: '#f59e0b', c2: '#7c2d12', c3: '#1c1917' },
+        { id: 'bluehour', label: 'Blue Hour Twilight', desc: 'Cool dusk + warm practicals', prompt: 'enveloped in cool cobalt blue-hour twilight balanced against warm interior practical lamps', c1: '#3b82f6', c2: '#1e3a5f', c3: '#090d16' },
+        { id: 'neon', label: 'Neon Cyberpunk', desc: 'Saturated signage & reflections', prompt: 'drenched in saturated magenta and cyan neon signage reflecting across damp surfaces', c1: '#ec4899', c2: '#0e7490', c3: '#090915' },
+        { id: 'overcast', label: 'Soft Overcast', desc: 'Diffused, poetic natural light', prompt: 'illuminated by huge soft overcast skylight producing gentle wrap-around contrast and muted tones', c1: '#94a3b8', c2: '#334155', c3: '#0f172a' },
+        { id: 'rembrandt', label: 'Rembrandt Studio', desc: 'Painterly 45° key & soft fill', prompt: 'lit with painterly Rembrandt directional key light carving subtle triangle highlights across the face', c1: '#fbbf24', c2: '#451a03', c3: '#0c0a09' },
+        { id: 'volumetric', label: 'Volumetric God Rays', desc: 'Shafts of light through haze', prompt: 'pierced by dramatic volumetric shafts of light slicing cleanly through atmospheric haze', c1: '#fde68a', c2: '#3f3f46', c3: '#09090b' },
+        { id: 'candle', label: 'Candle / Practical Warm', desc: 'Intimate flickering tungsten', prompt: 'lit solely by intimate flickering tungsten practicals and warm firelight dancing across textures', c1: '#ea580c', c2: '#431407', c3: '#0a0502' },
+        { id: 'harsh', label: 'Harsh High Sun', desc: 'Crisp desert/summer contrast', prompt: 'under crisp, high-contrast direct midday sunlight with sharp geometric shadow edges', c1: '#fef08a', c2: '#78716c', c3: '#1c1917' }
+      ],
+      lightDirs: [
+        { id: 'threequarter', label: 'Three-Quarter (45°)', prompt: 'key light motivated from a 45-degree three-quarter angle', lx: 85, ly: 50 },
+        { id: 'side', label: 'Side / Split (90°)', prompt: 'dramatic 90-degree side key light carving half the subject in shadow', lx: 38, ly: 112 },
+        { id: 'back', label: 'Backlit / Rim', prompt: 'strong backlighting outlining the silhouette with a crisp luminous rim', lx: 200, ly: 42 },
+        { id: 'front', label: 'Soft Front Key', prompt: 'gentle frontal softbox fill minimizing harsh shadows', lx: 200, ly: 175 },
+        { id: 'top', label: 'Top-Down Overhead', prompt: 'motivated overhead practical light casting deep brow shadows', lx: 200, ly: 26 },
+        { id: 'under', label: 'Under-Lit Practical', prompt: 'eerie upward bounce light from a low practical source', lx: 200, ly: 196 }
+      ],
+      fxOptions: [
+        { id: 'haze', label: 'Volumetric Haze', prompt: 'subtle atmospheric haze catching light beams' },
+        { id: 'rain', label: 'Rain & Wet Sheen', prompt: 'falling rain streaks and shimmering wet surface reflections' },
+        { id: 'dust', label: 'Floating Dust Motes', prompt: 'delicate dust motes drifting lazily through light shafts' },
+        { id: 'flare', label: 'Halation & Flare', prompt: 'organic warm highlight halation and subtle optical lens flare' },
+        { id: 'grain', label: 'Fine Film Grain', prompt: 'tactile photochemical film grain texture' },
+        { id: 'steam', label: 'Rising Steam / Mist', prompt: 'wisps of curling steam and low-lying mist' },
+        { id: 'snow', label: 'Drifting Snow / Ash', prompt: 'slowly drifting atmospheric particles catching the backlight' },
+        { id: 'shimmer', label: 'Heat Shimmer', prompt: 'subtle optical heat distortion in the distant air' }
+      ],
+      colorGrades: [
+        { id: 'tealorange', label: 'Teal & Orange', swatch: ['#0ea5e9', '#f97316'], prompt: 'graded in a refined cinematic teal-and-amber palette with rich shadow separation' },
+        { id: 'amberwarm', label: 'Warm Amber', swatch: ['#f59e0b', '#78350f'], prompt: 'graded with golden amber highlights, warm honey skin tones, and chocolate shadows' },
+        { id: 'bleach', label: 'Bleach Bypass', swatch: ['#94a3b8', '#1e293b'], prompt: 'finished with a desaturated bleach-bypass grade featuring steely contrast and restrained chroma' },
+        { id: 'cyber', label: 'Neon Magenta/Cyan', swatch: ['#ec4899', '#06b6d4'], prompt: 'graded with vibrant electric cyan and magenta highlights against deep obsidian blacks' },
+        { id: 'emerald', label: 'Moody Emerald', swatch: ['#10b981', '#064e3b'], prompt: 'graded in atmospheric moody emerald shadows and muted tungsten highlights' },
+        { id: 'pastel', label: 'Pastel Film', swatch: ['#fda4af', '#7dd3fc'], prompt: 'graded in curated storybook pastel hues with soft lifted shadows' },
+        { id: 'mono', label: 'High-Contrast B&W', swatch: ['#f8fafc', '#18181b'], prompt: 'graded in luminous high-contrast monochrome with silver highlights and deep blacks' },
+        { id: 'natural', label: 'True-to-Life', swatch: ['#a3e635', '#60a5fa'], prompt: 'color-graded for grounded, naturalistic cinema fidelity with clean neutral whites' }
+      ],
+      fpsOptions: [
+        { id: '24fps', label: '24fps Cinema', desc: 'Classic 180° motion blur', prompt: 'shot at 24fps with natural 180-degree shutter motion blur' },
+        { id: '48fps', label: '48fps Crisp', desc: 'Heightened clarity', prompt: 'captured at 48fps for heightened crisp kinetic detail' },
+        { id: '60fps', label: '60fps Slow-Mo', desc: '2.5x lyrical slow motion', prompt: 'filmed at 60fps played back in graceful slow motion to savor every movement' },
+        { id: '120fps', label: '120fps Ultra Slow', desc: 'Suspended dramatic time', prompt: 'captured at 120fps extreme slow motion suspending droplets and micro-motion in air' },
+        { id: 'timelapse', label: 'Time-Lapse', desc: 'Accelerated passage of time', prompt: 'rendered as a smooth motion-controlled cinema time-lapse accelerating clouds and light' },
+        { id: 'stutter', label: '12fps Expressive', desc: 'Wong Kar-wai step-print', prompt: 'styled with expressive slow-shutter step-printing creating poetic motion trails' }
+      ],
+      aspects: [
+        { id: '2.39:1', label: '2.39:1', sub: 'Scope' },
+        { id: '16:9', label: '16:9', sub: 'Widescreen' },
+        { id: '4:3', label: '4:3', sub: 'Academy' },
+        { id: '9:16', label: '9:16', sub: 'Vertical' },
+        { id: '1:1', label: '1:1', sub: 'Square' }
+      ],
+      presets: {
+        noir: {
+          rawIdea: 'A weary detective in a soaked trench coat drinks black coffee outside a late-night Tokyo ramen stall while neon signs flicker in rain puddles.',
+          subject: 'weary detective in a rain-soaked trench coat',
+          action: 'slowly raises a steaming ceramic cup to his lips, eyes scanning the empty alley',
+          setting: 'narrow rain-slicked Tokyo back alley lined with glowing kanji neon signs',
+          shotSize: 'mcu', angle: 'eye', movement: 'push', motionSpeed: 1, composition: 'thirds',
+          focalIdx: 2, lensChar: 'anamorphic', aperture: 't14', stock: 'vision500t',
+          lighting: 'noir', lightDir: 'side', fx: ['rain', 'haze', 'flare'],
+          colorGrade: 'cyber', fps: '24fps', aspect: '2.39:1', audio: true
+        },
+        golden: {
+          rawIdea: 'A lone traveler walks through tall golden wheat fields at sunset, trailing her fingertips across the stalks as warm light catches her hair.',
+          subject: 'lone traveler in a linen jacket',
+          action: 'walks unhurriedly through tall wheat, grazing the golden stalks with her fingertips',
+          setting: 'sun-drenched rolling countryside valley at golden hour',
+          shotSize: 'ms', angle: 'low', movement: 'steadicam', motionSpeed: 1, composition: 'thirds',
+          focalIdx: 3, lensChar: 'cooke', aperture: 't14', stock: 'portra',
+          lighting: 'golden', lightDir: 'back', fx: ['dust', 'flare'],
+          colorGrade: 'amberwarm', fps: '60fps', aspect: '2.39:1', audio: true
+        },
+        scifi: {
+          rawIdea: 'An astronaut slowly walks down a dimly lit derelict spaceship corridor as emergency red lights pulse and mist drifts across the metal grating.',
+          subject: 'astronaut in a weathered white EVA suit with reflective visor',
+          action: 'advances cautiously down the corridor, beam of helmet light sweeping the walls',
+          setting: 'claustrophobic derelict starship corridor with exposed conduits and metallic grating',
+          shotSize: 'mws', angle: 'dutch', movement: 'track', motionSpeed: 1, composition: 'symmetry',
+          focalIdx: 1, lensChar: 'anamorphic', aperture: 't28', stock: 'alexa',
+          lighting: 'volumetric', lightDir: 'top', fx: ['haze', 'steam'],
+          colorGrade: 'bleach', fps: '24fps', aspect: '2.39:1', audio: true
+        },
+        macro: {
+          rawIdea: 'Rich golden espresso pours from a naked portafilter into a pre-warmed ceramic cup, forming velvety tiger-striped crema with rising steam.',
+          subject: 'glossy stream of golden-brown espresso extraction',
+          action: 'pours smoothly from a bottomless brass portafilter, swirling into thick velvety crema',
+          setting: 'artisan moody dark-wood espresso bar counter',
+          shotSize: 'ecu', angle: 'eye', movement: 'push', motionSpeed: 0, composition: 'symmetry',
+          focalIdx: 6, lensChar: 'macro', aperture: 't28', stock: 'alexa',
+          lighting: 'rembrandt', lightDir: 'side', fx: ['steam'],
+          colorGrade: 'amberwarm', fps: '120fps', aspect: '16:9', audio: true
+        },
+        aerial: {
+          rawIdea: 'A camera glides over a jagged snow-covered mountain ridge at sunrise, revealing a lone climber standing on the summit above a sea of clouds.',
+          subject: 'lone mountaineer in a bright red parka',
+          action: 'stands silhouetted against the rising sun as wind whips snow off the ridge',
+          setting: 'jagged alpine peak rising above an endless ocean of sunlit clouds',
+          shotSize: 'ews', angle: 'high', movement: 'fpv', motionSpeed: 2, composition: 'leading',
+          focalIdx: 1, lensChar: 'zeiss', aperture: 't56', stock: 'imax',
+          lighting: 'golden', lightDir: 'back', fx: ['snow', 'haze'],
+          colorGrade: 'tealorange', fps: '24fps', aspect: '2.39:1', audio: true
+        },
+        retro: {
+          rawIdea: 'Two teenagers skateboard down a palm-lined California boulevard in the late afternoon sun, laughing and glancing back toward the camera.',
+          subject: 'two carefree teenagers on vintage cruiser skateboards',
+          action: 'carve playfully down the sun-baked asphalt, glancing back over their shoulders laughing',
+          setting: '1980s palm-lined coastal California boulevard bathed in warm afternoon haze',
+          shotSize: 'ms', angle: 'hip', movement: 'handheld', motionSpeed: 2, composition: 'thirds',
+          focalIdx: 2, lensChar: 'vintage70s', aperture: 't28', stock: 'super8',
+          lighting: 'golden', lightDir: 'threequarter', fx: ['grain', 'flare'],
+          colorGrade: 'pastel', fps: '24fps', aspect: '4:3', audio: true
+        }
+      }
+    };
+
+    // =========================================================
+    // APPLICATION STATE
+    // =========================================================
+    const DEFAULT_STATE = {
+      rawIdea: 'A weary detective in a soaked trench coat drinks black coffee outside a late-night Tokyo ramen stall while neon signs flicker in rain puddles.',
+      subject: '',
+      action: '',
+      setting: '',
+      shotSize: 'mcu',
+      angle: 'eye',
+      movement: 'push',
+      motionSpeed: 1,
+      composition: 'thirds',
+      focalIdx: 2,
+      lensChar: 'anamorphic',
+      aperture: 't14',
+      stock: 'vision500t',
+      lighting: 'noir',
+      lightDir: 'side',
+      fx: ['rain', 'haze', 'flare'],
+      colorGrade: 'cyber',
+      fps: '24fps',
+      aspect: '2.39:1',
+      audio: true,
+      targetModel: 'universal',
+      density: 'balanced',
+      activeTab: 'framing',
+      showBreakdown: false,
+      detectedTags: []
+    };
+
+    let state = JSON.parse(JSON.stringify(DEFAULT_STATE));
+    let shotlist = [];
+
+    try {
+      const saved = localStorage.getItem('cineprompt_shotlist_v1');
+      if (saved) shotlist = JSON.parse(saved);
+    } catch (e) {
+      shotlist = [];
+    }
+
+    // =========================================================
+    // HELPERS
+    // =========================================================
+    const byId = (id) => document.getElementById(id);
+    const findItem = (arr, id) => arr.find((x) => x.id === id) || arr[0];
+    const cap = (str) => (str ? str.charAt(0).toUpperCase() + str.slice(1) : '');
+
+    let toastTimer = null;
+    function showToast(msg) {
+      const el = byId('toast');
+      byId('toastMessage').textContent = msg;
+      el.classList.remove('opacity-0', 'translate-y-2');
+      el.classList.add('opacity-100', 'translate-y-0');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        el.classList.remove('opacity-100', 'translate-y-0');
+        el.classList.add('opacity-0', 'translate-y-2');
+      }, 2400);
+    }
+
+    function copyTextToClipboard(text, successMsg) {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(
+          () => showToast(successMsg),
+          () => fallbackCopy(text, successMsg)
+        );
+      } else {
+        fallbackCopy(text, successMsg);
+      }
+    }
+
+    function fallbackCopy(text, successMsg) {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        document.execCommand('copy');
+        showToast(successMsg);
+      } catch (e) {
+        showToast('Could not copy automatically — select text manually');
+      }
+      document.body.removeChild(ta);
+    }
+
+    function persistShotlist() {
+      try {
+        localStorage.setItem('cineprompt_shotlist_v1', JSON.stringify(shotlist));
+      } catch (e) {}
+    }
+
+    // =========================================================
+    // SMART IDEA-TO-CINEMATOGRAPHY ANALYZER
+    // =========================================================
+    function analyzeIdeaText() {
+      const text = (state.rawIdea || '').trim();
+      if (!text) {
+        showToast('Enter a video idea first so I can analyze it');
+        return;
+      }
+      const lower = text.toLowerCase();
+      const detected = [];
+
+      // Lighting & Time of Day detection
+      if (/(neon|cyberpunk|tokyo|arcade|billboard|club)/.test(lower)) {
+        state.lighting = 'neon';
+        state.colorGrade = 'cyber';
+        state.stock = 'vision500t';
+        detected.push('Neon Night');
+      } else if (/(noir|detective|shadow|alley|mystery|crime)/.test(lower)) {
+        state.lighting = 'noir';
+        state.lightDir = 'side';
+        state.stock = 'vision500t';
+        detected.push('Noir Contrast');
+      } else if (/(sunset|golden hour|sunrise|dawn|dusk|warm sun|afternoon)/.test(lower)) {
+        state.lighting = 'golden';
+        state.lightDir = 'back';
+        state.colorGrade = 'amberwarm';
+        state.stock = 'portra';
+        detected.push('Golden Hour');
+      } else if (/(twilight|blue hour|midnight|moonlight|night)/.test(lower)) {
+        state.lighting = 'bluehour';
+        state.colorGrade = 'tealorange';
+        detected.push('Blue Hour');
+      } else if (/(candle|fireplace|hearth|lantern|cozy|warm glow)/.test(lower)) {
+        state.lighting = 'candle';
+        state.colorGrade = 'amberwarm';
+        detected.push('Practical Warmth');
+      } else if (/(overcast|cloudy|foggy|gloomy|melancholy)/.test(lower)) {
+        state.lighting = 'overcast';
+        state.colorGrade = 'bleach';
+        detected.push('Soft Overcast');
+      } else if (/(desert|midday|harsh sun|beach|noon)/.test(lower)) {
+        state.lighting = 'harsh';
+        detected.push('High-Contrast Sun');
+      }
+
+      // Shot Size & Focal Length detection
+      if (/(eye|teardrop|pour|coffee|espresso|droplet|ring|watch|macro|petal|insect|texture)/.test(lower)) {
+        state.shotSize = 'ecu';
+        state.focalIdx = 6;
+        state.lensChar = 'macro';
+        state.aperture = 't28';
+        detected.push('Macro ECU');
+      } else if (/(mountain|cityscape|ocean|valley|aerial|drone|landscape|horizon|cliff|skyline)/.test(lower)) {
+        state.shotSize = 'ews';
+        state.focalIdx = 1;
+        state.movement = 'fpv';
+        state.stock = 'imax';
+        detected.push('Epic Wide Aerial');
+      } else if (/(portrait|face|smiles|cries|whispers|looks at camera|expression)/.test(lower)) {
+        state.shotSize = 'cu';
+        state.focalIdx = 4;
+        state.aperture = 't14';
+        detected.push('Portrait 85mm');
+      } else if (/(corridor|hallway|tunnel|street|walks down|runs through)/.test(lower)) {
+        state.shotSize = 'mws';
+        state.composition = 'symmetry';
+        state.movement = 'track';
+        detected.push('Tracking Depth');
+      }
+
+      // Movement & Pacing detection
+      if (/(chase|sprint|running|car|racing|fight|battle|explod|fast)/.test(lower)) {
+        state.movement = 'handheld';
+        state.motionSpeed = 3;
+        state.angle = 'low';
+        detected.push('Kinetic Handheld');
+      } else if (/(slow motion|slow-mo|floating|drifting|splash|shatter|falling)/.test(lower)) {
+        state.fps = '120fps';
+        detected.push('120fps Slow-Mo');
+      } else if (/(time-lapse|timelapse|clouds pass|day turns to night)/.test(lower)) {
+        state.fps = 'timelapse';
+        state.movement = 'static';
+        detected.push('Time-Lapse');
+      } else if (/(orbit|circle around|spin|360)/.test(lower)) {
+        state.movement = 'orbit';
+        detected.push('360° Orbit');
+      }
+
+      // Retro / Sci-Fi / B&W genre cues
+      if (/(1980s|80s|90s|70s|retro|vintage|nostalg|home video|super 8)/.test(lower)) {
+        state.stock = 'super8';
+        state.lensChar = 'vintage70s';
+        state.aspect = '4:3';
+        detected.push('Vintage Film');
+      } else if (/(black and white|monochrome|noir film|b&w)/.test(lower)) {
+        state.stock = 'bw';
+        state.colorGrade = 'mono';
+        detected.push('Monochrome');
+      } else if (/(sci-fi|spaceship|astronaut|futuristic|alien|robot)/.test(lower)) {
+        state.lensChar = 'anamorphic';
+        state.aspect = '2.39:1';
+        detected.push('Anamorphic Sci-Fi');
+      }
+
+      // Atmosphere FX detection
+      const newFx = new Set();
+      if (/(rain|puddle|wet|storm|drizzle)/.test(lower)) newFx.add('rain');
+      if (/(mist|fog|haze|smoke|smoky)/.test(lower)) newFx.add('haze');
+      if (/(steam|coffee|tea|ramen|soup|breath)/.test(lower)) newFx.add('steam');
+      if (/(snow|blizzard|ash|embers|petals)/.test(lower)) newFx.add('snow');
+      if (/(dust|sunbeam|shaft|attic|beam)/.test(lower)) newFx.add('dust');
+      if (/(flare|neon|sunset|sunlight|headlight)/.test(lower)) newFx.add('flare');
+      if (/(retro|vintage|film|8mm|16mm|35mm)/.test(lower)) newFx.add('grain');
+      if (newFx.size > 0) {
+        state.fx = Array.from(newFx);
+      }
+
+      state.detectedTags = detected.length ? detected : ['Narrative 35mm'];
+      renderAll();
+      showToast(`Applied ${state.detectedTags.length} cinematography choices from your idea`);
+    }
+
+    // =========================================================
+    // AUDIO SOUNDSCAPE GENERATOR
+    // =========================================================
+    function buildAudioCue() {
+      const lower = (state.rawIdea + ' ' + state.setting + ' ' + state.action).toLowerCase();
+      const cues = [];
+      if (state.fx.includes('rain') || /rain|puddle|storm/.test(lower)) cues.push('steady pattering rain on wet pavement');
+      if (/neon|city|tokyo|street|alley/.test(lower)) cues.push('subtle electric neon hum and distant muffled city traffic');
+      if (/coffee|espresso|ramen|cup|cafe/.test(lower)) cues.push('gentle ceramic clinks and warm ambient murmur');
+      if (/wheat|wind|mountain|alpine|forest|field/.test(lower)) cues.push('soft rushing wind and rustling foliage');
+      if (/spaceship|corridor|sci-fi|astronaut/.test(lower)) cues.push('low resonant hull hum and measured footsteps on metal grating');
+      if (/ocean|beach|waves/.test(lower)) cues.push('rhythmic rolling surf and coastal breeze');
+      if (/violin|music|piano|guitar/.test(lower)) cues.push('resonant acoustic notes echoing gently in open air');
+      if (cues.length === 0) {
+        cues.push('naturalistic room-tone ambience and subtle diegetic foley synchronized to on-screen motion');
+      }
+      return cues.slice(0, 2).join(', ');
+    }
+
+    // =========================================================
+    // PROMPT TRANSLATION ENGINE
+    // =========================================================
+    function composeNarrativeCore() {
+      const hasStructured = state.subject.trim() || state.action.trim() || state.setting.trim();
+      if (hasStructured) {
+        const parts = [];
+        if (state.subject.trim()) parts.push(state.subject.trim());
+        if (state.action.trim()) parts.push(state.action.trim());
+        let line = parts.join(' ');
+        if (state.setting.trim()) {
+          line += (line ? ', set within ' : '') + state.setting.trim();
+        }
+        return line.replace(/\.+$/, '');
+      }
+      const raw = (state.rawIdea || '').trim().replace(/\.+$/, '');
+      return raw || 'A solitary figure pausing in an atmospheric cinematic scene';
+    }
+
+    function generatePrompt() {
+      const shot = findItem(DATA.shotSizes, state.shotSize);
+      const angle = findItem(DATA.angles, state.angle);
+      const move = findItem(DATA.movements, state.movement);
+      const speed = DATA.motionSpeeds[state.motionSpeed] || DATA.motionSpeeds[1];
+      const comp = findItem(DATA.compositions, state.composition);
+      const focal = DATA.focalLengths[state.focalIdx] || DATA.focalLengths[2];
+      const lens = findItem(DATA.lensChars, state.lensChar);
+      const aperture = findItem(DATA.apertures, state.aperture);
+      const stock = findItem(DATA.stocks, state.stock);
+      const light = findItem(DATA.lightingStyles, state.lighting);
+      const lightDir = findItem(DATA.lightDirs, state.lightDir);
+      const grade = findItem(DATA.colorGrades, state.colorGrade);
+      const fps = findItem(DATA.fpsOptions, state.fps);
+      const fxList = state.fx.map((id) => findItem(DATA.fxOptions, id).prompt);
+
+      const core = composeNarrativeCore();
+      const audioCue = buildAudioCue();
+      const fxSentence = fxList.length ? `Atmospheric details include ${fxList.join(', ')}.` : '';
+
+      // JSON SPEC FORMAT
+      if (state.targetModel === 'json') {
+        const spec = {
+          scene_vision: core,
+          camera: {
+            shot_size: shot.label,
+            angle: angle.label,
+            movement: `${speed.label} ${move.label}`,
+            composition: comp.label,
+            aspect_ratio: state.aspect,
+            frame_rate: fps.label
+          },
+          optics: {
+            focal_length: focal.mm,
+            lens_glass: lens.label,
+            aperture_dof: `${aperture.label} (${aperture.desc})`,
+            camera_stock: stock.label
+          },
+          lighting_and_color: {
+            lighting_setup: light.label,
+            key_direction: lightDir.label,
+            color_grade: grade.label,
+            atmospheric_fx: state.fx.map((id) => findItem(DATA.fxOptions, id).label)
+          }
+        };
+        if (state.audio) spec.soundscape = audioCue;
+        return JSON.stringify(spec, null, 2);
+      }
+
+      // CONCISE DENSITY
+      if (state.density === 'concise') {
+        if (state.targetModel === 'runway') {
+          return `${cap(speed.adj)} ${move.label.toLowerCase()}, ${shot.label.toLowerCase()} (${angle.label.toLowerCase()}): ${core}. ${focal.mm} ${lens.label.toLowerCase()} at ${aperture.label}, ${light.label.toLowerCase()} lighting, ${grade.label.toLowerCase()} grade, ${stock.label}, ${fps.label}, ${state.aspect}.`;
+        }
+        return `${shot.prompt}, ${angle.prompt}: ${core}. Camera performs a ${speed.adj} ${move.label.toLowerCase()}. Shot on ${stock.label} with a ${focal.mm} ${lens.label.toLowerCase()} at ${aperture.label}. ${light.label} lighting (${lightDir.label.toLowerCase()}), ${grade.label.toLowerCase()} color grade${fxList.length ? `, with ${fxList.join(' and ')}` : ''}. ${fps.label}, ${state.aspect}.${state.audio ? ` Ambient audio: ${audioCue}.` : ''}`;
+      }
+
+      // MODEL-SPECIFIC PROSE FORMATTING (BALANCED & ULTRA)
+      const isUltra = state.density === 'detailed';
+
+      if (state.targetModel === 'veo') {
+        const s1 = `${shot.prompt}, ${angle.prompt}, ${comp.prompt}. ${core}.`;
+        const s2 = `The camera is ${move.prompt}, paced with ${speed.adj} momentum throughout the shot.`;
+        const s3 = `Filmed on ${stock.label} paired with a ${focal.prompt} and ${lens.prompt}, ${aperture.prompt}.`;
+        const s4 = `The scene is ${light.prompt}, with ${lightDir.prompt}, and ${grade.prompt}. ${fxSentence}`;
+        const s5 = isUltra
+          ? `Motion cadence is ${fps.prompt}, framed in ${state.aspect} aspect ratio with consistent physical light interaction, natural fabric/hair inertia, and coherent temporal continuity.`
+          : `${cap(fps.prompt)}, framed in ${state.aspect}.`;
+        const s6 = state.audio ? `Audio: ${audioCue}; no background music unless diegetic.` : '';
+        return [s1, s2, s3, s4, s5, s6].filter(Boolean).join(' ');
+      }
+
+      if (state.targetModel === 'sora') {
+        const s1 = `A photorealistic cinematic sequence framed in ${state.aspect}: ${core}.`;
+        const s2 = `${shot.prompt}, ${angle.prompt}, ${comp.prompt}. As the moment unfolds, the camera is ${move.prompt} with ${speed.adj} physical weight.`;
+        const s3 = `Optics and texture: ${stock.prompt}, using a ${focal.prompt} with ${lens.prompt}, ${aperture.prompt}.`;
+        const s4 = `Light & atmosphere: ${light.prompt}, with ${lightDir.prompt}. ${fxSentence} The image is ${grade.prompt} and ${fps.prompt}.`;
+        const s5 = isUltra
+          ? `Every surface obeys realistic optical physics—accurate specular reflections, micro-texture fidelity, and smooth, unbroken temporal motion from first frame to last.`
+          : '';
+        return [s1, s2, s3, s4, s5].filter(Boolean).join(' ');
+      }
+
+      if (state.targetModel === 'runway') {
+        const s1 = `[Camera: ${speed.label} ${move.label}, ${shot.short}, ${angle.label}] ${core}.`;
+        const s2 = `Framed with ${comp.prompt}. The camera is ${move.prompt}.`;
+        const s3 = `Visual look: ${focal.mm} ${lens.label}, ${aperture.label} depth of field, ${stock.label}. ${light.prompt}, ${lightDir.prompt}.`;
+        const s4 = `${cap(grade.prompt)}. ${fxSentence} ${cap(fps.prompt)}, ${state.aspect} cinema frame.`;
+        const s5 = isUltra ? `Maintain locked subject identity, smooth motion vectors, and crisp edge coherence across the entire duration.` : '';
+        return [s1, s2, s3, s4, s5].filter(Boolean).join(' ');
+      }
+
+      if (state.targetModel === 'kling') {
+        const s1 = `${shot.label}, ${angle.label}, ${state.aspect} cinema frame. Subject & action: ${core}.`;
+        const s2 = `Camera choreography: ${speed.adj} ${move.label.toLowerCase()} — ${move.prompt}, ${comp.prompt}.`;
+        const s3 = `Lens & film: ${focal.prompt}, ${lens.prompt}, ${aperture.prompt}, ${stock.prompt}.`;
+        const s4 = `Lighting & mood: ${light.prompt}, ${lightDir.prompt}, ${grade.prompt}. ${fxSentence} ${cap(fps.prompt)}.`;
+        const s5 = isUltra ? `High-precision subject anatomy, natural micro-expressions, physically accurate shadows and reflections.` : '';
+        return [s1, s2, s3, s4, s5].filter(Boolean).join(' ');
+      }
+
+      // UNIVERSAL CINEMATIC PROSE (Default)
+      const p1 = `${shot.prompt}, ${angle.prompt}, ${comp.prompt}: ${core}.`;
+      const p2 = `The camera is ${move.prompt}, moving at a ${speed.adj} pace.`;
+      const p3 = `${cap(stock.prompt)}, paired with a ${focal.prompt} and ${lens.prompt}, ${aperture.prompt}.`;
+      const p4 = `The scene is ${light.prompt}, with ${lightDir.prompt}, and ${grade.prompt}. ${fxSentence}`;
+      const p5 = `${cap(fps.prompt)}, formatted in ${state.aspect} cinematic framing.${isUltra ? ' Maintain seamless temporal continuity, authentic material textures, and natural motion physics.' : ''}`;
+      const p6 = state.audio ? `Diegetic soundscape: ${audioCue}.` : '';
+      return [p1, p2, p3, p4, p5, p6].filter(Boolean).join(' ');
+    }
+
+    function generateNegativePrompt() {
+      const base = [
+        'warped geometry',
+        'morphing faces or limbs',
+        'jittery camera artifacts',
+        'over-sharpened CGI plastic skin',
+        'floating disconnected objects',
+        'text overlays or watermarks'
+      ];
+      if (state.stock !== 'super8' && !state.fx.includes('grain')) {
+        base.push('heavy digital noise');
+      }
+      if (state.lighting === 'noir' || state.lighting === 'bluehour') {
+        base.push('flat overexposed shadows');
+      }
+      if (state.fps === '24fps') {
+        base.push('soap-opera hyper-smooth interpolation');
+      }
+      return base.join(', ');
+    }
+
+    // =========================================================
+    // LIVE SVG VIEWFINDER RENDERER
+    // =========================================================
+    function updateViewfinder() {
+      const shot = findItem(DATA.shotSizes, state.shotSize);
+      const angle = findItem(DATA.angles, state.angle);
+      const move = findItem(DATA.movements, state.movement);
+      const focal = DATA.focalLengths[state.focalIdx] || DATA.focalLengths[2];
+      const aperture = findItem(DATA.apertures, state.aperture);
+      const light = findItem(DATA.lightingStyles, state.lighting);
+      const lightDir = findItem(DATA.lightDirs, state.lightDir);
+      const fps = findItem(DATA.fpsOptions, state.fps);
+
+      // Update telemetry text
+      byId('hudTelemetryTop').textContent = `${fps.label.split(' ')[0]} · ${focal.mm} · ${aperture.label} · ${state.aspect}`;
+      byId('vfHudLeft').textContent = `${shot.label.toUpperCase()} · ${angle.label.toUpperCase()}`;
+      byId('vfHudRight').textContent = move.label.toUpperCase();
+
+      // Update lighting gradient & light source position
+      const grad = byId('vfLightGrad');
+      const cxPct = Math.round((lightDir.lx / 400) * 100);
+      const cyPct = Math.round((lightDir.ly / 225) * 100);
+      grad.setAttribute('cx', `${cxPct}%`);
+      grad.setAttribute('cy', `${cyPct}%`);
+      byId('vfColor1').setAttribute('stop-color', light.c1);
+      byId('vfColor2').setAttribute('stop-color', light.c2);
+      byId('vfColor3').setAttribute('stop-color', light.c3);
+
+      const lightSource = byId('vfLightSource');
+      lightSource.innerHTML = `
+        <circle cx="${lightDir.lx}" cy="${lightDir.ly}" r="6" fill="${light.c1}" fill-opacity="0.95" filter="url(#vfGlow)" />
+        <circle cx="${lightDir.lx}" cy="${lightDir.ly}" r="12" fill="none" stroke="${light.c1}" stroke-opacity="0.5" stroke-width="1" stroke-dasharray="3 3" />
+      `;
+
+      // Update subject silhouette transform
+      const subjX = state.composition === 'thirds' ? 148 : state.composition === 'negative' ? 278 : 200;
+      const subjY = 118 + shot.yOff + angle.yShift;
+      byId('vfSubjectGroup').setAttribute('transform', `translate(${subjX}, ${subjY}) rotate(${angle.rot}) scale(${shot.scale})`);
+      byId('vfRimArc').setAttribute('stroke', light.c1);
+
+      // Aspect ratio mask & active frame bounds
+      let fx = 0, fy = 0, fw = 400, fh = 225;
+      if (state.aspect === '2.39:1') {
+        fh = 167; fy = 29;
+      } else if (state.aspect === '4:3') {
+        fw = 300; fx = 50;
+      } else if (state.aspect === '9:16') {
+        fw = 126; fx = 137;
+      } else if (state.aspect === '1:1') {
+        fw = 225; fx = 87.5;
+      }
+
+      const mask = byId('vfAspectMask');
+      mask.innerHTML = `
+        <rect x="0" y="0" width="400" height="${fy}" />
+        <rect x="0" y="${fy + fh}" width="400" height="${225 - (fy + fh)}" />
+        <rect x="0" y="0" width="${fx}" height="225" />
+        <rect x="${fx + fw}" y="0" width="${400 - (fx + fw)}" height="225" />
+      `;
+
+      // Reticles at active frame corners
+      const pad = 8, len = 14;
+      byId('vfReticles').innerHTML = `
+        <path d="M ${fx + pad} ${fy + pad + len} L ${fx + pad} ${fy + pad} L ${fx + pad + len} ${fy + pad}" />
+        <path d="M ${fx + fw - pad - len} ${fy + pad} L ${fx + fw - pad} ${fy + pad} L ${fx + fw - pad} ${fy + pad + len}" />
+        <path d="M ${fx + pad} ${fy + fh - pad - len} L ${fx + pad} ${fy + fh - pad} L ${fx + pad + len} ${fy + fh - pad}" />
+        <path d="M ${fx + fw - pad - len} ${fy + fh - pad} L ${fx + fw - pad} ${fy + fh - pad} L ${fx + fw - pad} ${fy + fh - pad - len}" />
+      `;
+
+      // Composition guides
+      const compOverlay = byId('vfCompOverlay');
+      if (state.composition === 'thirds') {
+        compOverlay.innerHTML = `
+          <line x1="${fx + fw / 3}" y1="${fy}" x2="${fx + fw / 3}" y2="${fy + fh}" />
+          <line x1="${fx + (2 * fw) / 3}" y1="${fy}" x2="${fx + (2 * fw) / 3}" y2="${fy + fh}" />
+          <line x1="${fx}" y1="${fy + fh / 3}" x2="${fx + fw}" y2="${fy + fh / 3}" />
+          <line x1="${fx}" y1="${fy + (2 * fh) / 3}" x2="${fx + fw}" y2="${fy + (2 * fh) / 3}" />
+        `;
+      } else if (state.composition === 'symmetry') {
+        compOverlay.innerHTML = `
+          <line x1="${fx + fw / 2}" y1="${fy}" x2="${fx + fw / 2}" y2="${fy + fh}" stroke-dasharray="4 3" />
+          <line x1="${fx}" y1="${fy + fh / 2}" x2="${fx + fw}" y2="${fy + fh / 2}" stroke-dasharray="4 3" />
+          <circle cx="${fx + fw / 2}" cy="${fy + fh / 2}" r="18" />
+        `;
+      } else if (state.composition === 'leading') {
+        compOverlay.innerHTML = `
+          <line x1="${fx}" y1="${fy + fh}" x2="${fx + fw / 2}" y2="${fy + fh / 2}" />
+          <line x1="${fx + fw}" y1="${fy + fh}" x2="${fx + fw / 2}" y2="${fy + fh / 2}" />
+          <line x1="${fx}" y1="${fy}" x2="${fx + fw / 2}" y2="${fy + fh / 2}" stroke-opacity="0.12" />
+          <line x1="${fx + fw}" y1="${fy}" x2="${fx + fw / 2}" y2="${fy + fh / 2}" stroke-opacity="0.12" />
+        `;
+      } else {
+        compOverlay.innerHTML = `
+          <rect x="${fx + fw * 0.58}" y="${fy + fh * 0.18}" width="${fw * 0.34}" height="${fh * 0.64}" stroke-dasharray="3 3" />
+        `;
+      }
+
+      // Camera movement vector indicator
+      const moveOverlay = byId('vfMoveOverlay');
+      const cx = fx + fw / 2, cy = fy + fh / 2;
+      let moveSvg = '';
+      if (state.movement === 'push') {
+        moveSvg = `
+          <rect x="${cx - 46}" y="${cy - 26}" width="92" height="52" fill="none" stroke="#f59e0b" stroke-width="1" stroke-dasharray="3 3" opacity="0.7" />
+          <rect x="${cx - 28}" y="${cy - 16}" width="56" height="32" fill="none" stroke="#fbbf24" stroke-width="1.3" opacity="0.9" />
+        `;
+      } else if (state.movement === 'pull') {
+        moveSvg = `
+          <rect x="${cx - 24}" y="${cy - 14}" width="48" height="28" fill="none" stroke="#f59e0b" stroke-width="1" stroke-dasharray="3 3" opacity="0.65" />
+          <rect x="${cx - 56}" y="${cy - 32}" width="112" height="64" fill="none" stroke="#fbbf24" stroke-width="1.3" opacity="0.9" />
+        `;
+      } else if (state.movement === 'track' || state.movement === 'steadicam') {
+        moveSvg = `<path d="M ${cx - 45} ${cy + 36} L ${cx + 45} ${cy + 36} M ${cx + 38} ${cy + 31} L ${cx + 45} ${cy + 36} L ${cx + 38} ${cy + 41}" stroke="#fbbf24" stroke-width="1.8" fill="none" />`;
+      } else if (state.movement === 'orbit') {
+        moveSvg = `<path d="M ${cx - 48} ${cy + 28} Q ${cx} ${cy + 52} ${cx + 48} ${cy + 28}" stroke="#fbbf24" stroke-width="1.8" fill="none" stroke-dasharray="4 2" />`;
+      } else if (state.movement === 'crane') {
+        moveSvg = `<path d="M ${cx} ${cy + 34} L ${cx} ${cy - 32} M ${cx - 6} ${cy - 24} L ${cx} ${cy - 32} L ${cx + 6} ${cy - 24}" stroke="#fbbf24" stroke-width="1.8" fill="none" />`;
+      } else if (state.movement === 'handheld') {
+        moveSvg = `<path d="M ${cx - 32} ${cy + 36} Q ${cx - 16} ${cy + 28} ${cx} ${cy + 36} T ${cx + 32} ${cy + 34}" stroke="#fbbf24" stroke-width="1.6" fill="none" />`;
+      } else if (state.movement === 'fpv') {
+        moveSvg = `<path d="M ${cx - 52} ${cy + 38} Q ${cx - 10} ${cy - 22} ${cx + 50} ${cy - 18}" stroke="#fbbf24" stroke-width="1.8" fill="none" />`;
+      }
+      moveOverlay.innerHTML = moveSvg;
+    }
+
+    // =========================================================
+    // UI RENDERERS
+    // =========================================================
+    function renderOptionGrid(containerId, items, activeId, onSelect, extraClass = '') {
+      const container = byId(containerId);
+      container.innerHTML = items.map((item) => {
+        const isActive = item.id === activeId;
+        const swatchHtml = item.swatch
+          ? `<div class="flex items-center gap-1 mb-1">
+               <span class="w-3 h-3 rounded-full border border-white/20" style="background:${item.swatch[0]}"></span>
+               <span class="w-3 h-3 rounded-full border border-white/20" style="background:${item.swatch[1]}"></span>
+             </div>`
+          : '';
+        return `
+          <button type="button" data-id="${item.id}" class="option-chip ${isActive ? 'active' : ''} text-left rounded-xl border border-cinema-border bg-cinema-bg px-3 py-2 ${extraClass}">
+            ${swatchHtml}
+            <div class="text-xs font-medium leading-tight ${isActive ? 'text-amber-200' : 'text-slate-200'}">${item.label}</div>
+            ${item.desc ? `<div class="text-[10px] text-slate-400 mt-0.5 leading-snug">${item.desc}</div>` : ''}
+            ${item.sub ? `<div class="text-[10px] text-slate-400 mt-0.5">${item.sub}</div>` : ''}
+          </button>
+        `;
+      }).join('');
+
+      container.querySelectorAll('button[data-id]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          onSelect(btn.getAttribute('data-id'));
+          renderAll();
+        });
+      });
+    }
+
+    function renderFxGrid() {
+      const container = byId('fxGrid');
+      container.innerHTML = DATA.fxOptions.map((item) => {
+        const isActive = state.fx.includes(item.id);
+        return `
+          <button type="button" data-id="${item.id}" class="option-chip ${isActive ? 'active' : ''} flex items-center justify-between gap-1.5 rounded-xl border border-cinema-border bg-cinema-bg px-2.5 py-2 text-left">
+            <span class="text-xs font-medium ${isActive ? 'text-amber-200' : 'text-slate-200'}">${item.label}</span>
+            <span class="w-3.5 h-3.5 rounded flex items-center justify-center text-[10px] ${isActive ? 'bg-amber-500 text-cinema-bg font-bold' : 'border border-slate-600'}">${isActive ? '✓' : ''}</span>
+          </button>
+        `;
+      }).join('');
+
+      container.querySelectorAll('button[data-id]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const id = btn.getAttribute('data-id');
+          if (state.fx.includes(id)) {
+            state.fx = state.fx.filter((x) => x !== id);
+          } else {
+            state.fx = [...state.fx, id];
+          }
+          renderAll();
+        });
+      });
+    }
+
+    function renderReadiness() {
+      const checks = [
+        { label: 'Core Vision / Subject', ok: Boolean(state.rawIdea.trim() || state.subject.trim()) },
+        { label: 'Camera & Motion', ok: Boolean(state.shotSize && state.movement) },
+        { label: 'Optics & Film Stock', ok: Boolean(state.lensChar && state.stock) },
+        { label: 'Lighting & Grade', ok: Boolean(state.lighting && state.colorGrade) }
+      ];
+      const passed = checks.filter((c) => c.ok).length;
+      const pct = Math.round((passed / checks.length) * 100);
+      byId('readinessScore').textContent = `${pct}%`;
+      byId('readinessBar').style.width = `${pct}%`;
+      byId('readinessChecklist').innerHTML = checks.map((c) => `
+        <div class="flex items-center gap-1.5 ${c.ok ? 'text-slate-300' : 'text-slate-500'}">
+          <span class="w-3.5 h-3.5 rounded-full flex items-center justify-center text-[9px] ${c.ok ? 'bg-emerald-500/20 text-emerald-400' : 'bg-slate-800 text-slate-500'}">${c.ok ? '✓' : '·'}</span>
+          <span>${c.label}</span>
+        </div>
+      `).join('');
+    }
+
+    function renderShotlist() {
+      byId('shotlistCount').textContent = String(shotlist.length);
+      const container = byId('shotlistItems');
+      if (!shotlist.length) {
+        container.innerHTML = `
+          <div class="text-center py-12 px-4 rounded-xl border border-dashed border-cinema-border">
+            <p class="text-sm font-medium text-slate-300">No saved shots yet</p>
+            <p class="text-xs text-slate-500 mt-1">Click "Save to Shotlist" to build a multi-shot storyboard sequence you can reload or export.</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = shotlist.map((shot, idx) => `
+        <div class="rounded-xl bg-cinema-bg border border-cinema-border p-3.5 space-y-2">
+          <div class="flex items-center justify-between gap-2">
+            <span class="text-[11px] font-mono uppercase tracking-wider text-amber-400">Shot ${String(idx + 1).padStart(2, '0')} · ${shot.aspect} · ${shot.model.toUpperCase()}</span>
+            <div class="flex items-center gap-1">
+              <button type="button" data-load-idx="${idx}" class="px-2 py-1 rounded bg-cinema-card hover:bg-slate-800 border border-cinema-border text-[11px] text-slate-200">Load</button>
+              <button type="button" data-copy-idx="${idx}" class="px-2 py-1 rounded bg-cinema-card hover:bg-slate-800 border border-cinema-border text-[11px] text-amber-300">Copy</button>
+              <button type="button" data-del-idx="${idx}" class="p-1 rounded hover:bg-red-500/20 text-slate-500 hover:text-red-400" title="Remove shot">✕</button>
+            </div>
+          </div>
+          <p class="text-xs text-slate-200 line-clamp-3 leading-relaxed">${shot.prompt}</p>
+        </div>
+      `).join('');
+
+      container.querySelectorAll('button[data-load-idx]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const item = shotlist[Number(btn.getAttribute('data-load-idx'))];
+          if (item && item.snapshot) {
+            state = JSON.parse(JSON.stringify(item.snapshot));
+            syncInputsFromState();
+            renderAll();
+            closeShotlist();
+            showToast('Loaded shot settings into studio');
+          }
+        });
+      });
+
+      container.querySelectorAll('button[data-copy-idx]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const item = shotlist[Number(btn.getAttribute('data-copy-idx'))];
+          if (item) copyTextToClipboard(item.prompt, 'Copied saved shot prompt');
+        });
+      });
+
+      container.querySelectorAll('button[data-del-idx]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          shotlist.splice(Number(btn.getAttribute('data-del-idx')), 1);
+          persistShotlist();
+          renderShotlist();
+          showToast('Removed shot from shotlist');
+        });
+      });
+    }
+
+    function syncInputsFromState() {
+      byId('rawIdeaInput').value = state.rawIdea;
+      byId('subjectInput').value = state.subject;
+      byId('actionInput').value = state.action;
+      byId('settingInput').value = state.setting;
+      byId('motionSpeedRange').value = String(state.motionSpeed);
+      byId('focalLengthRange').value = String(state.focalIdx);
+    }
+
+    function renderAll() {
+      // Tab panels
+      document.querySelectorAll('.tab-btn').forEach((btn) => {
+        btn.classList.toggle('active', btn.getAttribute('data-tab') === state.activeTab);
+      });
+      document.querySelectorAll('.tab-panel').forEach((panel) => {
+        panel.classList.toggle('hidden', panel.id !== `panel-${state.activeTab}`);
+      });
+
+      // Grids
+      renderOptionGrid('shotSizeGrid', DATA.shotSizes, state.shotSize, (id) => { state.shotSize = id; });
+      renderOptionGrid('angleGrid', DATA.angles, state.angle, (id) => { state.angle = id; });
+      renderOptionGrid('movementGrid', DATA.movements, state.movement, (id) => { state.movement = id; });
+      renderOptionGrid('compositionGrid', DATA.compositions, state.composition, (id) => { state.composition = id; });
+      renderOptionGrid('lensGrid', DATA.lensChars, state.lensChar, (id) => { state.lensChar = id; });
+      renderOptionGrid('apertureGrid', DATA.apertures, state.aperture, (id) => { state.aperture = id; });
+      renderOptionGrid('stockGrid', DATA.stocks, state.stock, (id) => { state.stock = id; });
+      renderOptionGrid('lightingGrid', DATA.lightingStyles, state.lighting, (id) => { state.lighting = id; });
+      renderOptionGrid('lightDirGrid', DATA.lightDirs, state.lightDir, (id) => { state.lightDir = id; });
+      renderOptionGrid('colorGradeGrid', DATA.colorGrades, state.colorGrade, (id) => { state.colorGrade = id; });
+      renderOptionGrid('fpsGrid', DATA.fpsOptions, state.fps, (id) => { state.fps = id; });
+      renderOptionGrid('aspectGrid', DATA.aspects, state.aspect, (id) => { state.aspect = id; }, 'text-center');
+      renderFxGrid();
+
+      // Hints & slider labels
+      byId('shotSizeHint').textContent = findItem(DATA.shotSizes, state.shotSize).desc;
+      byId('angleHint').textContent = findItem(DATA.angles, state.angle).desc;
+      byId('movementHint').textContent = findItem(DATA.movements, state.movement).desc;
+      byId('motionSpeedLabel').textContent = (DATA.motionSpeeds[state.motionSpeed] || DATA.motionSpeeds[1]).label;
+      byId('focalLengthLabel').textContent = (DATA.focalLengths[state.focalIdx] || DATA.focalLengths[2]).label;
+
+      // Audio toggle
+      const audioBtn = byId('audioToggleBtn');
+      const audioKnob = byId('audioToggleKnob');
+      audioBtn.setAttribute('aria-checked', String(state.audio));
+      audioBtn.classList.toggle('bg-amber-500', state.audio);
+      audioBtn.classList.toggle('bg-slate-700', !state.audio);
+      audioKnob.classList.toggle('translate-x-5', state.audio);
+      audioKnob.classList.toggle('translate-x-0', !state.audio);
+
+      // Detected mood badges
+      byId('detectedMoodBadges').innerHTML = state.detectedTags.map((t) =>
+        `<span class="px-2 py-0.5 rounded-full text-[10px] font-mono bg-amber-500/15 text-amber-300 border border-amber-500/30">${t}</span>`
+      ).join('');
+
+      // Active summary pills under viewfinder
+      const summaryPills = [
+        findItem(DATA.stocks, state.stock).label,
+        findItem(DATA.lensChars, state.lensChar).label,
+        findItem(DATA.lightingStyles, state.lighting).label,
+        findItem(DATA.colorGrades, state.colorGrade).label
+      ];
+      byId('activeSummaryStrip').innerHTML = summaryPills.map((p) =>
+        `<span class="px-2 py-0.5 rounded-md text-[10px] font-mono bg-cinema-bg border border-cinema-border text-slate-300">${p}</span>`
+      ).join('');
+
+      // Model & density buttons
+      document.querySelectorAll('.model-btn').forEach((btn) => {
+        btn.classList.toggle('active', btn.getAttribute('data-model') === state.targetModel);
+      });
+      document.querySelectorAll('.density-btn').forEach((btn) => {
+        const isAct = btn.getAttribute('data-density') === state.density;
+        btn.classList.toggle('bg-amber-500/20', isAct);
+        btn.classList.toggle('text-amber-300', isAct);
+        btn.classList.toggle('font-medium', isAct);
+        btn.classList.toggle('text-slate-400', !isAct);
+      });
+
+      // Output prompt
+      const prompt = generatePrompt();
+      const outEl = byId('outputPrompt');
+      outEl.value = prompt;
+      outEl.classList.toggle('font-mono', state.targetModel === 'json');
+      outEl.classList.toggle('font-sans', state.targetModel !== 'json');
+
+      const words = prompt.trim() ? prompt.trim().split(/\s+/).length : 0;
+      const approxTokens = Math.round(words * 1.33);
+      byId('wordCountDisplay').textContent = `${words} words · ~${approxTokens} tokens`;
+
+      const tips = {
+        universal: 'Rich natural-language cinematography prose',
+        veo: 'Optimized for Veo 3 motion + diegetic audio',
+        sora: 'Emphasizes physical light & temporal realism',
+        runway: 'Camera-movement-first Gen-4 structure',
+        kling: 'High-clarity choreography & subject detail',
+        json: 'Structured production shot specification'
+      };
+      byId('modelTipDisplay').textContent = tips[state.targetModel] || '';
+
+      byId('negativePromptText').textContent = generateNegativePrompt();
+
+      updateViewfinder();
+      renderReadiness();
+      renderShotlist();
+    }
+
+    // =========================================================
+    // EVENT WIRING
+    // =========================================================
+    function openShotlist() {
+      byId('shotlistModal').classList.remove('hidden');
+    }
+    function closeShotlist() {
+      byId('shotlistModal').classList.add('hidden');
+    }
+
+    function downloadFile(filename, content, mime) {
+      const blob = new Blob([content], { type: mime });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    function initEvents() {
+      byId('rawIdeaInput').addEventListener('input', (e) => {
+        state.rawIdea = e.target.value;
+        renderAll();
+      });
+      byId('subjectInput').addEventListener('input', (e) => { state.subject = e.target.value; renderAll(); });
+      byId('actionInput').addEventListener('input', (e) => { state.action = e.target.value; renderAll(); });
+      byId('settingInput').addEventListener('input', (e) => { state.setting = e.target.value; renderAll(); });
+
+      byId('toggleBreakdownBtn').addEventListener('click', () => {
+        state.showBreakdown = !state.showBreakdown;
+        byId('structuredBreakdown').classList.toggle('hidden', !state.showBreakdown);
+        byId('breakdownToggleLabel').textContent = state.showBreakdown
+          ? 'Hide structured Subject / Action / Setting overrides'
+          : 'Show structured Subject / Action / Setting overrides';
+      });
+
+      byId('autoAnalyzeBtn').addEventListener('click', analyzeIdeaText);
+
+      // Tabs
+      document.querySelectorAll('.tab-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          state.activeTab = btn.getAttribute('data-tab');
+          renderAll();
+        });
+      });
+
+      // Sliders
+      byId('motionSpeedRange').addEventListener('input', (e) => {
+        state.motionSpeed = Number(e.target.value);
+        renderAll();
+      });
+      byId('focalLengthRange').addEventListener('input', (e) => {
+        state.focalIdx = Number(e.target.value);
+        renderAll();
+      });
+
+      // Audio toggle
+      byId('audioToggleBtn').addEventListener('click', () => {
+        state.audio = !state.audio;
+        renderAll();
+      });
+
+      // Target model selector
+      document.querySelectorAll('.model-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          state.targetModel = btn.getAttribute('data-model');
+          renderAll();
+        });
+      });
+
+      // Density buttons
+      document.querySelectorAll('.density-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          state.density = btn.getAttribute('data-density');
+          renderAll();
+        });
+      });
+
+      // Presets
+      byId('presetSelect').addEventListener('change', (e) => {
+        const key = e.target.value;
+        if (!key || !DATA.presets[key]) return;
+        const p = DATA.presets[key];
+        state = { ...state, ...JSON.parse(JSON.stringify(p)), detectedTags: ['Preset Loaded'] };
+        syncInputsFromState();
+        renderAll();
+        showToast('Loaded cinematography preset');
+        e.target.value = '';
+      });
+
+      // Randomize / Inspire Look
+      byId('randomizeCineBtn').addEventListener('click', () => {
+        const pick = (arr) => arr[Math.floor(Math.random() * arr.length)].id;
+        state.shotSize = pick(DATA.shotSizes);
+        state.angle = pick(DATA.angles);
+        state.movement = pick(DATA.movements);
+        state.motionSpeed = Math.floor(Math.random() * DATA.motionSpeeds.length);
+        state.composition = pick(DATA.compositions);
+        state.focalIdx = Math.floor(Math.random() * DATA.focalLengths.length);
+        state.lensChar = pick(DATA.lensChars);
+        state.aperture = pick(DATA.apertures);
+        state.stock = pick(DATA.stocks);
+        state.lighting = pick(DATA.lightingStyles);
+        state.lightDir = pick(DATA.lightDirs);
+        state.colorGrade = pick(DATA.colorGrades);
+        state.fps = pick(DATA.fpsOptions);
+        state.detectedTags = ['Randomized Look'];
+        syncInputsFromState();
+        renderAll();
+        showToast('Generated a fresh cinematography look');
+      });
+
+      // Reset
+      byId('resetBtn').addEventListener('click', () => {
+        state = JSON.parse(JSON.stringify(DEFAULT_STATE));
+        syncInputsFromState();
+        renderAll();
+        showToast('Reset studio to default setup');
+      });
+
+      // Copy buttons
+      byId('copyPromptBtn').addEventListener('click', () => {
+        copyTextToClipboard(byId('outputPrompt').value, 'Cinematography prompt copied');
+      });
+      byId('copyNegBtn').addEventListener('click', () => {
+        copyTextToClipboard(byId('negativePromptText').textContent, 'Negative prompt copied');
+      });
+
+      // Save to Shotlist
+      byId('saveShotBtn').addEventListener('click', () => {
+        const prompt = generatePrompt();
+        shotlist.push({
+          id: Date.now(),
+          createdAt: new Date().toISOString(),
+          aspect: state.aspect,
+          model: state.targetModel,
+          prompt,
+          negativePrompt: generateNegativePrompt(),
+          snapshot: JSON.parse(JSON.stringify(state))
+        });
+        persistShotlist();
+        renderShotlist();
+        showToast(`Saved Shot ${String(shotlist.length).padStart(2, '0')} to Shotlist`);
+      });
+
+      // Shotlist modal controls
+      byId('openShotlistBtn').addEventListener('click', openShotlist);
+      byId('closeShotlistBtn').addEventListener('click', closeShotlist);
+      byId('shotlistBackdrop').addEventListener('click', closeShotlist);
+
+      byId('exportTxtBtn').addEventListener('click', () => {
+        if (!shotlist.length) { showToast('Save at least one shot before exporting'); return; }
+        const content = shotlist.map((s, i) =>
+          `=== SHOT ${String(i + 1).padStart(2, '0')} (${s.aspect} | ${s.model.toUpperCase()}) ===\n${s.prompt}\n\nNegative Prompt: ${s.negativePrompt}\n`
+        ).join('\n--------------------------------------------------\n\n');
+        downloadFile('cineprompt-shotlist.txt', content, 'text/plain;charset=utf-8');
+        showToast('Exported shotlist as .TXT');
+      });
+
+      byId('exportJsonBtn').addEventListener('click', () => {
+        if (!shotlist.length) { showToast('Save at least one shot before exporting'); return; }
+        downloadFile('cineprompt-shotlist.json', JSON.stringify(shotlist, null, 2), 'application/json;charset=utf-8');
+        showToast('Exported shotlist as .JSON');
+      });
+    }
+
+    // Boot
+    window.addEventListener('DOMContentLoaded', () => {
+      syncInputsFromState();
+      initEvents();
+      renderAll();
+      if (window.lucide) {
+        window.lucide.createIcons();
+      }
+    });
+  </script>
+</body>
+</html>

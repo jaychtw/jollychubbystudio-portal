@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ground-Based Defense · War Room</title>
+<meta name="theme-color" content="#10191c">
+<style>
+:root{color-scheme:dark;--paper:#e8efec;--dim:#aabcb9;--line:#344a49;--mint:#a4d8be}
+*{box-sizing:border-box}
+body{margin:0;background:#0c1518;color:var(--paper);font:16px/1.55 system-ui,sans-serif}
+main,header,footer{width:min(1060px,90%);margin:auto}
+header,footer,.section-head,.open{display:flex;align-items:center;justify-content:space-between;gap:1rem}
+header{padding:22px 0;border-bottom:1px solid var(--line);font-weight:700}
+button{color:var(--paper);border:1px solid var(--line);background:#152326;padding:7px 15px;cursor:pointer;border-radius:3px}
+a:focus-visible,button:focus-visible{outline:3px solid #f5c787;outline-offset:5px}
+h1,h2,h3,p{margin:0}
+.hero{position:relative;overflow:hidden;isolation:isolate;padding:clamp(44px,7vw,92px) 0;border-bottom:1px solid var(--line)}
+.hero:after{content:"";position:absolute;z-index:-1;inset:0 0 0 40%;opacity:.65;background:repeating-radial-gradient(ellipse at 92% 90%,transparent 0 29px,#4d797745 30px 31px,transparent 32px 52px),linear-gradient(163deg,transparent 58%,#84b3a765 58.2%,transparent 58.6%);mask-image:linear-gradient(to right,transparent,#000 45%)}
+h1{font-size:clamp(52px,8vw,94px);letter-spacing:-.07em;line-height:1.07}
+.hero p{max-width:540px;color:#c4d1cc;font-size:clamp(16px,2vw,20px);margin-top:15px}
+.section-head{margin:28px 0 17px}
+h2{font-weight:600;font-size:21px;letter-spacing:-.03em}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:18px}
+.card{--accent:#a4d8be;display:flex;flex-direction:column;text-decoration:none;color:inherit;background:#152225;border:1px solid var(--line);border-radius:5px;overflow:hidden;transition:border-color .15s}
+.card:nth-child(2){--accent:#efbe83}.card:hover{border-color:var(--accent)}
+.preview{height:110px;overflow:hidden;position:relative;color:var(--accent);background-color:#112022;background-image:linear-gradient(#47615e30 1px,transparent 1px),linear-gradient(90deg,#47615e30 1px,transparent 1px);background-size:23px 23px;border-bottom:1px solid var(--line)}
+.radar:before{content:"";position:absolute;left:48%;top:-64px;width:230px;height:230px;border-radius:50%;background:repeating-radial-gradient(transparent 0 24px,#83c2ae80 25px 26px,transparent 27px 30px),conic-gradient(from 210deg,transparent 20deg,#85ddac64 74deg,transparent 75deg)}
+.scope:before{content:"";position:absolute;inset:18% 6%;background:var(--accent);clip-path:polygon(0 63%,28% 63%,30% 54%,32% 71%,35% 12%,37% 89%,40% 55%,44% 63%,57% 63%,60% 42%,62% 70%,65% 23%,67% 77%,70% 62%,100% 62%,100% 65%,70% 65%,67% 82%,65% 34%,62% 75%,60% 48%,58% 66%,44% 66%,40% 60%,37% 96%,35% 27%,32% 78%,30% 59%,28% 66%,0 66%)}
+.echo{background-image:repeating-radial-gradient(ellipse at 64% 55%,#e3e5d0 0 3px,#879fa77a 4px 6px,transparent 7px 26px);background-color:#182a36}.detail{flex:1;display:flex;flex-direction:column;padding:22px}
+h3{font-size:clamp(24px,3.5vw,36px);letter-spacing:-.045em;line-height:1.15}
+.detail p{margin:12px 0 24px;color:var(--dim)}
+.open{margin-top:auto;padding-top:13px;border-top:1px solid var(--line);color:var(--accent);font-weight:650}.open span{font-size:21px}
+footer{padding:26px 0 32px;color:var(--dim);font:12px monospace}
+[lang="en"] .zh,[lang="zh-Hant"] .en{display:none}
+</style>
+</head><body>
+<header><span>Ground-Based Defense</span><button id="language" lang="zh-Hant" aria-label="繁體中文">繁</button></header>
+<main>
+<section class="hero"><h1>War Room</h1><p><span class="en">Take a seat at a missile defense console. Each exercise puts a different decision in your hands.</span><span class="zh">坐上飛彈防禦指揮席。每場演習，都有不同的決策等你下達。</span></p></section>
+<section aria-labelledby="modules"><div class="section-head"><h2 id="modules"><span class="en">Select a module</span><span class="zh">選擇演習模組</span></h2></div>
+<div class="grid">
+<a class="card" href="modules/night-watch/index.html"><div class="preview radar" aria-hidden="true"></div><div class="detail"><h3>Night Watch</h3><p><span class="en">Two returns cross the North Pacific. Decide when to warn Port Alder and which track merits your only interceptor.</span><span class="zh">兩個雷達回波正穿越北太平洋。決定何時警告奧德港，以及唯一一枚攔截彈該鎖定哪條航跡。</span></p><div class="open"><b class="en">Enter watch floor</b><b class="zh">進入值勤室</b><span aria-hidden="true">↗</span></div></div></a>
+<a class="card" href="modules/gbi-fire-control/index.html"><div class="preview scope" aria-hidden="true"></div><div class="detail"><h3>GBI Fire Control</h3><p><span class="en">Work the Sector 7 console. Separate the warhead from its decoys and complete a five-step launch sequence before reentry.</span><span class="zh">操作第七區火控台，在彈頭重返大氣層前辨識誘餌，完成五道發射程序。模組介面為英文。</span></p><div class="open"><b class="en">Enter fire control</b><b class="zh">進入火控室</b><span aria-hidden="true">↗</span></div></div></a>
+<a class="card" href="modules/after-the-flash/index.html"><div class="preview echo" aria-hidden="true"></div><div class="detail"><h3>After the Flash</h3><p><span class="en">A flash appears over the Pacific. Trace the reports to their sources and tell Port Alder whether its patients can leave shelter.</span><span class="zh">太平洋上空閃過一道亮光。核對觀測來源，回覆奧德港醫院的病患是否可以離開避難所。</span></p><div class="open"><b class="en">Enter assessment desk</b><b class="zh">進入攔截評估席</b><span aria-hidden="true">↗</span></div></div></a>
+</div></section></main>
+<footer><span class="en">Fictional defense simulation</span><span class="zh">虛構防禦演習</span></footer>
+<script>
+const switcher = document.getElementById('language');
+function setLanguage(chinese) {
+  document.documentElement.lang = chinese ? 'zh-Hant' : 'en';
+  switcher.lang = chinese ? 'en' : 'zh-Hant';
+  switcher.textContent = chinese ? 'En' : '繁';
+  switcher.setAttribute('aria-label', chinese ? 'English' : '繁體中文');
+}
+try { setLanguage(localStorage.getItem('gbd-hub-language') === 'zh-Hant'); } catch {}
+switcher.addEventListener('click', () => {
+  setLanguage(document.documentElement.lang === 'en');
+  try { localStorage.setItem('gbd-hub-language', document.documentElement.lang); } catch {}
+});
+</script></body></html>

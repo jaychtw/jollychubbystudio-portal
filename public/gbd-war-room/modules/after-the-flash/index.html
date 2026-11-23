@@ -1,0 +1,70 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#10171e"><title>After the Flash · War Room</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#0c131a;color:#e7eeef;font:16px/1.5 system-ui,sans-serif;color-scheme:dark}main,header{width:min(1120px,92%);margin:auto}header{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #31404b;padding:16px 0}a{color:#c0d3de;text-decoration:none}button,select{font:inherit;color:inherit;background:#1a2935;border:1px solid #506372;padding:8px 12px;border-radius:4px;cursor:pointer}button:hover,a:hover,summary:hover{color:#fff;border-color:#b7d9ec}button:disabled{opacity:.45;cursor:default}:focus-visible{outline:3px solid #ffc988;outline-offset:4px}h1{font-size:clamp(40px,6vw,70px);letter-spacing:-.065em;line-height:1;margin:15px 0}h2{font-size:19px;margin:0 0 13px}p{margin:8px 0;color:#c3cfd5}.hero{padding:24px 0 15px}.grid{display:grid;grid-template-columns:1.25fr 1fr;gap:16px}section,aside{background:#121e28;border:1px solid #334754;border-radius:5px;padding:19px;min-width:0}.unit{font:12px/1.5 ui-monospace,monospace;text-transform:uppercase;letter-spacing:.11em;color:#a9c8da}.amber{color:#f4c28c}canvas{display:block;width:100%;height:195px;background:#09151f}.scrub{display:flex;align-items:center;gap:12px;margin:12px 0}.scrub input{flex:1;min-width:30px;accent-color:#9fcddd}.status{background:#1e2c35;border-left:3px solid #e4ad71;padding:12px;margin-bottom:20px}details{margin:7px 0;border-top:1px solid #384954;padding:7px 0}summary{cursor:pointer;color:#c6e7ee}button.action{display:block;text-align:left;margin:8px 0;width:100%;background:#20333d}.controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.primary{background:#edbc81;color:#1b1712;border-color:#edbc81;font-weight:700}.sub{margin-top:16px}ol{padding-left:20px}li{margin-bottom:12px}.note{font-size:14px;color:#b0c2ce}footer{padding:18px 0 28px}hr{border:0;border-top:1px solid #3a4a54;margin:16px 0}@media(max-width:750px){.grid{grid-template-columns:1fr}.hero{padding-top:14px}canvas{height:155px}section,aside{padding:15px}}
+</style></head><body><header><a href="../../index.html">← War Room</a><button id="lang"></button></header><main><div class="hero"><span class="unit" id="role"></span><h1 id="title"></h1><p id="intro"></p></div><div class="grid"><section><h2 id="replayTitle"></h2><canvas aria-hidden="true" id="scope"></canvas><label class="scrub"><span id="scrubLabel"></span><input type="range" id="frame" min="-30" max="30" value="0"><output id="time"></output></label><p id="frameNote" class="note"></p><hr><h2 id="fileTitle"></h2><div id="files"></div></section><aside><div class="unit amber" id="round"></div><h2 id="desk"></h2><div id="city" class="status"></div><div id="play"></div></aside></div><section id="review" class="sub" hidden></section><footer class="unit" id="footer"></footer></main>
+<script>
+const el=id=>document.getElementById(id);
+let zh=false,incident=0,stage='brief',history=[],contacts=[],opened=new Set();
+try{zh=localStorage.getItem('gbd-hub-language')==='zh-Hant'}catch{}
+const L=(en,tw)=>zh?tw:en;
+const names=[['Harbor','港灣'],['Breakwater','防波堤'],['Low Tide','低潮']];
+const stationNames=[['North radar','北方雷達'],['Coastal camera','海岸攝影站'],['Regional desk','區域指揮席']];
+const orders=[['Maintain shelter','維持避難'],['Issue all-clear','解除警報'],['Flag surviving track','通報殘存航跡']];
+const outcomes=[['The payload broke up at the flash.','彈頭在閃光出現時解體。'],['The collision scattered a decoy. The payload continued.','撞擊使誘餌碎裂，彈頭持續飛行。'],['The payload broke up. An old radar sweep remained on the display.','彈頭已解體，雷達畫面仍顯示舊掃描。']];
+const evidence=[
+ [['T+02.4','Fragments diverge. Full corridor scan is clear.','碎片向外分散，全走廊掃描無殘存物體。','clear'],['T+02.1','Cloud obscures the corridor after the flash.','閃光後，雲層遮蔽觀測區。','unknown']],
+ [['T+02.4','A compact return continues beyond the debris.','一道緊密回波穿過碎片區，持續前進。','threat'],['T+02.1','A separate object crosses the downstream observation gate.','另一物體通過下游觀測區。','threat']],
+ [['T−01.8','Last available sweep shows a compact return. Its capture predates the flash.','最後一圈掃描中有緊密回波，擷取時間早於閃光。','unknown'],['T+02.1','Full corridor in view. The object fragments and the downstream gate stays clear.','走廊全段可見。物體碎裂，下游觀測區持續淨空。','clear']]
+];
+function report(i){
+ if(i===-2)return ['T+00.0',L('Optical station','光學站'),L('Bright flash at the predicted crossing. Payload obscured.','預測交會處出現閃光，彈頭遭遮蔽。'),L('Direct observation · optical camera O-1','直接觀測 · 光學攝影機 O-1')];
+ if(i===-1||i===2)return ['T+00.0',L('Regional desk','區域指揮席'),L('Collision observed at crossing.','交會點觀察到碰撞。'),L('Relayed from O-1. The regional desk has no separate observation.','轉述 O-1。區域指揮席無獨立觀測資料。')];
+ const [stamp,en,tw]=evidence[incident][i];return [stamp,L(...stationNames[i]),L(en,tw),L('Direct observation · ','直接觀測 · ')+(i===0?'R-4':'C-2')];
+}
+function basis(sources){
+ for(const i of sources){if(i===2)continue;const finding=evidence[incident][i][3];if(finding!=='unknown')return finding}
+ return 'unknown';
+}
+function action(label,fn,cls='action'){const b=document.createElement('button');b.textContent=label;b.className=cls;b.onclick=fn;return b}
+function line(parent,str,tag='p'){const e=document.createElement(tag);e.textContent=str;parent.append(e);return e}
+function reset(){stage='brief';history=[];contacts=[];opened.clear();el('frame').value=0;render()}
+function transmit(i){if(stage!=='send')return;history.push({order:i,sources:[...contacts]});stage=history.length===3?'end':'contact';render()}
+function request(i){if(stage!=='contact'||contacts.includes(i))return;contacts.push(i);opened.add(i);stage='send';render()}
+function cityEffect(i){return [L('Patient transport is holding at the shelter entrance.','病患轉送車停在避難所入口等候。'),L('The hospital begins moving patients.','醫院開始轉送病患。'),L('Command is tracking the reported survivor. The city maintains shelter.','指揮中心正在追蹤通報的物體，全市維持避難。')][i]}
+function render(){
+ document.documentElement.lang=zh?'zh-Hant':'en';el('lang').textContent=zh?'En':'繁';el('lang').ariaLabel=L('繁體中文','English');
+ el('role').textContent=L('Port Alder / Assessment desk','奧德港 / 攔截評估席');el('title').textContent=L('After the Flash','閃光之後');el('intro').textContent=L('The interceptor has already flown. Port Alder is waiting for your assessment.','攔截彈已經發射。奧德港正等著你的評估。');
+ el('replayTitle').textContent=L('Optical replay · O-1','光學回放 · O-1');el('scrubLabel').textContent=L('Replay time','回放時間');el('fileTitle').textContent=L('Report file','觀測報告');el('footer').textContent=L('Fictional exercise · Timing advances with each exchange','虛構演習 · 每次通聯推進情境');
+ const files=el('files');files.replaceChildren();
+ for(const i of [-2,-1,...contacts]){const [stamp,name,body,source]=report(i);const d=document.createElement('details');d.open=opened.has(i);line(d,name+' / '+stamp,'summary');line(d,body);line(d,source).className='note';d.ontoggle=()=>{if(!d.isConnected)return;if(d.open)opened.add(i);else opened.delete(i)};files.append(d)}
+ const play=el('play');play.replaceChildren();el('review').hidden=stage!=='end';
+ el('round').textContent=L('Incident ','事件 ')+(incident+1)+' / '+L(...names[incident]);el('desk').textContent=L('Port Alder hospital','奧德港醫院');
+ const calls=[L('“Our transfer team is ready. Can patients leave shelter?”','「轉送小組就位。病患可以離開避難所了嗎？」'),L('“The receiving ward needs our departure time. Does your assessment still stand?”','「接收病房需要知道出發時間。你們維持原先的判斷嗎？」'),L('“The driver needs a final decision. We can move on your word.”','「司機在等最後決定。只要你下令，我們就出發。」')];
+ el('city').textContent=stage==='end'?cityEffect(history[2].order):calls[Math.min(2,history.length)];
+ if(stage==='brief'){
+ line(play,L('Inspect the six-second recording and trace both reports to their sources. Send three assessments. Between calls, one station can use the radio channel.','檢視六秒影像並核對兩份報告的來源。你須回覆三次，每次回覆之間只能聯絡一站。'));
+ const label=line(play,L('Select incident ','選擇事件 '),'label'),select=document.createElement('select');names.forEach((pair,i)=>select.add(new Option((i+1)+' / '+L(...pair),i)));select.value=incident;select.onchange=()=>{incident=Number(select.value);reset()};label.append(select);play.append(document.createElement('hr'),action(L('Take the desk','接掌評估席'),()=>{stage='send';render()},'primary'));
+ }else if(stage==='send'){line(play,L('Transmission ','通報 ')+(history.length+1)+' / 3','h2');orders.forEach((pair,i)=>play.append(action(L(...pair),()=>transmit(i))))}
+ else if(stage==='contact'){line(play,cityEffect(history.at(-1).order));line(play,L('One channel available. Choose a station for the next report.','目前僅一條通訊線路可用。請選擇下一個報告來源。'));stationNames.forEach((pair,i)=>{const b=action(L(...pair),()=>request(i));b.disabled=contacts.includes(i);play.append(b)})}
+ else{line(play,L(...outcomes[incident]));play.append(action(L('Next incident →','下一起事件 →'),()=>{incident=(incident+1)%3;reset()}),action(L('Replay this incident','重玩本事件'),reset));debrief()}
+ draw()
+}
+function debrief(){const box=el('review');box.replaceChildren();line(box,L('Assessment record','評估紀錄'),'h2');const list=document.createElement('ol');box.append(list);
+ const lastOrder=history[2].order;
+ const consequence=incident===1
+ ? (lastOrder===1?L('Patients entered the transfer lane while the threat remained.','威脅仍在時，病患已進入轉送通道。'):lastOrder===2?L('Patients remained sheltered and command received the continuing-track warning.','病患繼續避難，指揮中心已收到殘存航跡通報。'):L('Patients remained sheltered. Command received no final warning about the surviving track.','病患繼續避難，但指揮中心未收到殘存航跡的最終通報。'))
+ : (lastOrder===1?L('The transfer team departed through a clear corridor.','轉送小組經已淨空的走廊出發。'):L('The corridor was clear. The transfer team was still waiting when the watch ended.','走廊已淨空，值勤結束時轉送小組仍在等待。'));
+ line(box,consequence);
+ for(const h of history){const known=basis(h.sources);const justified=h.order===(known==='unknown'?0:known==='clear'?1:2);const li=document.createElement('li');list.append(li);line(li,L(...orders[h.order]),'strong');line(li,L('Evidence available: ','當時可用證據：')+(['O-1',...h.sources.map(i=>['R-4','C-2','O-1 ↩'][i])].join(' / ')));line(li,known==='unknown'?L('No independent observation had resolved the payload’s fate.','尚無獨立觀測可判定彈頭狀態。'):known==='clear'?L('Independent post-flash coverage showed the corridor clear.','閃光後的獨立觀測顯示走廊淨空。'):L('An independent station tracked a continuing object after the flash.','獨立站台在閃光後追蹤到持續移動的物體。'));line(li,justified?L('Your message matched the evidence available then.','你的通報符合當時可用證據。'):L('Your message diverged from what those reports supported.','當時的報告並不支持這項通報。')).className='amber'}
+}
+function draw(){
+ const t=el('frame').value/10,c=el('scope'),ctx=c.getContext('2d'),w=c.clientWidth,h=c.clientHeight;if(!w||!h)return;
+ c.width=w*devicePixelRatio;c.height=h*devicePixelRatio;ctx.scale(devicePixelRatio,devicePixelRatio);
+ ctx.strokeStyle='#243b49';ctx.lineWidth=1;for(let x=0;x<w;x+=25){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,h);ctx.stroke()}for(let y=0;y<h;y+=25){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke()}
+ const dot=(x,y,r,col)=>{ctx.fillStyle=col;ctx.beginPath();ctx.arc(x*w,y*h,r,0,Math.PI*2);ctx.fill()};
+ if(t<0){for(let k=0;k<12;k++){const s=t-k*.045;dot(.5+s*.125,.48+s*.08,k?1.6:4,'#b3dfee');dot(.5+s*.095,.48-s*.1,k?1.6:4,'#e8b074')}}
+ else{for(let k=0;k<27;k++){const a=k*2.399;dot(.5+Math.cos(a)*t*(.023+(k%5)*.008),.48+Math.sin(a)*t*(.04+(k%4)*.013),2,'#a7bbc5')}if(t<.6)dot(.5,.48,3+(1-t/.6)*13,'#f7deb0')}
+ const tag='T'+(t<0?'−':'+')+Math.abs(t).toFixed(1)+' s';el('time').textContent=tag;el('frameNote').textContent=t<0?L('Two tracks converge inside the camera frame.','兩道航跡在鏡頭範圍內逐漸靠近。'):t<.6?L('A flash obscures the crossing.','閃光遮蔽了交會點。'):L('Debris spreads. The downstream corridor is outside this camera’s view.','碎片擴散。下游走廊超出本攝影機的視野。');ctx.fillStyle='#9bbbbf';ctx.font='12px monospace';ctx.fillText('O-1  /  '+tag,12,21)
+}
+el('frame').oninput=draw;el('lang').onclick=()=>{zh=!zh;try{localStorage.setItem('gbd-hub-language',document.documentElement.lang==='en'?'zh-Hant':'en')}catch{}render()};new ResizeObserver(draw).observe(el('scope'));render();
+</script></body></html>
