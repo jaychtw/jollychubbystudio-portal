@@ -1,0 +1,53 @@
+name: Verify studio favicon in production
+on:
+  push:
+    branches: [verify/live-bear-badge]
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Compare live icons and portal links with the release
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          from urllib.request import urlopen
+          from html.parser import HTMLParser
+          from struct import unpack_from
+          import time
+          domain = 'https://jollychubbystudio.com'
+          class Icons(HTMLParser):
+              def handle_starttag(self, tag, attrs):
+                  a = dict(attrs)
+                  if tag=='link' and a.get('rel')=='icon': self.href=a.get('href')
+          for route in ['/', '/apps/', '/bookshelf/']:
+              for retry in range(5):
+                  with urlopen(domain+route, timeout=15) as r:
+                      page = Icons()
+                      page.feed(r.read().decode())
+                  if getattr(page,'href',None)=='/bear-badge-v1.png': break
+                  time.sleep(4)
+              assert page.href=='/bear-badge-v1.png', (route,page.href)
+              print(route, page.href)
+          for name in ['bear-badge-v1.png','favicon.ico','favicon.svg']:
+              with urlopen(domain+'/'+name,timeout=15) as r:
+                  b=r.read()
+                  assert r.status==200 and b==Path('public',name).read_bytes(),name
+                  print(name,r.status,r.headers.get('Content-Type'),len(b))
+                  if name.endswith('.ico'):
+                      count=unpack_from('<H',b,4)[0]
+                      sizes=[b[6+i*16] for i in range(count)]
+                      assert sizes==[16,32,48,64]
+                      print('ICO sizes',sizes)
+          PY
+      - name: Check short-domain redirects
+        run: |
+          for path in / /privacy; do
+            result=$(curl -sS -L --max-redirs 4 --max-time 25 -o /dev/null -w '%{http_code} %{url_effective} %{num_redirects}' "https://jollychubby.com$path")
+            echo "$result"
+            test "$result" = "200 https://jollychubbystudio.com$path 1"
+          done
