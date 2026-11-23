@@ -19,7 +19,8 @@ function refreshPicker(){
    const cards=places.map((p,i)=>{
      if(p.group!==group)return '';
      const selected=picked.has(i);
-     return `<button class="choice" data-place="${i}" aria-pressed="${selected}" ${!selected&&picked.size>=3?'disabled':''}><span aria-hidden="true" class="postcard" style="background-position:${group*50}% ${(i%7)*100/6}%"></span><span><b>${p.name[lang]}</b><small>${p.angle[lang]}</small></span><span class="check" aria-hidden="true">${selected?'✓':'+'}</span></button>`;
+     const artwork=p.postcard ?? i;
+     return `<button class="choice" data-place="${i}" aria-pressed="${selected}" ${!selected&&picked.size>=3?'disabled':''}><span aria-hidden="true" class="postcard" style="background-position:${Math.floor(artwork/7)*50}% ${(artwork%7)*100/6}%"></span><span><b>${p.name[lang]}</b><small>${p.angle[lang]}</small></span><span class="check" aria-hidden="true">${selected?'✓':'+'}</span></button>`;
    }).join('');
    return `<section class="category"><h3>${label}</h3>${cards}</section>`;
  }).join('');
