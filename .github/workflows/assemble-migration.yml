@@ -17,7 +17,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - run: python3 migration/assemble.py
+      - run: rm -rf public && python3 migration/assemble.py
+      - run: python3 migration/localize.py
+      - run: python3 migration/verify.py
       - uses: actions/upload-artifact@v4
         with:
           name: studio-runtime
