@@ -84,14 +84,14 @@ tree.write(ROOT / "sitemap.xml", encoding="utf-8", xml_declaration=True)
 import base64
 import shutil
 branding = Path("branding")
-for name in ("bear-badge-v1.png", "favicon.ico"):
+for name in ("dancing-bear-v2.png", "favicon.ico"):
     shutil.copyfile(branding / name, ROOT / name)
-png = base64.b64encode((branding / "bear-badge-v1.png").read_bytes()).decode("ascii")
+png = base64.b64encode((branding / "dancing-bear-v2.png").read_bytes()).decode("ascii")
 (ROOT / "favicon.svg").write_text('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128"><image width="128" height="128" href="data:image/png;base64,' + png + '"/></svg>\n')
 for page in ROOT.rglob("*.html"):
     if page.relative_to(ROOT).parts[0] in SLUGS:
         continue
     original = page.read_text()
-    updated = re.sub(r'href="/assets/possibility/favicon\.[a-z0-9]+\.svg" type="image/svg\+xml"', 'href="/bear-badge-v1.png" type="image/png" sizes="128x128"', original)
+    updated = re.sub(r'href="/assets/possibility/favicon\.[a-z0-9]+\.svg" type="image/svg\+xml"', 'href="/dancing-bear-v2.png" type="image/png" sizes="128x128"', original)
     if original != updated:
         page.write_text(updated)
