@@ -1,0 +1,1127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TravelCanvas — Multiplayer Travel Workspace</title>
+    <style>
+        :root {
+            --bg-topbar: #0b1120;
+            --bg-upper-canvas: #f8fafc;
+            --bg-lower-spine: #0f172a;
+            --bg-day-slot: #131c2e;
+            --border-light: #e2e8f0;
+            --border-dark: #1e293b;
+            --teal-accent: #14b8a6;
+            --teal-hover: #0d9488;
+            --amber-btn: #f59e0b;
+            --text-dark: #0f172a;
+            --text-light: #f8fafc;
+            --text-muted: #64748b;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang TC", "Microsoft JhengHei", Roboto, sans-serif; }
+        body { background: var(--bg-topbar); color: var(--text-light); height: 100vh; overflow: hidden; user-select: none; }
+        button { cursor: pointer; border: none; font-weight: 600; border-radius: 8px; transition: 0.15s ease; display: inline-flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; flex-shrink: 0; }
+        input, textarea, select { background: #ffffff; border: 1px solid #cbd5e1; color: var(--text-dark); border-radius: 8px; padding: 9px 12px; font-size: 13px; width: 100%; outline: none; }
+        input:focus, textarea:focus, select:focus { border-color: var(--teal-accent); box-shadow: 0 0 0 2px rgba(20, 184, 166, 0.2); }
+
+        /* Lobby & Nickname Screens */
+        .center-screen { height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; background: radial-gradient(circle at center, #1e293b 0%, #090d16 100%); position: relative; }
+        .auth-card { background: #ffffff; color: var(--text-dark); border: 1px solid var(--border-light); border-radius: 20px; padding: 32px; width: 100%; max-width: 440px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); }
+        .logo-title { font-size: 38px; font-weight: 900; background: linear-gradient(90deg, #14b8a6, #38bdf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 6px; }
+        .floating-lang { position: absolute; top: 20px; right: 24px; }
+
+        /* Top Toolbar */
+        .topbar { height: 60px; background: var(--bg-topbar); border-bottom: 1px solid var(--border-dark); padding: 0 20px; display: flex; align-items: center; justify-content: space-between; z-index: 100; position: relative; }
+        .bar-group { display: flex; align-items: center; gap: 10px; }
+        .room-pill { background: rgba(20, 184, 166, 0.15); color: #2dd4bf; border: 1px solid rgba(20, 184, 166, 0.4); padding: 3px 10px; border-radius: 6px; font-family: monospace; font-size: 12px; font-weight: 700; white-space: nowrap; }
+        .sync-badge { font-size: 11px; padding: 3px 8px; border-radius: 999px; font-weight: 700; white-space: nowrap; }
+        .sync-saved { background: rgba(16, 185, 129, 0.15); color: #34d399; }
+        .sync-saving { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+        .sync-error { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+        .btn-new-card { background: var(--teal-accent); color: #ffffff; padding: 8px 16px; font-size: 13px; font-weight: 700; border-radius: 8px; white-space: nowrap; flex-shrink: 0; }
+        .btn-new-card:hover { background: var(--teal-hover); }
+        .btn-tool { background: #1e293b; border: 1px solid #334155; color: #e2e8f0; padding: 7px 12px; font-size: 12px; white-space: nowrap; }
+        .btn-tool:hover, .btn-tool.active { border-color: var(--teal-accent); color: #2dd4bf; background: rgba(20, 184, 166, 0.15); }
+        .btn-lang { background: #0f172a; border: 1px solid #334155; color: #38bdf8; padding: 6px 11px; font-size: 12px; font-weight: 800; letter-spacing: 0.03em; white-space: nowrap; }
+        .btn-lang:hover { border-color: #38bdf8; background: rgba(56, 189, 248, 0.12); }
+        .btn-amber { background: var(--amber-btn); color: #090d16; padding: 8px 14px; font-size: 12px; font-weight: 700; white-space: nowrap; }
+
+        /* Split Workspace Viewport */
+        .workspace-scroll { height: calc(100vh - 60px); overflow-y: auto; overflow-x: auto; display: flex; flex-direction: column; }
+
+        /* Upper Freeform Idea Canvas */
+        .upper-canvas { position: relative; min-width: 1400px; min-height: 430px; flex-shrink: 0; background-color: var(--bg-upper-canvas); background-image: radial-gradient(#cbd5e1 1.5px, transparent 1.5px); background-size: 24px 24px; border-bottom: 4px solid var(--teal-accent); padding: 16px 24px; }
+        .canvas-banner-row { display: flex; justify-content: space-between; align-items: center; pointer-events: none; margin-bottom: 8px; }
+        .canvas-pill-hint { background: rgba(255, 255, 255, 0.92); border: 1px solid #cbd5e1; color: #475569; padding: 5px 12px; border-radius: 999px; font-size: 10px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+
+        /* Lower Central Timeline Spine */
+        .lower-spine { min-width: 1400px; flex: 1; background-color: var(--bg-lower-spine); padding: 20px 24px 40px; display: flex; flex-direction: column; }
+        .spine-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+        .spine-badge { background: var(--teal-accent); color: #042f2e; font-size: 11px; font-weight: 900; padding: 4px 10px; border-radius: 6px; letter-spacing: 0.05em; text-transform: uppercase; white-space: nowrap; }
+        .days-row { display: flex; gap: 18px; align-items: flex-start; overflow-x: auto; padding-bottom: 12px; }
+
+        /* Day Column & Editable Day Header */
+        .day-slot { min-width: 310px; width: 310px; background: var(--bg-day-slot); border: 1px solid #1e293b; border-radius: 14px; padding: 14px; min-height: 360px; display: flex; flex-direction: column; transition: border-color 0.15s; }
+        .day-slot.drag-over { border-color: var(--teal-accent); box-shadow: 0 0 0 2px rgba(20, 184, 166, 0.35); }
+        .day-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid #1e293b; }
+        .day-head-left { display: flex; align-items: center; gap: 10px; cursor: pointer; flex: 1; border-radius: 6px; padding: 2px 4px; transition: background 0.15s; }
+        .day-head-left:hover { background: rgba(255, 255, 255, 0.06); }
+        .day-num-circle { width: 24px; height: 24px; border-radius: 50%; background: var(--teal-accent); color: #042f2e; font-weight: 900; font-size: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .day-name { font-weight: 800; font-size: 14px; color: #ffffff; display: flex; align-items: center; gap: 6px; }
+        .day-sub { font-size: 11px; color: #94a3b8; margin-top: 2px; }
+        .day-actions { display: flex; gap: 4px; }
+        .day-icon-btn { width: 24px; height: 24px; border-radius: 6px; background: #1e293b; color: #94a3b8; font-size: 12px; }
+        .day-icon-btn:hover { background: #334155; color: white; }
+
+        /* Crisp White Cards with Colorful Category Headers */
+        .travel-card { width: 280px; background: #ffffff; color: var(--text-dark); border-radius: 12px; overflow: hidden; box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.18), 0 0 0 1px #e2e8f0; transition: transform 0.18s ease, box-shadow 0.18s ease, margin 0.18s ease; user-select: none; }
+        .travel-card.floating { position: absolute; cursor: grab; z-index: 30; }
+        .travel-card.floating:active { cursor: grabbing; box-shadow: 0 20px 35px -5px rgba(15, 23, 42, 0.35); transform: scale(1.02); z-index: 90; }
+        .travel-card.scheduled { width: 100%; position: relative; cursor: grab; margin-bottom: 12px; box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35); }
+
+        /* Colorful Category Header Bars */
+        .card-header-bar { height: 38px; padding: 0 12px; display: flex; align-items: center; justify-content: space-between; color: #ffffff; font-weight: 700; font-size: 13px; }
+        .header-Food { background: linear-gradient(90deg, #f97316, #ea580c); }
+        .header-Stay { background: linear-gradient(90deg, #6366f1, #4f46e5); }
+        .header-Activity { background: linear-gradient(90deg, #10b981, #059669); }
+        .header-Transport { background: linear-gradient(90deg, #0284c7, #0369a1); }
+        .header-Note { background: linear-gradient(90deg, #f59e0b, #d97706); }
+
+        .card-header-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 165px; display: flex; align-items: center; gap: 6px; }
+        .card-header-controls { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+        .header-pill-btn { background: rgba(0, 0, 0, 0.22); color: #ffffff; padding: 2px 7px; border-radius: 999px; font-size: 11px; font-weight: 700; }
+        .header-pill-btn:hover { background: rgba(0, 0, 0, 0.4); }
+
+        .card-photo-wrap { width: 100%; height: 132px; overflow: hidden; background: #f1f5f9; border-bottom: 1px solid #f1f5f9; position: relative; }
+        .card-photo-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; }
+
+        .card-body-content { padding: 12px; }
+        .card-memo { font-size: 12px; color: #334155; line-height: 1.45; white-space: pre-wrap; margin-bottom: 10px; }
+        .card-footer { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #f1f5f9; padding-top: 8px; font-size: 11px; color: #64748b; gap: 6px; }
+        .day-select-mini { width: auto; padding: 3px 6px; font-size: 11px; border-radius: 6px; background: #f8fafc; border: 1px solid #cbd5e1; color: #0f172a; font-weight: 600; cursor: pointer; }
+        .edit-dark-btn { background: #0f172a; color: #ffffff; padding: 4px 8px; border-radius: 5px; font-size: 10px; font-weight: 700; }
+        .edit-dark-btn:hover { background: #334155; }
+
+        /* Rolodex Peek-a-Boo Stacking */
+        .day-cards.rolodex .travel-card.scheduled:not(:first-child) { margin-top: -145px; }
+        .day-cards.rolodex .travel-card.scheduled:hover { transform: translateY(-6px); z-index: 50; margin-bottom: 135px; box-shadow: 0 18px 32px rgba(0,0,0,0.65); }
+
+        /* Modals & Paste Dropzone */
+        .modal-backdrop { position: fixed; inset: 0; background: rgba(9, 13, 22, 0.72); display: flex; align-items: center; justify-content: center; z-index: 200; backdrop-filter: blur(3px); }
+        .modal-box { background: #ffffff; color: var(--text-dark); border-radius: 16px; padding: 24px; width: 100%; max-width: 440px; display: flex; flex-direction: column; gap: 14px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); max-height: 92vh; overflow-y: auto; }
+        .modal-label { font-size: 12px; font-weight: 700; color: #334155; margin-bottom: 4px; display: block; }
+        .paste-zone { border: 2px dashed #94a3b8; background: #f8fafc; border-radius: 10px; padding: 12px; text-align: center; font-size: 12px; color: #475569; transition: 0.15s; cursor: pointer; position: relative; }
+        .paste-zone:hover, .paste-zone.paste-active { border-color: var(--teal-accent); background: #f0fdfa; color: #0f766e; }
+        .photo-preview-box { margin-top: 8px; position: relative; height: 110px; border-radius: 8px; overflow: hidden; border: 1px solid #cbd5e1; background: #f1f5f9; }
+        .photo-preview-box img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .clear-photo-btn { position: absolute; top: 6px; right: 6px; background: rgba(15, 23, 42, 0.8); color: white; font-size: 11px; padding: 3px 8px; border-radius: 6px; }
+
+        /* Print Unfolded Itinerary */
+        @media print {
+            body, .workspace-scroll, .lower-spine { height: auto !important; overflow: visible !important; background: white !important; color: black !important; min-width: 100% !important; }
+            .topbar, .upper-canvas, .no-print { display: none !important; }
+            .days-row { display: block !important; }
+            .day-slot { width: 100% !important; border: 1px solid #cbd5e1 !important; background: white !important; margin-bottom: 20px !important; page-break-inside: avoid; }
+            .day-name { color: black !important; }
+            .day-cards.rolodex .travel-card.scheduled:not(:first-child) { margin-top: 10px !important; }
+            .travel-card.scheduled { box-shadow: none !important; border: 1px solid #cbd5e1 !important; page-break-inside: avoid; }
+        }
+    </style>
+</head>
+<body>
+    <div id="app"></div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCYm0edORydyO2MFV_5w4WwUWR0dZm5wQU",
+            authDomain: "traveltogether-2a321.firebaseapp.com",
+            projectId: "traveltogether-2a321",
+            storageBucket: "traveltogether-2a321.firebasestorage.app",
+            messagingSenderId: "558637715909",
+            appId: "1:558637715909:web:9345829be48b40c2e5bbac",
+            measurementId: "G-7LV0857NCF"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        const CATEGORY_ICONS = {
+            Food: '🍴',
+            Stay: '🛏️',
+            Activity: '⛩️',
+            Transport: '🚄',
+            Note: '📋'
+        };
+
+        const I18N = {
+            en: {
+                subtitle: 'Multiplayer Spatial Idea Canvas & Timeline Spine',
+                enterRoomLabel: 'Enter Existing Room Code',
+                joinBtn: 'Join',
+                newBlankLabel: 'Create a New Blank Trip Room',
+                tripNamePlaceholder: 'Trip Title (e.g. Tokyo Summer 2026)',
+                newRoomBtn: '+ Create Blank Project Room',
+                sampleBtn: '★ Open Sample Trip (KYOTO-AUTUMN-42)',
+                resetSampleBtn: '↻ Reset Sample Trip to Default',
+                whatNickname: 'What is your nickname?',
+                roomCodeLabel: 'Room Code:',
+                displayNameLabel: 'Your Display Name',
+                enterWorkspaceBtn: 'Enter Workspace →',
+                switchRoomBtn: '⇄ Switch Room',
+                codePrefix: 'Code:',
+                syncSaved: '✓ Auto-Saved to Cloud',
+                syncSaving: '⏳ Saving...',
+                syncError: '⚠ Save Error',
+                newCardBtn: '+New Card',
+                rolodexBtn: '≋ Tidy Rolodex Stack',
+                rolodexOn: '(ON)',
+                backupBtn: 'Backup / JSON',
+                plannerLabel: 'Planner:',
+                exportPdfBtn: 'Export Unfolded PDF',
+                upperHint1: '✨ UNSCHEDULED IDEA CANVAS — DOUBLE-CLICK BLANK SPACE TO CREATE A CARD, OR DRAG ONTO THE TIMELINE SPINE BELOW',
+                upperHint2: 'ANTI-OVERLAP ACTIVE: STACKED CARDS ALWAYS KEEP TITLE HEADERS 100% VISIBLE',
+                spineBadge: '📅 CENTRAL TIMELINE SPINE',
+                spineDesc: 'Drag cards from the upper canvas into any Day slot below. Click any Day header to edit its title or date.',
+                addDayBtn: '+ Add Day to Timeline',
+                dropHerePrefix: 'Drop cards here for',
+                orClickCreate: 'or click to create one',
+                unscheduledOpt: 'Unscheduled',
+                editBtn: 'Edit',
+                byPrefix: 'By',
+                editCardTitle: 'Edit Card',
+                addCardTitle: '+New Card',
+                cardTitleLabel: 'Card Title',
+                cardTitlePlaceholder: 'e.g. Nishiki Market Food Crawl',
+                categoryLabel: 'Category',
+                catFood: '🍴 Food & Dining (Orange Header)',
+                catStay: '🛏️ Hotel & Stay (Indigo Header)',
+                catActivity: '⛩️ Sightseeing & Activity (Green Header)',
+                catTransport: '🚄 Transport & Express (Blue Header)',
+                catNote: '📋 Packing & Checklist (Amber Header)',
+                photoLabel: 'Photo (Paste from Clipboard, Upload File, or Paste URL)',
+                pasteHint: '📋 Press Cmd+V / Ctrl+V anywhere in this window to paste a copied image from clipboard!',
+                pasteConfirmed: '✅ Image pasted from clipboard!',
+                clearPhoto: 'Remove Photo',
+                notesLabel: 'Notes / Price / Details',
+                notesPlaceholder: 'Add notes, opening hours, tips...',
+                cancelBtn: 'Cancel',
+                saveCardBtn: 'Save Card',
+                editDayHeaderTitle: 'Edit Day Header',
+                dayTitleLabel: 'Day Title',
+                dayDateLabel: 'Date & Subtitle',
+                saveDayBtn: 'Save Day Header',
+                newDayDefaultSub: 'Click ✎ to set date & area',
+                untitledTrip: 'New Friends Trip'
+            },
+            zh: {
+                subtitle: '多人即時空間靈感畫布 ＆ 行程時間軸',
+                enterRoomLabel: '輸入現有房間代碼',
+                joinBtn: '加入',
+                newBlankLabel: '建立全新空白行程房間',
+                tripNamePlaceholder: '行程名稱（例如：東京夏日之旅）',
+                newRoomBtn: '+ 建立空白專案房間',
+                sampleBtn: '★ 開啟京都賞楓範例 (KYOTO-AUTUMN-42)',
+                resetSampleBtn: '↻ 重置範例房間為預設值',
+                whatNickname: '請輸入您的暱稱',
+                roomCodeLabel: '房間代碼：',
+                displayNameLabel: '顯示名稱',
+                enterWorkspaceBtn: '進入共享畫布 →',
+                switchRoomBtn: '⇄ 切換房間',
+                codePrefix: '代碼：',
+                syncSaved: '✓ 已自動雲端儲存',
+                syncSaving: '⏳ 儲存中...',
+                syncError: '⚠ 儲存失敗',
+                newCardBtn: '+新增卡片',
+                rolodexBtn: '≋ 疊牌整齊模式',
+                rolodexOn: '(開啟)',
+                backupBtn: '備份 / JSON',
+                plannerLabel: '規劃者：',
+                exportPdfBtn: '匯出展開版 PDF',
+                upperHint1: '✨ 未排程靈感畫布 — 雙擊空白處新增卡片，或將卡片拖曳至下方時間軸',
+                upperHint2: '防重疊保護開啟：堆疊卡片時永遠完整保留彩色標題列',
+                spineBadge: '📅 中央行程時間軸',
+                spineDesc: '將上方靈感卡片拖曳至下方各天欄位。點擊任何「天數標題」即可修改名稱與日期。',
+                addDayBtn: '+ 新增行程天數',
+                dropHerePrefix: '將卡片拖曳至此：',
+                orClickCreate: '或點擊此處直接新增卡片',
+                unscheduledOpt: '未排程',
+                editBtn: '編輯',
+                byPrefix: '建立者：',
+                editCardTitle: '編輯行程卡片',
+                addCardTitle: '+新增卡片',
+                cardTitleLabel: '卡片標題',
+                cardTitlePlaceholder: '例如：錦市場美食巡禮',
+                categoryLabel: '類別 (Category)',
+                catFood: '🍴 美食與餐廳 (橘色標題列)',
+                catStay: '🛏️ 住宿與飯店 (靛藍標題列)',
+                catActivity: '⛩️ 景點與活動 (綠色標題列)',
+                catTransport: '🚄 交通與快線 (藍色標題列)',
+                catNote: '📋 行李與備忘錄 (琥珀標題列)',
+                photoLabel: '照片 (支援剪貼簿貼上、上傳檔案或貼上圖片網址)',
+                pasteHint: '📋 在此視窗直接按 Cmd+V / Ctrl+V，即可貼上剪貼簿中的截圖或照片！',
+                pasteConfirmed: '✅ 已從剪貼簿貼上圖片！',
+                clearPhoto: '移除照片',
+                notesLabel: '備註 / 價格 / 細節',
+                notesPlaceholder: '輸入備註、營業時間、訂位資訊...',
+                cancelBtn: '取消',
+                saveCardBtn: '儲存卡片',
+                editDayHeaderTitle: '編輯天數標題',
+                dayTitleLabel: '天數名稱',
+                dayDateLabel: '日期與副標題',
+                saveDayBtn: '儲存標題',
+                newDayDefaultSub: '點擊 ✎ 設定日期與地區',
+                untitledTrip: '全新好友旅程'
+            }
+        };
+
+        let state = {
+            lang: localStorage.getItem('travelcanvas_lang') || 'en',
+            view: 'lobby',
+            projectCode: '',
+            tripTitle: 'New Friends Trip',
+            username: localStorage.getItem('travelcanvas_nickname') || '',
+            syncStatus: 'saved',
+            rolodexMode: false,
+            cardModalOpen: false,
+            editingCardId: null,
+            tempPhotoData: '',
+            justPasted: false,
+            dayModalOpen: false,
+            editingDayId: null,
+            days: [
+                { id: 'd1', label: 'Day 1', date: 'Click ✎ to set date & area' },
+                { id: 'd2', label: 'Day 2', date: 'Click ✎ to set date & area' },
+                { id: 'd3', label: 'Day 3', date: 'Click ✎ to set date & area' }
+            ],
+            cards: []
+        };
+
+        let unsubscribe = null;
+        let authReadyPromise = signInAnonymously(auth).catch(console.error);
+
+        function t(key) {
+            return (I18N[state.lang] && I18N[state.lang][key]) || I18N.en[key] || key;
+        }
+
+        function toggleLang() {
+            state.lang = state.lang === 'en' ? 'zh' : 'en';
+            localStorage.setItem('travelcanvas_lang', state.lang);
+            render();
+        }
+
+        function esc(str) {
+            return String(str || '').replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+        }
+
+        function compressImageDataUrl(dataUrl, callback) {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const maxW = 550;
+                const scale = Math.min(1, maxW / img.width);
+                canvas.width = img.width * scale;
+                canvas.height = img.height * scale;
+                canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+                callback(canvas.toDataURL('image/jpeg', 0.75));
+            };
+            img.src = dataUrl;
+        }
+
+        // Global Clipboard Paste Listener when Card Modal is Open
+        window.addEventListener('paste', (e) => {
+            if (!state.cardModalOpen) return;
+            const items = (e.clipboardData || e.originalEvent.clipboardData)?.items;
+            if (!items) return;
+
+            for (let i = 0; i < items.length; i++) {
+                const item = items[i];
+                if (item.type.indexOf('image') !== -1) {
+                    e.preventDefault();
+                    const blob = item.getAsFile();
+                    if (!blob) return;
+                    const reader = new FileReader();
+                    reader.onload = (ev) => {
+                        compressImageDataUrl(ev.target.result, (compressed) => {
+                            state.tempPhotoData = compressed;
+                            state.justPasted = true;
+                            updateModalPhotoPreview();
+                        });
+                    };
+                    reader.readAsDataURL(blob);
+                    break;
+                }
+            }
+        });
+
+        function updateModalPhotoPreview() {
+            const urlInput = document.getElementById('modalCardPhotoUrl');
+            const pasteZone = document.getElementById('modalPasteZone');
+            const previewContainer = document.getElementById('modalPhotoPreviewWrap');
+            if (urlInput) urlInput.value = state.tempPhotoData;
+            if (pasteZone && state.justPasted) {
+                pasteZone.classList.add('paste-active');
+                pasteZone.textContent = t('pasteConfirmed');
+            }
+            if (previewContainer) {
+                if (state.tempPhotoData) {
+                    previewContainer.innerHTML = `
+                        <div class="photo-preview-box">
+                            <img src="${esc(state.tempPhotoData)}" alt="Preview" />
+                            <button type="button" id="clearPhotoBtn" class="clear-photo-btn">${t('clearPhoto')}</button>
+                        </div>
+                    `;
+                    document.getElementById('clearPhotoBtn').onclick = () => {
+                        state.tempPhotoData = '';
+                        state.justPasted = false;
+                        updateModalPhotoPreview();
+                    };
+                } else {
+                    previewContainer.innerHTML = '';
+                }
+            }
+        }
+
+        function render() {
+            const root = document.getElementById('app');
+            const langBtnLabel = state.lang === 'en' ? 'EN | 繁' : '繁 | EN';
+
+            if (state.view === 'lobby') {
+                root.innerHTML = `
+                    <div class="center-screen">
+                        <div class="floating-lang">
+                            <button id="langToggleLobby" type="button" class="btn-lang">${langBtnLabel}</button>
+                        </div>
+                        <h1 class="logo-title">TravelCanvas</h1>
+                        <p style="color: #94a3b8; margin-bottom: 28px; font-size: 15px;">${t('subtitle')}</p>
+                        <div class="auth-card">
+                            <label for="roomCodeInput" class="modal-label">${t('enterRoomLabel')}</label>
+                            <div style="display: flex; gap: 8px; margin-bottom: 20px; align-items: stretch;">
+                                <input id="roomCodeInput" name="roomCode" type="text" autocomplete="off" placeholder="e.g. TRIP-4821" style="text-transform: uppercase; flex: 1;" />
+                                <button id="joinBtn" type="button" class="btn-new-card" style="padding: 0 22px; min-width: 84px;">${t('joinBtn')}</button>
+                            </div>
+
+                            <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 18px 0;" />
+
+                            <label for="newTripTitleInput" class="modal-label">${t('newBlankLabel')}</label>
+                            <input id="newTripTitleInput" name="newTripTitle" type="text" autocomplete="off" placeholder="${t('tripNamePlaceholder')}" style="margin-bottom: 10px;" />
+                            <button id="newRoomBtn" type="button" class="btn-new-card" style="width: 100%; padding: 12px; margin-bottom: 18px;">
+                                ${t('newRoomBtn')}
+                            </button>
+
+                            <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 18px 0;" />
+
+                            <button id="sampleBtn" type="button" style="width: 100%; padding: 11px; background: #f1f5f9; color: #0f172a; margin-bottom: 8px;">
+                                ${t('sampleBtn')}
+                            </button>
+                            <button id="resetSampleBtn" type="button" style="width: 100%; padding: 7px; background: transparent; color: #64748b; font-size: 11px;">
+                                ${t('resetSampleBtn')}
+                            </button>
+                        </div>
+                    </div>
+                `;
+                document.getElementById('langToggleLobby').onclick = toggleLang;
+
+                const triggerJoin = () => {
+                    const c = document.getElementById('roomCodeInput').value.trim().toUpperCase();
+                    if (c) enterExistingRoom(c);
+                };
+                document.getElementById('joinBtn').onclick = triggerJoin;
+                document.getElementById('roomCodeInput').onkeydown = (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        triggerJoin();
+                    }
+                };
+
+                const triggerNewBlank = () => {
+                    const customTitle = document.getElementById('newTripTitleInput').value.trim();
+                    createBlankRoom('', customTitle);
+                };
+                document.getElementById('newRoomBtn').onclick = triggerNewBlank;
+                document.getElementById('newTripTitleInput').onkeydown = (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        triggerNewBlank();
+                    }
+                };
+
+                document.getElementById('sampleBtn').onclick = () => openOrInitSampleRoom(false);
+                document.getElementById('resetSampleBtn').onclick = () => openOrInitSampleRoom(true);
+                return;
+            }
+
+            if (state.view === 'username') {
+                root.innerHTML = `
+                    <div class="center-screen">
+                        <div class="floating-lang">
+                            <button id="langToggleUser" type="button" class="btn-lang">${langBtnLabel}</button>
+                        </div>
+                        <div class="auth-card" style="text-align: center;">
+                            <h2 style="font-size: 22px; font-weight: 800; margin-bottom: 6px;">${t('whatNickname')}</h2>
+                            <p style="font-size: 13px; color: #64748b; margin-bottom: 20px;">${t('roomCodeLabel')} <span class="room-pill" style="background:#f0fdfa; color:#0d9488;">${esc(state.projectCode)}</span></p>
+                            <div style="text-align: left; margin-bottom: 18px;">
+                                <label for="plannerNameInput" class="modal-label">${t('displayNameLabel')}</label>
+                                <input id="plannerNameInput" name="plannerName" type="text" autocomplete="name" value="${esc(state.username)}" placeholder="e.g. JC" />
+                            </div>
+                            <button id="enterCanvasBtn" type="button" class="btn-new-card" style="width: 100%; padding: 12px;">${t('enterWorkspaceBtn')}</button>
+                        </div>
+                    </div>
+                `;
+                document.getElementById('langToggleUser').onclick = toggleLang;
+
+                const triggerLaunch = () => {
+                    const name = document.getElementById('plannerNameInput').value.trim();
+                    if (name) launchCanvas(name);
+                };
+                document.getElementById('enterCanvasBtn').onclick = triggerLaunch;
+                const nameInputEl = document.getElementById('plannerNameInput');
+                nameInputEl.onkeydown = (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        triggerLaunch();
+                    }
+                };
+                nameInputEl.focus();
+                return;
+            }
+
+            const floatingCards = state.cards.filter(c => !c.dayId);
+            const editingCard = state.cards.find(c => c.id === state.editingCardId) || { title: '', category: 'Food', body: '', photo: '', preAssignDayId: null };
+            const editingDay = state.days.find(d => d.id === state.editingDayId) || { label: '', date: '' };
+
+            const syncClass = state.syncStatus === 'saving' ? 'sync-saving' : (state.syncStatus === 'error' ? 'sync-error' : 'sync-saved');
+            const syncLabel = state.syncStatus === 'saving' ? t('syncSaving') : (state.syncStatus === 'error' ? t('syncError') : t('syncSaved'));
+
+            root.innerHTML = `
+                <header class="topbar">
+                    <div class="bar-group">
+                        <div>
+                            <div style="font-size: 15px; font-weight: 800; color: white;">${esc(state.tripTitle)}</div>
+                            <div style="display: flex; align-items: center; gap: 8px; margin-top: 2px;">
+                                <span style="font-size: 11px; color: #94a3b8;">${t('codePrefix')}</span>
+                                <span class="room-pill">${esc(state.projectCode)}</span>
+                                <span class="sync-badge ${syncClass}">${syncLabel}</span>
+                                <button id="switchRoomBtn" type="button" style="background: transparent; color: #94a3b8; font-size: 11px; text-decoration: underline;">${t('switchRoomBtn')}</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bar-group">
+                        <button id="newCardBtn" type="button" class="btn-new-card">${t('newCardBtn')}</button>
+                        <button id="rolodexToggleBtn" type="button" class="btn-tool ${state.rolodexMode ? 'active' : ''}">
+                            ${t('rolodexBtn')} ${state.rolodexMode ? t('rolodexOn') : ''}
+                        </button>
+                        <button id="backupBtn" type="button" class="btn-tool">${t('backupBtn')}</button>
+                    </div>
+                    <div class="bar-group">
+                        <button id="langToggleMain" type="button" class="btn-lang">${langBtnLabel}</button>
+                        <span style="font-size: 12px; color: #94a3b8; white-space: nowrap;">${t('plannerLabel')} <strong style="color: white;">${esc(state.username)}</strong></span>
+                        <button id="printPdfBtn" type="button" class="btn-amber">${t('exportPdfBtn')}</button>
+                    </div>
+                </header>
+
+                <div class="workspace-scroll">
+                    <!-- UPPER LIGHT PLANNING CANVAS -->
+                    <section class="upper-canvas" id="upperCanvas">
+                        <div class="canvas-banner-row">
+                            <span class="canvas-pill-hint">${t('upperHint1')}</span>
+                            <span class="canvas-pill-hint">${t('upperHint2')}</span>
+                        </div>
+                        <div id="floatingLayer"></div>
+                    </section>
+
+                    <!-- LOWER DARK TIMELINE SPINE -->
+                    <section class="lower-spine">
+                        <div class="spine-bar">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <span class="spine-badge">${t('spineBadge')}</span>
+                                <span style="font-size: 12px; color: #94a3b8;">${t('spineDesc')}</span>
+                            </div>
+                            <button id="addDayColBtn" type="button" class="btn-tool" style="border-color: #14b8a6; color: #2dd4bf;">${t('addDayBtn')}</button>
+                        </div>
+                        <div class="days-row" id="daysRow"></div>
+                    </section>
+                </div>
+
+                <!-- ADD / EDIT CARD MODAL -->
+                ${state.cardModalOpen ? `
+                    <div class="modal-backdrop">
+                        <div class="modal-box">
+                            <h3 style="font-size: 17px; font-weight: 800;">${state.editingCardId ? t('editCardTitle') : t('addCardTitle')}</h3>
+                            <div>
+                                <label for="modalCardTitle" class="modal-label">${t('cardTitleLabel')}</label>
+                                <input id="modalCardTitle" name="modalCardTitle" type="text" autocomplete="off" value="${esc(editingCard.title)}" placeholder="${t('cardTitlePlaceholder')}" />
+                            </div>
+                            <div>
+                                <label for="modalCardCat" class="modal-label">${t('categoryLabel')}</label>
+                                <select id="modalCardCat" name="modalCardCat">
+                                    <option value="Food" ${editingCard.category === 'Food' ? 'selected' : ''}>${t('catFood')}</option>
+                                    <option value="Stay" ${editingCard.category === 'Stay' ? 'selected' : ''}>${t('catStay')}</option>
+                                    <option value="Activity" ${editingCard.category === 'Activity' ? 'selected' : ''}>${t('catActivity')}</option>
+                                    <option value="Transport" ${editingCard.category === 'Transport' ? 'selected' : ''}>${t('catTransport')}</option>
+                                    <option value="Note" ${editingCard.category === 'Note' ? 'selected' : ''}>${t('catNote')}</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="modalCardPhotoUrl" class="modal-label">${t('photoLabel')}</label>
+                                <div id="modalPasteZone" class="paste-zone" style="margin-bottom: 8px;">
+                                    ${state.justPasted ? t('pasteConfirmed') : t('pasteHint')}
+                                </div>
+                                <input id="modalCardPhotoUrl" name="modalCardPhotoUrl" type="text" autocomplete="off" value="${esc(state.tempPhotoData)}" placeholder="https://images.unsplash.com/..." style="margin-bottom: 6px;" />
+                                <input id="modalCardPhotoFile" name="modalCardPhotoFile" type="file" accept="image/*" style="font-size: 12px; padding: 6px;" />
+                                <div id="modalPhotoPreviewWrap"></div>
+                            </div>
+                            <div>
+                                <label for="modalCardBody" class="modal-label">${t('notesLabel')}</label>
+                                <textarea id="modalCardBody" name="modalCardBody" rows="3" autocomplete="off" placeholder="${t('notesPlaceholder')}">${esc(editingCard.body)}</textarea>
+                            </div>
+                            <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 6px;">
+                                <button id="cancelCardModalBtn" type="button" style="padding: 8px 14px; background: #e2e8f0; color: #0f172a;">${t('cancelBtn')}</button>
+                                <button id="saveCardModalBtn" type="button" class="btn-new-card">${t('saveCardBtn')}</button>
+                            </div>
+                        </div>
+                    </div>
+                ` : ''}
+
+                <!-- EDIT DAY HEADER MODAL -->
+                ${state.dayModalOpen ? `
+                    <div class="modal-backdrop">
+                        <div class="modal-box">
+                            <h3 style="font-size: 17px; font-weight: 800;">${t('editDayHeaderTitle')}</h3>
+                            <div>
+                                <label for="modalDayLabel" class="modal-label">${t('dayTitleLabel')}</label>
+                                <input id="modalDayLabel" name="modalDayLabel" type="text" autocomplete="off" value="${esc(editingDay.label)}" placeholder="e.g. Day 1" />
+                            </div>
+                            <div>
+                                <label for="modalDayDate" class="modal-label">${t('dayDateLabel')}</label>
+                                <input id="modalDayDate" name="modalDayDate" type="text" autocomplete="off" value="${esc(editingDay.date)}" placeholder="e.g. Nov 18 · Arrival & Gion" />
+                            </div>
+                            <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 6px;">
+                                <button id="cancelDayModalBtn" type="button" style="padding: 8px 14px; background: #e2e8f0; color: #0f172a;">${t('cancelBtn')}</button>
+                                <button id="saveDayModalBtn" type="button" class="btn-new-card">${t('saveDayBtn')}</button>
+                            </div>
+                        </div>
+                    </div>
+                ` : ''}
+            `;
+
+            document.getElementById('langToggleMain').onclick = toggleLang;
+            document.getElementById('switchRoomBtn').onclick = () => {
+                if (unsubscribe) unsubscribe();
+                window.location.hash = '';
+                state.view = 'lobby';
+                render();
+            };
+            document.getElementById('newCardBtn').onclick = () => openCardModal(null, null);
+            document.getElementById('rolodexToggleBtn').onclick = () => {
+                state.rolodexMode = !state.rolodexMode;
+                render();
+            };
+            document.getElementById('addDayColBtn').onclick = addDayColumn;
+            document.getElementById('backupBtn').onclick = exportJSON;
+            document.getElementById('printPdfBtn').onclick = () => window.print();
+
+            document.getElementById('upperCanvas').ondblclick = (e) => {
+                if (e.target.id === 'upperCanvas' || e.target.id === 'floatingLayer') {
+                    openCardModal(null, null);
+                }
+            };
+
+            if (state.cardModalOpen) {
+                updateModalPhotoPreview();
+                const titleInput = document.getElementById('modalCardTitle');
+                titleInput.onkeydown = (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        saveCardFromModal();
+                    }
+                };
+                const urlInput = document.getElementById('modalCardPhotoUrl');
+                urlInput.oninput = (e) => {
+                    state.tempPhotoData = e.target.value.trim();
+                    state.justPasted = false;
+                    updateModalPhotoPreview();
+                };
+                const fileInput = document.getElementById('modalCardPhotoFile');
+                fileInput.onchange = (e) => {
+                    const file = e.target.files && e.target.files[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = (ev) => {
+                        compressImageDataUrl(ev.target.result, (compressed) => {
+                            state.tempPhotoData = compressed;
+                            state.justPasted = false;
+                            updateModalPhotoPreview();
+                        });
+                    };
+                    reader.readAsDataURL(file);
+                };
+                document.getElementById('cancelCardModalBtn').onclick = () => { state.cardModalOpen = false; render(); };
+                document.getElementById('saveCardModalBtn').onclick = saveCardFromModal;
+            }
+
+            if (state.dayModalOpen) {
+                const dayEnterHandler = (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        saveDayHeaderFromModal();
+                    }
+                };
+                document.getElementById('modalDayLabel').onkeydown = dayEnterHandler;
+                document.getElementById('modalDayDate').onkeydown = dayEnterHandler;
+                document.getElementById('cancelDayModalBtn').onclick = () => { state.dayModalOpen = false; render(); };
+                document.getElementById('saveDayModalBtn').onclick = saveDayHeaderFromModal;
+            }
+
+            // Render Floating Cards
+            const floatingLayer = document.getElementById('floatingLayer');
+            floatingCards.forEach(card => {
+                const el = createCardDOM(card, true);
+                el.style.left = (card.x || 40) + 'px';
+                el.style.top = (card.y || 52) + 'px';
+                makeDraggable(el, card);
+                floatingLayer.appendChild(el);
+            });
+
+            // Render Timeline Spine Day Columns
+            const daysRow = document.getElementById('daysRow');
+            state.days.forEach((day, idx) => {
+                const slot = document.createElement('div');
+                slot.className = 'day-slot';
+                slot.setAttribute('data-day-id', day.id);
+                const dayCards = state.cards.filter(c => c.dayId === day.id);
+                slot.innerHTML = `
+                    <div class="day-head">
+                        <div class="day-head-left" data-edit-day="${esc(day.id)}">
+                            <span class="day-num-circle">${idx + 1}</span>
+                            <div>
+                                <div class="day-name">${esc(day.label)} <span style="font-size: 11px; color: #64748b;">✎</span></div>
+                                <div class="day-sub">${esc(day.date)}</div>
+                            </div>
+                        </div>
+                        <div class="day-actions no-print">
+                            <button type="button" class="day-icon-btn" data-add-in-day="${esc(day.id)}">+</button>
+                            ${state.days.length > 1 ? `<button type="button" class="day-icon-btn" data-del-day="${esc(day.id)}">✕</button>` : ''}
+                        </div>
+                    </div>
+                    <div class="day-cards ${state.rolodexMode ? 'rolodex' : ''}" style="flex: 1; display: flex; flex-direction: column;"></div>
+                `;
+
+                slot.querySelector('[data-edit-day]').onclick = () => {
+                    state.editingDayId = day.id;
+                    state.dayModalOpen = true;
+                    render();
+                };
+                slot.querySelector('[data-add-in-day]').onclick = () => openCardModal(null, day.id);
+                const delDayBtn = slot.querySelector('[data-del-day]');
+                if (delDayBtn) delDayBtn.onclick = () => deleteDayColumn(day.id);
+
+                const container = slot.querySelector('.day-cards');
+                if (dayCards.length === 0) {
+                    container.innerHTML = `
+                        <div data-empty-add="${esc(day.id)}" style="flex: 1; border: 1px dashed #334155; border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 12px; color: #64748b; padding: 24px; text-align: center; cursor: pointer;">
+                            <div>${t('dropHerePrefix')} ${esc(day.label)}</div>
+                            <div style="font-size: 11px; color: #475569; margin-top: 4px;">${t('orClickCreate')}</div>
+                        </div>
+                    `;
+                    container.querySelector('[data-empty-add]').onclick = () => openCardModal(null, day.id);
+                } else {
+                    dayCards.forEach(c => {
+                        const cardEl = createCardDOM(c, false);
+                        makeDraggable(cardEl, c);
+                        container.appendChild(cardEl);
+                    });
+                }
+                daysRow.appendChild(slot);
+            });
+        }
+
+        function openCardModal(cardId, defaultDayId = null) {
+            state.editingCardId = cardId;
+            state.preAssignDayId = defaultDayId;
+            const existing = state.cards.find(c => c.id === cardId);
+            state.tempPhotoData = existing ? (existing.photo || '') : '';
+            state.justPasted = false;
+            state.cardModalOpen = true;
+            render();
+        }
+
+        function createCardDOM(card, isFloating) {
+            const el = document.createElement('div');
+            el.className = `travel-card ${isFloating ? 'floating' : 'scheduled'}`;
+            const votes = Array.isArray(card.upvotes) ? card.upvotes.length : 1;
+            const icon = CATEGORY_ICONS[card.category] || '🍴';
+
+            el.innerHTML = `
+                <div class="card-header-bar header-${esc(card.category || 'Food')}">
+                    <div class="card-header-title">
+                        <span>⠿</span>
+                        <span>${icon}</span>
+                        <span>${esc(card.title)}</span>
+                    </div>
+                    <div class="card-header-controls no-print">
+                        <button type="button" class="header-pill-btn" data-vote="${esc(card.id)}">♥ ${votes}</button>
+                        <button type="button" class="header-pill-btn" data-del="${esc(card.id)}">✕</button>
+                    </div>
+                </div>
+                ${card.photo ? `
+                    <div class="card-photo-wrap">
+                        <img src="${esc(card.photo)}" alt="${esc(card.title)}" onerror="this.parentElement.style.display='none'" />
+                    </div>
+                ` : ''}
+                <div class="card-body-content">
+                    ${card.body ? `<div class="card-memo">${esc(card.body)}</div>` : ''}
+                    <div class="card-footer">
+                        <span>${t('byPrefix')} <strong>${esc(card.creator)}</strong></span>
+                        <div style="display: flex; align-items: center; gap: 6px;" class="no-print">
+                            <select class="day-select-mini" name="cardDayAssign_${esc(card.id)}" aria-label="Assign Day">
+                                <option value="" ${!card.dayId ? 'selected' : ''}>${t('unscheduledOpt')}</option>
+                                ${state.days.map(d => `<option value="${esc(d.id)}" ${card.dayId === d.id ? 'selected' : ''}>${esc(d.label)}</option>`).join('')}
+                            </select>
+                            <button type="button" class="edit-dark-btn" data-edit="${esc(card.id)}">${t('editBtn')}</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            el.querySelector('[data-vote]').onclick = (e) => { e.stopPropagation(); toggleVote(card.id); };
+            el.querySelector('[data-del]').onclick = (e) => { e.stopPropagation(); deleteCard(card.id); };
+            el.querySelector('[data-edit]').onclick = (e) => {
+                e.stopPropagation();
+                openCardModal(card.id, card.dayId);
+            };
+            const selectEl = el.querySelector('.day-select-mini');
+            selectEl.onchange = (e) => {
+                e.stopPropagation();
+                assignToDay(card.id, e.target.value || null);
+            };
+            selectEl.onmousedown = (e) => e.stopPropagation();
+
+            return el;
+        }
+
+        function makeDraggable(el, card) {
+            let startX = 0, startY = 0, origX = card.x || 50, origY = card.y || 55, dragging = false;
+
+            el.onmousedown = (e) => {
+                if (['BUTTON', 'SELECT', 'INPUT'].includes(e.target.tagName)) return;
+                dragging = true;
+                startX = e.clientX;
+                startY = e.clientY;
+                origX = parseFloat(el.style.left) || 50;
+                origY = parseFloat(el.style.top) || 55;
+
+                const onMove = (me) => {
+                    if (!dragging) return;
+                    if (!card.dayId) {
+                        const nx = Math.max(16, origX + (me.clientX - startX));
+                        const ny = Math.max(44, origY + (me.clientY - startY));
+                        el.style.left = nx + 'px';
+                        el.style.top = ny + 'px';
+                    }
+                    document.querySelectorAll('.day-slot').forEach(slot => {
+                        const r = slot.getBoundingClientRect();
+                        if (me.clientX >= r.left && me.clientX <= r.right && me.clientY >= r.top && me.clientY <= r.bottom) {
+                            slot.classList.add('drag-over');
+                        } else {
+                            slot.classList.remove('drag-over');
+                        }
+                    });
+                };
+
+                const onUp = async (ue) => {
+                    document.removeEventListener('mousemove', onMove);
+                    document.removeEventListener('mouseup', onUp);
+                    if (!dragging) return;
+                    dragging = false;
+
+                    let droppedDayId = null;
+                    document.querySelectorAll('.day-slot').forEach(slot => {
+                        slot.classList.remove('drag-over');
+                        const r = slot.getBoundingClientRect();
+                        if (ue.clientX >= r.left && ue.clientX <= r.right && ue.clientY >= r.top && ue.clientY <= r.bottom) {
+                            droppedDayId = slot.getAttribute('data-day-id');
+                        }
+                    });
+
+                    if (droppedDayId) {
+                        await assignToDay(card.id, droppedDayId);
+                    } else if (!card.dayId) {
+                        const finalX = Math.round(parseFloat(el.style.left));
+                        const finalY = Math.round(parseFloat(el.style.top));
+                        state.cards = state.cards.map(c => c.id === card.id ? { ...c, x: finalX, y: finalY } : c);
+                        await syncFirestore();
+                    }
+                };
+
+                document.addEventListener('mousemove', onMove);
+                document.addEventListener('mouseup', onUp);
+            };
+        }
+
+        async function createBlankRoom(customCode, customTitle) {
+            await authReadyPromise;
+            const code = customCode || ('TRIP-' + Math.floor(1000 + Math.random() * 9000));
+            const title = customTitle || t('untitledTrip');
+            const blankDays = [
+                { id: 'd1', label: 'Day 1', date: t('newDayDefaultSub') },
+                { id: 'd2', label: 'Day 2', date: t('newDayDefaultSub') },
+                { id: 'd3', label: 'Day 3', date: t('newDayDefaultSub') }
+            ];
+            const initial = {
+                project_code: code,
+                trip_title: title,
+                created_at: new Date().toISOString(),
+                days: blankDays,
+                cards: []
+            };
+            await setDoc(doc(db, "projects", code), initial);
+            state.projectCode = code;
+            state.tripTitle = title;
+            state.days = blankDays;
+            state.cards = [];
+            window.location.hash = code;
+            state.view = state.username ? 'workspace' : 'username';
+            if (state.view === 'workspace') subscribeToRoom(code);
+            render();
+        }
+
+        async function openOrInitSampleRoom(forceReset = false) {
+            await authReadyPromise;
+            const code = 'KYOTO-AUTUMN-42';
+            const snap = await getDoc(doc(db, "projects", code));
+
+            if (!snap.exists() || forceReset) {
+                const sampleData = {
+                    project_code: code,
+                    trip_title: 'Kyoto & Osaka Autumn Friends Trip',
+                    created_at: new Date().toISOString(),
+                    days: [
+                        { id: 'd1', label: 'Day 1', date: 'Nov 18 · Arrival & Gion' },
+                        { id: 'd2', label: 'Day 2', date: 'Nov 19 · Arashiyama & West' },
+                        { id: 'd3', label: 'Day 3', date: 'Nov 20 · Fushimi & Osaka' }
+                    ],
+                    cards: [
+                        {
+                            id: 'c1',
+                            title: 'Nishiki Market Food Crawl',
+                            body: 'Unscheduled idea! Try tamagoyaki, matcha warabimochi, and grilled skewered seafood. Best between 11am and 3pm.',
+                            category: 'Food',
+                            photo: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=600&q=80',
+                            creator: 'Alex',
+                            upvotes: ['Alex', 'JC'],
+                            dayId: null,
+                            x: 55,
+                            y: 62
+                        },
+                        {
+                            id: 'c2',
+                            title: 'Packing & SIM Card Memo',
+                            body: '1. Download Ubigi or Airalo eSIM before flying.\n2. Add digital Suica card to Apple Wallet.\n3. Bring comfortable walking shoes (20k steps/day).',
+                            category: 'Note',
+                            photo: '',
+                            creator: 'Alex',
+                            upvotes: ['Alex', 'Sam', 'JC'],
+                            dayId: null,
+                            x: 370,
+                            y: 52
+                        },
+                        {
+                            id: 'c3',
+                            title: 'Backup Hotel: Piece Hostel Sanjo',
+                            body: 'Great design hostel in downtown Kyoto in case we want to stay closer to Nishiki Market.',
+                            category: 'Stay',
+                            photo: '',
+                            creator: 'Sam',
+                            upvotes: ['Sam'],
+                            dayId: null,
+                            x: 685,
+                            y: 52
+                        },
+                        {
+                            id: 'c4',
+                            title: 'Kansai Express Haruka to Kyoto',
+                            body: 'Direct train from KIX Airport to Kyoto Station (75 mins). Book ICOCA + Haruka discount pass in advance so we do not wait in line.',
+                            category: 'Transport',
+                            photo: 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=600&q=80',
+                            creator: 'Alex',
+                            upvotes: ['Alex', 'Sam', 'JC'],
+                            dayId: 'd1'
+                        },
+                        {
+                            id: 'c5',
+                            title: 'Arashiyama Bamboo Grove (7 AM)',
+                            body: 'Reddit says we MUST arrive before 7:00 AM or it is wall-to-wall tourists. Afterwards we can grab Arabica coffee right by the Togetsukyo Bridge.',
+                            category: 'Activity',
+                            photo: 'https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&w=600&q=80',
+                            creator: 'Sam',
+                            upvotes: ['Sam', 'JC', 'Alex'],
+                            dayId: 'd2'
+                        }
+                    ]
+                };
+                await setDoc(doc(db, "projects", code), sampleData);
+            }
+
+            await enterExistingRoom(code);
+        }
+
+        async function enterExistingRoom(code) {
+            await authReadyPromise;
+            const snap = await getDoc(doc(db, "projects", code));
+            if (!snap.exists()) {
+                await createBlankRoom(code, code);
+                return;
+            }
+            const data = snap.data();
+            state.projectCode = code;
+            state.tripTitle = data.trip_title || code;
+            state.days = data.days || state.days;
+            state.cards = data.cards || [];
+            window.location.hash = code;
+            state.view = state.username ? 'workspace' : 'username';
+            if (state.view === 'workspace') subscribeToRoom(code);
+            render();
+        }
+
+        function launchCanvas(name) {
+            state.username = name;
+            localStorage.setItem('travelcanvas_nickname', name);
+            state.view = 'workspace';
+            subscribeToRoom(state.projectCode);
+            render();
+        }
+
+        function subscribeToRoom(code) {
+            if (unsubscribe) unsubscribe();
+            unsubscribe = onSnapshot(doc(db, "projects", code), (snap) => {
+                if (snap.exists()) {
+                    const data = snap.data();
+                    state.tripTitle = data.trip_title || state.tripTitle;
+                    state.cards = Array.isArray(data.cards) ? data.cards : [];
+                    if (Array.isArray(data.days) && data.days.length) state.days = data.days;
+                    if (state.view === 'workspace') render();
+                }
+            });
+        }
+
+        async function syncFirestore() {
+            if (!state.projectCode) return;
+            state.syncStatus = 'saving';
+            render();
+            try {
+                await authReadyPromise;
+                await setDoc(doc(db, "projects", state.projectCode), {
+                    project_code: state.projectCode,
+                    trip_title: state.tripTitle,
+                    days: state.days,
+                    cards: state.cards,
+                    updated_at: new Date().toISOString()
+                }, { merge: true });
+                state.syncStatus = 'saved';
+                render();
+            } catch (err) {
+                console.error("Auto-save failed:", err);
+                state.syncStatus = 'error';
+                render();
+            }
+        }
+
+        async function saveCardFromModal() {
+            const title = document.getElementById('modalCardTitle').value.trim();
+            const category = document.getElementById('modalCardCat').value;
+            const photo = state.tempPhotoData || document.getElementById('modalCardPhotoUrl').value.trim();
+            const body = document.getElementById('modalCardBody').value.trim();
+            if (!title) return;
+
+            if (state.editingCardId) {
+                state.cards = state.cards.map(c => c.id === state.editingCardId ? { ...c, title, category, photo, body } : c);
+            } else {
+                const count = state.cards.filter(c => !c.dayId).length;
+                state.cards.push({
+                    id: 'c_' + Date.now(),
+                    title,
+                    category,
+                    photo,
+                    body,
+                    creator: state.username || 'Planner',
+                    upvotes: [state.username || 'Planner'],
+                    dayId: state.preAssignDayId || null,
+                    x: 55 + (count * 305) % 920,
+                    y: 55 + Math.floor(count / 3) * 80
+                });
+            }
+            state.cardModalOpen = false;
+            state.editingCardId = null;
+            state.preAssignDayId = null;
+            state.tempPhotoData = '';
+            state.justPasted = false;
+            await syncFirestore();
+        }
+
+        async function saveDayHeaderFromModal() {
+            const label = document.getElementById('modalDayLabel').value.trim();
+            const date = document.getElementById('modalDayDate').value.trim();
+            if (!label) return;
+            state.days = state.days.map(d => d.id === state.editingDayId ? { ...d, label, date } : d);
+            state.dayModalOpen = false;
+            state.editingDayId = null;
+            await syncFirestore();
+        }
+
+        async function assignToDay(cardId, dayId) {
+            state.cards = state.cards.map(c => c.id === cardId ? { ...c, dayId } : c);
+            await syncFirestore();
+        }
+
+        async function toggleVote(cardId) {
+            state.cards = state.cards.map(c => {
+                if (c.id !== cardId) return c;
+                const list = Array.isArray(c.upvotes) ? [...c.upvotes] : [];
+                const idx = list.indexOf(state.username);
+                if (idx >= 0) list.splice(idx, 1);
+                else list.push(state.username);
+                return { ...c, upvotes: list };
+            });
+            await syncFirestore();
+        }
+
+        async function deleteCard(cardId) {
+            state.cards = state.cards.filter(c => c.id !== cardId);
+            await syncFirestore();
+        }
+
+        async function addDayColumn() {
+            const n = state.days.length + 1;
+            state.days.push({ id: 'd_' + Date.now(), label: `Day ${n}`, date: t('newDayDefaultSub') });
+            await syncFirestore();
+        }
+
+        async function deleteDayColumn(dayId) {
+            state.days = state.days.filter(d => d.id !== dayId);
+            state.cards = state.cards.map(c => c.dayId === dayId ? { ...c, dayId: null } : c);
+            await syncFirestore();
+        }
+
+        function exportJSON() {
+            const blob = new Blob([JSON.stringify({ projectCode: state.projectCode, tripTitle: state.tripTitle, days: state.days, cards: state.cards }, null, 2)], { type: 'application/json' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `${state.projectCode}-canvas.json`;
+            a.click();
+        }
+
+        const initialHash = window.location.hash.replace('#', '').trim().toUpperCase();
+        if (initialHash) {
+            enterExistingRoom(initialHash);
+        } else {
+            render();
+        }
+    </script>
+</body>
+</html>

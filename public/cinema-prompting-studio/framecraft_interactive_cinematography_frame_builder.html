@@ -1,0 +1,1376 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FrameCraft — Interactive Cinematography Frame Builder</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+            mono: ['JetBrains Mono', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'monospace']
+          },
+          colors: {
+            stage: {
+              bg: '#080a0f',
+              panel: '#10141e',
+              card: '#161c2a',
+              border: '#242c3e',
+              accent: '#f59e0b'
+            }
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    :root { color-scheme: dark; }
+    body {
+      background-color: #080a0f;
+      color: #e2e8f0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      overflow-x: hidden;
+    }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #0c1018; }
+    ::-webkit-scrollbar-thumb { background: #293349; border-radius: 9999px; }
+    .chip-btn {
+      transition: all 0.15s ease;
+    }
+    .chip-btn:hover {
+      border-color: #475569;
+      background-color: #1c2436;
+    }
+    .chip-btn.active {
+      border-color: #f59e0b;
+      background-color: rgba(245, 158, 11, 0.15);
+      color: #fef3c7;
+    }
+    .draggable-item {
+      cursor: grab;
+      user-select: none;
+      touch-action: none;
+    }
+    .draggable-item:active {
+      cursor: grabbing;
+    }
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      background: #1e2638;
+      height: 6px;
+      border-radius: 9999px;
+      outline: none;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 15px;
+      height: 15px;
+      border-radius: 50%;
+      background: #f59e0b;
+      cursor: pointer;
+      border: 2px solid #080a0f;
+    }
+    .layer-badge-fg { background: rgba(244, 63, 94, 0.18); color: #fda4af; border-color: rgba(244, 63, 94, 0.4); }
+    .layer-badge-mg { background: rgba(245, 158, 11, 0.18); color: #fde68a; border-color: rgba(245, 158, 11, 0.45); }
+    .layer-badge-bg { background: rgba(56, 189, 248, 0.16); color: #7dd3fc; border-color: rgba(56, 189, 248, 0.4); }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+  <!-- Header -->
+  <header class="sticky top-0 z-30 border-b border-stage-border bg-stage-bg/90 backdrop-blur-md">
+    <div class="max-w-[1440px] mx-auto px-4 sm:px-6 h-15 py-2.5 flex items-center justify-between gap-3">
+      <div class="flex items-center gap-3 min-w-0">
+        <div class="w-9 h-9 rounded-lg bg-amber-500/15 border border-amber-500/40 flex items-center justify-center shrink-0">
+          <i data-lucide="scan-eye" class="w-5 h-5 text-amber-400"></i>
+        </div>
+        <div class="min-w-0">
+          <div class="flex items-center gap-2">
+            <h1 class="text-base sm:text-lg font-bold tracking-tight text-slate-100 truncate">FrameCraft</h1>
+            <span class="hidden sm:inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono uppercase tracking-wider bg-amber-500/15 text-amber-300 border border-amber-500/30">Interactive Frame Builder</span>
+          </div>
+          <p class="text-xs text-slate-400 truncate hidden md:block">Stage characters & depth layers directly on the frame, dial camera optics, and generate exact cinematography prompts</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2 shrink-0">
+        <div class="relative">
+          <select id="scenePresetSelect" aria-label="Load staged scene" class="appearance-none bg-stage-card hover:bg-slate-800 border border-stage-border text-slate-200 text-xs sm:text-sm rounded-lg pl-3 pr-8 py-1.5 focus:outline-none focus:border-amber-500 cursor-pointer">
+            <option value="">Load Staged Scene...</option>
+            <option value="cafe">Rainy Cafe Reunion</option>
+            <option value="desert">Desert Highway Standoff</option>
+            <option value="rooftop">Neon Rooftop Confessional</option>
+            <option value="forest">Misty Forest Discovery</option>
+          </select>
+          <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 pointer-events-none absolute right-2 top-1/2 -translate-y-1/2"></i>
+        </div>
+        <button id="clearStageBtn" type="button" class="px-2.5 py-1.5 rounded-lg bg-stage-card hover:bg-slate-800 border border-stage-border text-xs text-slate-300 transition">Clear</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Workspace -->
+  <main class="flex-1 max-w-[1440px] w-full mx-auto px-4 sm:px-6 py-4 sm:py-5">
+    <div class="grid grid-cols-1 xl:grid-cols-12 gap-5 items-start">
+
+      <!-- LEFT / CENTER: Interactive Frame Builder Stage + Camera Controls (8 cols on XL) -->
+      <div class="xl:col-span-8 space-y-4">
+
+        <!-- Interactive Stage Card -->
+        <section class="rounded-2xl bg-stage-panel border border-stage-border p-3.5 sm:p-4 shadow-xl">
+          <!-- Stage Toolbar -->
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+            <div class="flex flex-wrap items-center gap-1.5">
+              <span class="text-[11px] font-mono uppercase tracking-wider text-slate-400 mr-1">Aspect:</span>
+              <div id="aspectBtnGroup" class="inline-flex rounded-lg bg-stage-bg border border-stage-border p-0.5 text-[11px] font-mono">
+                <button type="button" data-aspect="2.39:1" class="aspect-btn px-2 py-1 rounded-md bg-amber-500/20 text-amber-300 font-semibold">2.39:1</button>
+                <button type="button" data-aspect="16:9" class="aspect-btn px-2 py-1 rounded-md text-slate-400 hover:text-slate-200">16:9</button>
+                <button type="button" data-aspect="4:3" class="aspect-btn px-2 py-1 rounded-md text-slate-400 hover:text-slate-200">4:3</button>
+                <button type="button" data-aspect="9:16" class="aspect-btn px-2 py-1 rounded-md text-slate-400 hover:text-slate-200">9:16</button>
+                <button type="button" data-aspect="1:1" class="aspect-btn px-2 py-1 rounded-md text-slate-400 hover:text-slate-200">1:1</button>
+              </div>
+              <button id="toggleGridBtn" type="button" class="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-stage-bg border border-stage-border text-[11px] text-amber-300 hover:bg-slate-800 transition" title="Toggle Rule of Thirds grid">
+                <i data-lucide="grid-3x3" class="w-3.5 h-3.5"></i>
+                <span class="hidden sm:inline">Thirds</span>
+              </button>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <button id="playMotionBtn" type="button" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-stage-bg text-xs font-semibold transition shadow">
+                <i data-lucide="play" class="w-3.5 h-3.5"></i>
+                <span id="playMotionLabel">Preview Camera Move</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Interactive SVG Cinema Frame -->
+          <div class="relative w-full rounded-xl bg-black border border-slate-800 overflow-hidden select-none" style="aspect-ratio: 16 / 9;">
+            <svg id="stageSvg" viewBox="0 0 800 450" class="w-full h-full block">
+              <defs>
+                <!-- Dynamic Sky & Ground Gradients -->
+                <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop id="skyStop1" offset="0%" stop-color="#0b1224" />
+                  <stop id="skyStop2" offset="100%" stop-color="#1e293b" />
+                </linearGradient>
+                <linearGradient id="groundGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop id="groundStop1" offset="0%" stop-color="#111827" />
+                  <stop id="groundStop2" offset="100%" stop-color="#05070c" />
+                </linearGradient>
+                <radialGradient id="keyLightGlow" cx="25%" cy="22%" r="65%">
+                  <stop id="lightStop1" offset="0%" stop-color="#f59e0b" stop-opacity="0.42" />
+                  <stop id="lightStop2" offset="60%" stop-color="#f59e0b" stop-opacity="0.08" />
+                  <stop offset="100%" stop-color="#000000" stop-opacity="0" />
+                </radialGradient>
+                <!-- Live Depth of Field Blur Filters -->
+                <filter id="blurBg" x="-15%" y="-15%" width="130%" height="130%">
+                  <feGaussianBlur id="blurBgStd" stdDeviation="3.5" />
+                </filter>
+                <filter id="blurFg" x="-15%" y="-15%" width="130%" height="130%">
+                  <feGaussianBlur id="blurFgStd" stdDeviation="2.5" />
+                </filter>
+                <filter id="softGlow">
+                  <feGaussianBlur stdDeviation="4" result="blur" />
+                  <feMerge>
+                    <feMergeNode in="blur" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
+              </defs>
+
+              <!-- Camera World Group (transforms during Dutch tilt & Motion Preview) -->
+              <g id="cameraWorld">
+                <!-- Horizon / Sky + Ground -->
+                <rect id="skyRect" x="-120" y="-120" width="1040" height="365" fill="url(#skyGrad)" />
+                <rect id="groundRect" x="-120" y="245" width="1040" height="340" fill="url(#groundGrad)" />
+                <line id="horizonLine" x1="-120" y1="245" x2="920" y2="245" stroke="rgba(255,255,255,0.14)" stroke-width="1" stroke-dasharray="6 4" />
+                <!-- Subtle perspective floor lines -->
+                <g id="floorLines" stroke="rgba(255,255,255,0.06)" stroke-width="1"></g>
+
+                <!-- Key Light Atmosphere Wash -->
+                <rect x="-120" y="-120" width="1040" height="690" fill="url(#keyLightGlow)" pointer-events="none" />
+
+                <!-- 3 DEPTH LAYERS -->
+                <g id="layerBG"></g>
+                <g id="layerMG"></g>
+                <g id="layerFG"></g>
+
+                <!-- Atmosphere FX Overlay (Rain / Haze / Dust) -->
+                <g id="fxLayer" pointer-events="none"></g>
+
+                <!-- Draggable Key Light Handle -->
+                <g id="lightHandleGroup" class="draggable-item" transform="translate(180, 95)">
+                  <circle cx="0" cy="0" r="18" fill="rgba(245,158,11,0.12)" stroke="#fbbf24" stroke-width="1.2" stroke-dasharray="3 3" />
+                  <circle cx="0" cy="0" r="7" fill="#fbbf24" filter="url(#softGlow)" />
+                  <text x="0" y="28" text-anchor="middle" fill="#fde68a" font-size="10" font-family="monospace" font-weight="600">KEY LIGHT</text>
+                </g>
+              </g>
+
+              <!-- Camera Movement Path Guide Overlay -->
+              <g id="motionGuideOverlay" pointer-events="none"></g>
+
+              <!-- Rule of Thirds Grid -->
+              <g id="thirdsGridOverlay" stroke="rgba(255,255,255,0.18)" stroke-width="1" pointer-events="none"></g>
+
+              <!-- Aspect Ratio Letterbox / Pillarbox Masks -->
+              <g id="aspectMaskGroup" fill="#04060a" pointer-events="none"></g>
+
+              <!-- Viewfinder Corner Reticles -->
+              <g id="reticleGroup" stroke="#f59e0b" stroke-width="2" stroke-opacity="0.85" fill="none" pointer-events="none"></g>
+            </svg>
+
+            <!-- HUD Telemetry Overlay -->
+            <div class="absolute top-2.5 left-3 right-3 flex items-center justify-between text-[10px] sm:text-[11px] font-mono pointer-events-none">
+              <span id="hudTopLeft" class="px-2 py-0.5 rounded bg-black/65 backdrop-blur-sm border border-white/10 text-amber-300">35mm · T1.8 · EYE-LEVEL</span>
+              <span id="hudTopRight" class="px-2 py-0.5 rounded bg-black/65 backdrop-blur-sm border border-white/10 text-slate-200">DOLLY PUSH-IN</span>
+            </div>
+            <div class="absolute bottom-2.5 left-3 right-3 flex items-center justify-between text-[10px] font-mono text-slate-400 pointer-events-none">
+              <span class="px-2 py-0.5 rounded bg-black/65 border border-white/10">Drag objects or Key Light directly inside the frame</span>
+              <span id="hudCounts" class="px-2 py-0.5 rounded bg-black/65 border border-white/10 text-slate-300">FG: 1 · MG: 2 · BG: 1</span>
+            </div>
+          </div>
+
+          <!-- Quick Add Element Palette -->
+          <div class="mt-3 pt-3 border-t border-stage-border/80">
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+              <span class="text-[11px] font-mono uppercase tracking-wider text-slate-400">Add to Frame:</span>
+              <div class="flex items-center gap-1.5 text-[10px] font-mono">
+                <span class="px-1.5 py-0.5 rounded border layer-badge-fg">FG = Foreground</span>
+                <span class="px-1.5 py-0.5 rounded border layer-badge-mg">MG = Midground (Focus)</span>
+                <span class="px-1.5 py-0.5 rounded border layer-badge-bg">BG = Background</span>
+              </div>
+            </div>
+            <div id="paletteGrid" class="flex flex-wrap gap-1.5"></div>
+          </div>
+        </section>
+
+        <!-- Camera, Lens, Movement & Lighting Controls -->
+        <section class="rounded-2xl bg-stage-panel border border-stage-border p-4 shadow-lg space-y-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Lens & Depth of Field -->
+            <div class="rounded-xl bg-stage-bg border border-stage-border p-3.5 space-y-3.5">
+              <div class="flex items-center gap-2 text-xs font-semibold text-slate-100">
+                <i data-lucide="aperture" class="w-4 h-4 text-amber-400"></i>
+                <span>Lens & Focus Optics</span>
+              </div>
+
+              <div>
+                <div class="flex items-center justify-between text-xs mb-1.5">
+                  <span class="text-slate-400">Focal Length</span>
+                  <span id="focalReadout" class="font-mono text-amber-400">35mm — Classic Cinema</span>
+                </div>
+                <input id="focalSlider" type="range" min="0" max="5" step="1" value="2" class="w-full" />
+                <div class="flex justify-between text-[10px] font-mono text-slate-500 mt-1">
+                  <span>14mm Wide</span><span>24mm</span><span>35mm</span><span>50mm</span><span>85mm</span><span>135mm Tele</span>
+                </div>
+              </div>
+
+              <div>
+                <div class="flex items-center justify-between text-xs mb-1.5">
+                  <span class="text-slate-400">Background / Foreground Blur</span>
+                  <span id="dofReadout" class="font-mono text-amber-400">T1.8 — Shallow Bokeh</span>
+                </div>
+                <input id="dofSlider" type="range" min="0" max="3" step="1" value="1" class="w-full" />
+                <div class="flex justify-between text-[10px] font-mono text-slate-500 mt-1">
+                  <span>T1.4 Dreamy</span><span>T1.8 Soft</span><span>T4.0 Mild</span><span>T11 Sharp</span>
+                </div>
+              </div>
+
+              <div>
+                <span class="block text-[11px] text-slate-400 mb-1.5">Camera Angle (shifts horizon live)</span>
+                <div id="angleBtnGrid" class="grid grid-cols-3 gap-1.5"></div>
+              </div>
+            </div>
+
+            <!-- Camera Movement & Lighting Mood -->
+            <div class="rounded-xl bg-stage-bg border border-stage-border p-3.5 space-y-3.5">
+              <div class="flex items-center gap-2 text-xs font-semibold text-slate-100">
+                <i data-lucide="video" class="w-4 h-4 text-amber-400"></i>
+                <span>Camera Movement & Lighting</span>
+              </div>
+
+              <div>
+                <div class="flex items-center justify-between text-xs mb-1.5">
+                  <span class="text-slate-400">Camera Movement</span>
+                  <span id="moveSpeedText" class="font-mono text-amber-400 text-[11px]">Slow & Smooth</span>
+                </div>
+                <div id="movementBtnGrid" class="grid grid-cols-3 gap-1.5"></div>
+                <div class="mt-2 flex items-center gap-2">
+                  <span class="text-[10px] font-mono text-slate-500">Speed:</span>
+                  <input id="speedSlider" type="range" min="0" max="2" step="1" value="0" class="flex-1" />
+                </div>
+              </div>
+
+              <div>
+                <span class="block text-[11px] text-slate-400 mb-1.5">Lighting Mood & Atmosphere</span>
+                <div id="moodBtnGrid" class="grid grid-cols-3 gap-1.5 mb-2"></div>
+                <div id="fxBtnGrid" class="flex flex-wrap gap-1.5"></div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- RIGHT COLUMN: Selected Object Inspector + Live Translated Prompt (4 cols on XL) -->
+      <div class="xl:col-span-4 space-y-4 xl:sticky xl:top-20">
+
+        <!-- Selected Element Inspector -->
+        <section class="rounded-2xl bg-stage-panel border border-stage-border p-4 shadow-lg">
+          <div class="flex items-center justify-between gap-2 mb-3">
+            <div class="flex items-center gap-2">
+              <i data-lucide="layers" class="w-4 h-4 text-amber-400"></i>
+              <h2 class="text-sm font-semibold text-slate-100">Element Inspector</h2>
+            </div>
+            <span id="selectedPosBadge" class="text-[10px] font-mono text-slate-400">Click an object on stage</span>
+          </div>
+
+          <!-- Placed Elements Quick Switcher Strip -->
+          <div id="stageElementList" class="flex flex-wrap gap-1.5 mb-3 pb-3 border-b border-stage-border/70"></div>
+
+          <!-- Inspector Form -->
+          <div id="inspectorBody" class="space-y-3"></div>
+        </section>
+
+        <!-- Live Translated Cinematography Prompt -->
+        <section class="rounded-2xl bg-stage-panel border border-stage-border p-4 shadow-lg">
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-2.5">
+            <div class="flex items-center gap-2">
+              <i data-lucide="sparkles" class="w-4 h-4 text-amber-400"></i>
+              <h2 class="text-sm font-semibold text-slate-100">Translated Prompt</h2>
+            </div>
+            <div class="inline-flex rounded-lg bg-stage-bg border border-stage-border p-0.5 text-[10px] font-mono shrink-0">
+              <button type="button" data-fmt="universal" class="fmt-btn whitespace-nowrap px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-semibold">Prose</button>
+              <button type="button" data-fmt="veo" class="fmt-btn whitespace-nowrap px-2 py-0.5 rounded text-slate-400 hover:text-slate-200">Veo 3</button>
+              <button type="button" data-fmt="sora" class="fmt-btn whitespace-nowrap px-2 py-0.5 rounded text-slate-400 hover:text-slate-200">Sora</button>
+              <button type="button" data-fmt="runway" class="fmt-btn whitespace-nowrap px-2 py-0.5 rounded text-slate-400 hover:text-slate-200">Runway</button>
+              <button type="button" data-fmt="json" class="fmt-btn whitespace-nowrap px-2 py-0.5 rounded text-slate-400 hover:text-slate-200">JSON</button>
+            </div>
+          </div>
+
+          <textarea id="promptOutput" readonly rows="9" class="w-full rounded-xl bg-stage-bg border border-stage-border px-3 py-2.5 text-xs sm:text-[13px] text-slate-100 leading-relaxed outline-none resize-y"></textarea>
+
+          <div class="mt-2.5 flex items-center justify-between gap-2">
+            <span id="promptStats" class="text-[11px] font-mono text-slate-500">0 words</span>
+            <div class="flex items-center gap-2">
+              <button id="copyPromptBtn" type="button" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-stage-bg text-xs font-semibold transition shadow">
+                <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                <span>Copy Prompt</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Spatial Layer Breakdown Summary -->
+          <div class="mt-3 pt-3 border-t border-stage-border/70 space-y-1.5 text-[11px]">
+            <div class="flex items-start gap-2">
+              <span class="px-1.5 py-0.5 rounded border layer-badge-fg font-mono text-[9px] shrink-0">FG</span>
+              <span id="sumFG" class="text-slate-400 leading-snug">None</span>
+            </div>
+            <div class="flex items-start gap-2">
+              <span class="px-1.5 py-0.5 rounded border layer-badge-mg font-mono text-[9px] shrink-0">MG</span>
+              <span id="sumMG" class="text-slate-300 leading-snug">None</span>
+            </div>
+            <div class="flex items-start gap-2">
+              <span class="px-1.5 py-0.5 rounded border layer-badge-bg font-mono text-[9px] shrink-0">BG</span>
+              <span id="sumBG" class="text-slate-400 leading-snug">None</span>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <!-- Custom Object Modal -->
+  <div id="customModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
+    <div id="customModalBg" class="absolute inset-0 bg-black/75 backdrop-blur-sm"></div>
+    <div class="relative w-full max-w-sm rounded-2xl bg-stage-panel border border-stage-border p-5 shadow-2xl space-y-3.5">
+      <div class="flex items-center justify-between">
+        <h3 class="text-sm font-semibold text-slate-100">Add Custom Element to Frame</h3>
+        <button id="closeCustomModal" type="button" class="text-slate-400 hover:text-slate-200">✕</button>
+      </div>
+      <div>
+        <label for="customNameInput" class="block text-[11px] font-mono uppercase text-slate-400 mb-1">Name / Label</label>
+        <input id="customNameInput" type="text" placeholder="e.g., Red Umbrella, Stray Cat, Hanging Lantern" class="w-full rounded-lg bg-stage-bg border border-stage-border focus:border-amber-500 px-3 py-2 text-xs text-slate-100 outline-none" />
+      </div>
+      <div>
+        <label for="customLayerSelect" class="block text-[11px] font-mono uppercase text-slate-400 mb-1">Depth Layer</label>
+        <select id="customLayerSelect" class="w-full rounded-lg bg-stage-bg border border-stage-border px-3 py-2 text-xs text-slate-100 outline-none">
+          <option value="fg">Foreground (Closest to Lens)</option>
+          <option value="mg" selected>Midground (Main Focus Plane)</option>
+          <option value="bg">Background (Distant Environment)</option>
+        </select>
+      </div>
+      <div>
+        <label for="customDescInput" class="block text-[11px] font-mono uppercase text-slate-400 mb-1">Visual Detail / Motion (Optional)</label>
+        <input id="customDescInput" type="text" placeholder="e.g., swaying gently in the rain" class="w-full rounded-lg bg-stage-bg border border-stage-border focus:border-amber-500 px-3 py-2 text-xs text-slate-100 outline-none" />
+      </div>
+      <div class="flex justify-end gap-2 pt-1">
+        <button id="cancelCustomBtn" type="button" class="px-3 py-1.5 rounded-lg bg-stage-card text-xs text-slate-300">Cancel</button>
+        <button id="confirmCustomBtn" type="button" class="px-4 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-stage-bg text-xs font-semibold">Place on Frame</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 pointer-events-none opacity-0 translate-y-2 transition-all duration-200">
+    <div class="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-900 border border-amber-500/40 text-slate-100 text-xs shadow-xl">
+      <i data-lucide="check-circle-2" class="w-4 h-4 text-amber-400 shrink-0"></i>
+      <span id="toastText">Done</span>
+    </div>
+  </div>
+
+  <script>
+    // =========================================================
+    // CATALOG & CINEMA CONSTANTS
+    // =========================================================
+    const CATALOG = {
+      palette: [
+        { type: 'hero', label: '+ Main Character', defaultName: 'Elena', layer: 'mg', icon: 'user', desc: 'wearing a dark wool coat', action: 'pauses and glances slowly toward the light' },
+        { type: 'person', label: '+ Side Character', defaultName: 'Stranger', layer: 'mg', icon: 'users', desc: 'in silhouette', action: 'stands quietly nearby' },
+        { type: 'window', label: '+ Window / Frame', defaultName: 'Rain-streaked window edge', layer: 'fg', icon: 'frame', desc: 'dark wooden mullion with water droplets', action: '' },
+        { type: 'cup', label: '+ Table / Cup', defaultName: 'Steaming coffee cup', layer: 'fg', icon: 'coffee', desc: 'warm ceramic mug on a dark tabletop', action: 'curling wisps of steam rising' },
+        { type: 'foliage', label: '+ Foliage / Branch', defaultName: 'Overhanging branches', layer: 'fg', icon: 'trees', desc: 'soft leafy branches framing the corner', action: 'swaying lightly in the breeze' },
+        { type: 'neon', label: '+ Neon Sign', defaultName: 'Glowing neon sign', layer: 'mg', icon: 'zap', desc: 'buzzing cyan and magenta signage', action: 'flickering softly' },
+        { type: 'car', label: '+ Vehicle', defaultName: 'Vintage sedan', layer: 'mg', icon: 'car', desc: 'headlights cutting through the mist', action: 'parked along the wet curb' },
+        { type: 'lamp', label: '+ Streetlamp', defaultName: 'Warm streetlamp', layer: 'mg', icon: 'lamp', desc: 'tall cast-iron lamp post', action: 'casting a soft pool of amber light' },
+        { type: 'city', label: '+ City Skyline', defaultName: 'Distant city skyline', layer: 'bg', icon: 'building-2', desc: 'towering illuminated high-rises', action: '' },
+        { type: 'mountain', label: '+ Mountains', defaultName: 'Jagged mountain range', layer: 'bg', icon: 'mountain', desc: 'mist-veiled alpine peaks', action: '' },
+        { type: 'custom', label: '+ Custom Object', defaultName: 'Custom Prop', layer: 'mg', icon: 'plus', desc: '', action: '' }
+      ],
+      focals: [
+        { mm: '14mm', label: '14mm — Ultra-Wide', bgScale: 0.78, prompt: '14mm ultra-wide lens exaggerating depth separation between foreground and background' },
+        { mm: '24mm', label: '24mm — Wide Cinema', bgScale: 0.88, prompt: '24mm wide cinema prime capturing rich environmental scale' },
+        { mm: '35mm', label: '35mm — Classic Cinema', bgScale: 1.0, prompt: '35mm classic narrative prime with natural spatial proportions' },
+        { mm: '50mm', label: '50mm — Natural Eye', bgScale: 1.12, prompt: '50mm standard prime mirroring human eye perspective' },
+        { mm: '85mm', label: '85mm — Portrait Tele', bgScale: 1.28, prompt: '85mm portrait telephoto lens gently compressing background elements closer' },
+        { mm: '135mm', label: '135mm — Heavy Compression', bgScale: 1.48, prompt: '135mm long telephoto lens dramatically flattening background layers into creamy bokeh' }
+      ],
+      dofs: [
+        { label: 'T1.4 — Dreamy Bokeh', bgBlur: 5.5, fgBlur: 4.0, prompt: 'shot wide open at T1.4 with razor-thin focus on the midground and dreamy bokeh across foreground and background' },
+        { label: 'T1.8 — Shallow Separation', bgBlur: 3.4, fgBlur: 2.4, prompt: 'shot at T1.8 keeping the midground crisp while softly melting foreground and background layers' },
+        { label: 'T4.0 — Balanced Depth', bgBlur: 1.4, fgBlur: 1.0, prompt: 'exposed at T4.0 maintaining legible environmental detail with gentle depth separation' },
+        { label: 'T11 — Deep Focus', bgBlur: 0, fgBlur: 0, prompt: 'captured in crisp T11 deep focus so foreground, midground, and distant background remain sharply legible' }
+      ],
+      angles: [
+        { id: 'eye', label: 'Eye-Level', horizonY: 245, tilt: 0, prompt: 'eye-level camera angle' },
+        { id: 'low', label: 'Low Angle', horizonY: 315, tilt: 0, prompt: 'heroic low camera angle looking upward' },
+        { id: 'high', label: 'High Angle', horizonY: 165, tilt: 0, prompt: 'elevated high camera angle looking slightly downward' },
+        { id: 'dutch', label: 'Dutch Tilt', horizonY: 245, tilt: -9, prompt: 'canted Dutch tilt angle creating uneasy tension' },
+        { id: 'ots', label: 'Over-Shoulder', horizonY: 245, tilt: 0, prompt: 'intimate over-the-shoulder perspective' },
+        { id: 'birds', label: "Bird's-Eye", horizonY: 95, tilt: 0, prompt: 'steep overhead bird’s-eye perspective' }
+      ],
+      movements: [
+        { id: 'static', label: 'Static', prompt: 'locked off on a rock-steady tripod' },
+        { id: 'push', label: 'Push-In', prompt: 'executing a smooth dolly push-in closer toward the midground subject' },
+        { id: 'pull', label: 'Pull-Back', prompt: 'gliding backward in a controlled dolly pull-out revealing the surrounding frame' },
+        { id: 'pan_r', label: 'Pan Right', prompt: 'panning smoothly from left to right across the staged scene' },
+        { id: 'pan_l', label: 'Pan Left', prompt: 'panning smoothly from right to left across the staged scene' },
+        { id: 'track', label: 'Track Side', prompt: 'tracking laterally with rich parallax shift between foreground, midground, and background' },
+        { id: 'crane', label: 'Crane Rise', prompt: 'rising smoothly on a jib crane to unveil the wider horizon' },
+        { id: 'orbit', label: 'Orbit Arc', prompt: 'sweeping in a curved arc orbit around the main subject' },
+        { id: 'handheld', label: 'Handheld', prompt: 'held with organic, breathing handheld micro-motion for raw immediacy' }
+      ],
+      speeds: [
+        { label: 'Slow & Deliberate', adj: 'slow, deliberate' },
+        { label: 'Smooth & Measured', adj: 'smooth, measured' },
+        { label: 'Brisk & Dynamic', adj: 'brisk, dynamic' }
+      ],
+      moods: [
+        { id: 'noir', label: 'Neon Noir', sky1: '#070b18', sky2: '#1a1b3a', grd1: '#0f172a', grd2: '#03050a', light: '#38bdf8', prompt: 'moody neon-noir night lighting with deep shadows and glowing specular reflections' },
+        { id: 'golden', label: 'Golden Hour', sky1: '#3b1c0a', sky2: '#c25918', grd1: '#2b180d', grd2: '#0f0905', light: '#fbbf24', prompt: 'warm low-angle golden hour sunlight casting long amber rim highlights' },
+        { id: 'bluehour', label: 'Blue Hour', sky1: '#0a1930', sky2: '#1d4ed8', grd1: '#0f172a', grd2: '#050811', light: '#60a5fa', prompt: 'cool cobalt blue-hour twilight balanced with warm practical accents' },
+        { id: 'overcast', label: 'Soft Overcast', sky1: '#1e293b', sky2: '#475569', grd1: '#1e293b', grd2: '#0f172a', light: '#cbd5e1', prompt: 'diffused soft overcast daylight with gentle, poetic shadow roll-off' },
+        { id: 'candle', label: 'Cozy Warm', sky1: '#1c0f08', sky2: '#451a03', grd1: '#1c120c', grd2: '#090503', light: '#f97316', prompt: 'intimate warm tungsten candlelight dancing softly across textures' },
+        { id: 'cyber', label: 'Cyber Neon', sky1: '#140826', sky2: '#3b0764', grd1: '#0e1726', grd2: '#05060c', light: '#ec4899', prompt: 'saturated magenta and cyan cyberpunk lighting with crisp wet reflections' }
+      ],
+      fxList: [
+        { id: 'rain', label: 'Rain', prompt: 'falling rain streaks and wet reflections' },
+        { id: 'haze', label: 'Mist / Haze', prompt: 'volumetric atmospheric mist catching light beams' },
+        { id: 'dust', label: 'Dust Motes', prompt: 'floating dust motes drifting through the air' },
+        { id: 'grain', label: '35mm Grain', prompt: 'fine organic 35mm film grain' }
+      ]
+    };
+
+    const PRESET_SCENES = {
+      cafe: {
+        aspect: '2.39:1', focalIdx: 2, dofIdx: 1, angle: 'eye', movement: 'push', speed: 0, mood: 'noir', fx: ['rain', 'haze'],
+        lightPos: { x: 185, y: 105 },
+        items: [
+          { id: 1, type: 'window', name: 'Rain-streaked cafe window', layer: 'fg', x: 120, y: 235, scale: 1.15, facing: 'center', desc: 'dark wooden mullion beaded with rain', action: '' },
+          { id: 2, type: 'cup', name: 'Steaming espresso cup', layer: 'fg', x: 645, y: 345, scale: 1.0, facing: 'center', desc: 'warm ceramic cup on the foreground edge', action: 'thin steam curling upward' },
+          { id: 3, type: 'hero', name: 'Maya', layer: 'mg', x: 350, y: 245, scale: 1.1, facing: 'right', desc: 'young woman in a vintage trench coat', action: 'looks up slowly as the cafe door chimes' },
+          { id: 4, type: 'neon', name: 'Ruby-red bar sign', layer: 'mg', x: 600, y: 170, scale: 0.9, facing: 'center', desc: 'buzzing crimson neon script', action: 'flickering softly against the glass' },
+          { id: 5, type: 'city', name: 'Wet midnight skyline', layer: 'bg', x: 460, y: 185, scale: 1.15, facing: 'center', desc: 'distant glowing high-rises and bokeh headlights', action: '' }
+        ]
+      },
+      desert: {
+        aspect: '2.39:1', focalIdx: 4, dofIdx: 2, angle: 'low', movement: 'track', speed: 0, mood: 'golden', fx: ['dust', 'grain'],
+        lightPos: { x: 640, y: 110 },
+        items: [
+          { id: 1, type: 'foliage', name: 'Dry desert scrub', layer: 'fg', x: 115, y: 355, scale: 1.1, facing: 'center', desc: 'sun-bleached sagebrush along the road shoulder', action: 'rustling in the hot wind' },
+          { id: 2, type: 'hero', name: 'Marcus', layer: 'mg', x: 320, y: 255, scale: 1.05, facing: 'right', desc: 'lone driver in a dusty denim jacket', action: 'leans against the car door, squinting into the horizon' },
+          { id: 3, type: 'car', name: '1970s muscle car', layer: 'mg', x: 545, y: 270, scale: 1.15, facing: 'left', desc: 'sun-faded metallic blue coupe', action: 'heat radiating off the hood' },
+          { id: 4, type: 'mountain', name: 'Red-rock mesas', layer: 'bg', x: 410, y: 195, scale: 1.25, facing: 'center', desc: 'towering desert buttes glowing amber at dusk', action: '' }
+        ]
+      },
+      rooftop: {
+        aspect: '16:9', focalIdx: 2, dofIdx: 0, angle: 'eye', movement: 'orbit', speed: 0, mood: 'cyber', fx: ['haze', 'rain'],
+        lightPos: { x: 590, y: 95 },
+        items: [
+          { id: 1, type: 'neon', name: 'Magenta rooftop billboard', layer: 'fg', x: 110, y: 155, scale: 1.1, facing: 'center', desc: 'glowing holographic edge framing the left', action: 'pulsing rhythmically' },
+          { id: 2, type: 'hero', name: 'Kenji', layer: 'mg', x: 400, y: 245, scale: 1.15, facing: 'left', desc: 'courier in a reflective rain jacket', action: 'exhales visible breath while gazing over the neon city' },
+          { id: 3, type: 'city', name: 'Cyberpunk megalopolis', layer: 'bg', x: 410, y: 190, scale: 1.3, facing: 'center', desc: 'towering neon skyscrapers veiled in night mist', action: '' }
+        ]
+      },
+      forest: {
+        aspect: '2.39:1', focalIdx: 1, dofIdx: 1, angle: 'high', movement: 'crane', speed: 0, mood: 'bluehour', fx: ['haze', 'dust'],
+        lightPos: { x: 400, y: 80 },
+        items: [
+          { id: 1, type: 'foliage', name: 'Pine boughs', layer: 'fg', x: 675, y: 140, scale: 1.2, facing: 'center', desc: 'dark evergreen needles framing upper right', action: 'swaying gently' },
+          { id: 2, type: 'hero', name: 'Aria', layer: 'mg', x: 375, y: 265, scale: 0.95, facing: 'center', desc: 'traveler in a crimson cloak holding a brass lantern', action: 'steps cautiously into the misty clearing' },
+          { id: 3, type: 'lamp', name: 'Ancient stone lantern', layer: 'mg', x: 530, y: 260, scale: 0.95, facing: 'center', desc: 'moss-covered monolith', action: 'emitting a faint warm glow' },
+          { id: 4, type: 'mountain', name: 'Mist-shrouded ridge', layer: 'bg', x: 390, y: 175, scale: 1.2, facing: 'center', desc: 'layered blue pine ridges disappearing into fog', action: '' }
+        ]
+      }
+    };
+
+    // =========================================================
+    // STATE
+    // =========================================================
+    let state = {
+      ...JSON.parse(JSON.stringify(PRESET_SCENES.cafe)),
+      selectedId: 3,
+      showThirds: true,
+      outputFormat: 'universal',
+      isPlaying: false
+    };
+    let nextId = 100;
+    let dragTarget = null; // { kind: 'item'|'light', id, offsetX, offsetY }
+    let animFrameId = null;
+
+    const byId = (id) => document.getElementById(id);
+    const findById = (arr, id) => arr.find((x) => x.id === id) || arr[0];
+
+    let toastTimer = null;
+    function showToast(msg) {
+      const el = byId('toast');
+      byId('toastText').textContent = msg;
+      el.classList.remove('opacity-0', 'translate-y-2');
+      el.classList.add('opacity-100', 'translate-y-0');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        el.classList.remove('opacity-100', 'translate-y-0');
+        el.classList.add('opacity-0', 'translate-y-2');
+      }, 2200);
+    }
+
+    function copyText(text) {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => showToast('Prompt copied to clipboard'), () => fallbackCopy(text));
+      } else {
+        fallbackCopy(text);
+      }
+    }
+    function fallbackCopy(text) {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); showToast('Prompt copied to clipboard'); } catch (e) {}
+      document.body.removeChild(ta);
+    }
+
+    // =========================================================
+    // SPATIAL POSITION ANALYZER (x, y -> natural film blocking)
+    // =========================================================
+    function getFrameBounds() {
+      let x = 0, y = 0, w = 800, h = 450;
+      if (state.aspect === '2.39:1') { y = 58; h = 334; }
+      else if (state.aspect === '4:3') { x = 100; w = 600; }
+      else if (state.aspect === '9:16') { x = 273; w = 254; }
+      else if (state.aspect === '1:1') { x = 175; w = 450; }
+      return { x, y, w, h };
+    }
+
+    function describePosition(item) {
+      const b = getFrameBounds();
+      const nx = (item.x - b.x) / b.w;
+      const ny = (item.y - b.y) / b.h;
+      let horiz = 'center';
+      if (nx < 0.24) horiz = 'far left';
+      else if (nx < 0.42) horiz = 'left third';
+      else if (nx > 0.76) horiz = 'far right';
+      else if (nx > 0.58) horiz = 'right third';
+
+      let vert = '';
+      if (ny < 0.3) vert = 'upper ';
+      else if (ny > 0.72) vert = 'lower ';
+      return `${vert}${horiz}`.trim();
+    }
+
+    function describeLightDirection() {
+      const { x, y } = state.lightPos;
+      const horiz = x < 290 ? 'from frame-left' : x > 510 ? 'from frame-right' : 'from center';
+      const vert = y < 150 ? 'high overhead' : y > 310 ? 'low upward' : 'three-quarter';
+      return `motivated key light ${vert} ${horiz}`;
+    }
+
+    // =========================================================
+    // SVG GLYPHS FOR STAGED ELEMENTS
+    // =========================================================
+    function getElementSvg(item, isSelected) {
+      const isHero = item.type === 'hero';
+      const layerStroke = item.layer === 'fg' ? '#fb7185' : item.layer === 'bg' ? '#38bdf8' : '#fbbf24';
+      const stroke = isSelected ? '#ffffff' : layerStroke;
+      const fillMain = isHero ? 'rgba(245, 158, 11, 0.28)' : 'rgba(15, 23, 42, 0.78)';
+      const flip = item.facing === 'left' ? -1 : 1;
+
+      let shape = '';
+      if (item.type === 'hero' || item.type === 'person') {
+        shape = `
+          <g transform="scale(${flip}, 1)">
+            <ellipse cx="0" cy="48" rx="22" ry="6" fill="rgba(0,0,0,0.45)" />
+            <path d="M -22 44 C -22 14 -16 4 0 4 C 16 4 22 14 22 44 Z" fill="${fillMain}" stroke="${stroke}" stroke-width="${isSelected ? 2.4 : 1.6}" />
+            <circle cx="0" cy="-14" r="14" fill="${fillMain}" stroke="${stroke}" stroke-width="${isSelected ? 2.4 : 1.6}" />
+            ${item.facing !== 'center' ? `<path d="M 10 -15 L 18 -13 L 10 -11 Z" fill="${stroke}" opacity="0.85" />` : ''}
+            ${isHero ? `<polygon points="0,-38 3,-32 9,-32 4,-28 6,-22 0,-26 -6,-22 -4,-28 -9,-32 -3,-32" fill="#fbbf24" />` : ''}
+          </g>
+        `;
+      } else if (item.type === 'window') {
+        shape = `
+          <rect x="-42" y="-58" width="84" height="116" rx="4" fill="rgba(15,23,42,0.55)" stroke="${stroke}" stroke-width="3" />
+          <line x1="0" y1="-58" x2="0" y2="58" stroke="${stroke}" stroke-width="2" />
+          <line x1="-42" y1="0" x2="42" y2="0" stroke="${stroke}" stroke-width="2" />
+        `;
+      } else if (item.type === 'cup') {
+        shape = `
+          <path d="M -18 -6 H 18 L 14 22 H -14 Z" fill="${fillMain}" stroke="${stroke}" stroke-width="1.8" />
+          <path d="M 17 -1 C 26 -1 26 14 15 14" fill="none" stroke="${stroke}" stroke-width="1.8" />
+          <path d="M -6 -12 Q -10 -22 -4 -30 M 4 -12 Q 8 -22 2 -30" fill="none" stroke="#e2e8f0" stroke-width="1.3" opacity="0.65" />
+        `;
+      } else if (item.type === 'foliage') {
+        shape = `
+          <path d="M -38 14 Q -10 -20 34 -18" fill="none" stroke="${stroke}" stroke-width="2.5" />
+          <ellipse cx="-16" cy="-6" rx="18" ry="10" transform="rotate(-20 -16 -6)" fill="rgba(16,185,129,0.28)" stroke="${stroke}" stroke-width="1.4" />
+          <ellipse cx="14" cy="-14" rx="20" ry="11" transform="rotate(12 14 -14)" fill="rgba(16,185,129,0.28)" stroke="${stroke}" stroke-width="1.4" />
+          <ellipse cx="4" cy="4" rx="15" ry="9" fill="rgba(16,185,129,0.22)" stroke="${stroke}" stroke-width="1.2" />
+        `;
+      } else if (item.type === 'neon') {
+        shape = `
+          <rect x="-44" y="-18" width="88" height="36" rx="6" fill="rgba(236,72,153,0.18)" stroke="#f472b6" stroke-width="2.2" filter="url(#softGlow)" />
+          <line x1="-30" y1="0" x2="30" y2="0" stroke="#38bdf8" stroke-width="3" stroke-linecap="round" />
+        `;
+      } else if (item.type === 'car') {
+        shape = `
+          <g transform="scale(${flip}, 1)">
+            <path d="M -46 16 L -40 -2 L -18 -18 L 18 -18 L 36 -2 L 46 6 L 46 16 Z" fill="${fillMain}" stroke="${stroke}" stroke-width="1.8" />
+            <circle cx="-26" cy="18" r="9" fill="#090b10" stroke="${stroke}" stroke-width="2" />
+            <circle cx="26" cy="18" r="9" fill="#090b10" stroke="${stroke}" stroke-width="2" />
+            <circle cx="44" cy="6" r="4" fill="#fde68a" filter="url(#softGlow)" />
+          </g>
+        `;
+      } else if (item.type === 'lamp') {
+        shape = `
+          <line x1="0" y1="45" x2="0" y2="-36" stroke="${stroke}" stroke-width="2.4" />
+          <path d="M -12 -36 H 12 L 8 -20 H -8 Z" fill="rgba(251,191,36,0.35)" stroke="#fbbf24" stroke-width="1.6" />
+          <circle cx="0" cy="-28" r="18" fill="rgba(251,191,36,0.16)" />
+        `;
+      } else if (item.type === 'city') {
+        shape = `
+          <g fill="rgba(15,23,42,0.85)" stroke="${stroke}" stroke-width="1.3">
+            <rect x="-90" y="-22" width="26" height="62" />
+            <rect x="-60" y="-48" width="32" height="88" />
+            <rect x="-24" y="-32" width="28" height="72" />
+            <rect x="8" y="-58" width="36" height="98" />
+            <rect x="48" y="-26" width="34" height="66" />
+          </g>
+        `;
+      } else if (item.type === 'mountain') {
+        shape = `
+          <path d="M -115 36 L -55 -36 L -10 14 L 38 -48 L 115 36 Z" fill="rgba(15,23,42,0.82)" stroke="${stroke}" stroke-width="1.6" />
+          <path d="M 38 -48 L 22 -24 L 38 -28 L 52 -22 Z" fill="rgba(226,232,240,0.45)" />
+        `;
+      } else {
+        shape = `
+          <rect x="-26" y="-22" width="52" height="44" rx="10" fill="${fillMain}" stroke="${stroke}" stroke-width="1.8" />
+          <circle cx="0" cy="0" r="6" fill="${stroke}" opacity="0.7" />
+        `;
+      }
+
+      const selRing = isSelected
+        ? `<rect x="-54" y="-54" width="108" height="108" rx="12" fill="none" stroke="#fbbf24" stroke-width="1.4" stroke-dasharray="5 4" opacity="0.9" />`
+        : '';
+
+      const layerTag = item.layer.toUpperCase();
+      const shapeFilter = item.layer === 'bg' ? 'filter="url(#blurBg)"' : item.layer === 'fg' ? 'filter="url(#blurFg)"' : '';
+      return `
+        <g class="draggable-item" data-item-id="${item.id}" transform="translate(${item.x}, ${item.y}) scale(${item.scale})">
+          <g ${shapeFilter}>${shape}</g>
+          ${selRing}
+          <g transform="translate(0, 62)">
+            <rect x="-52" y="-10" width="104" height="18" rx="5" fill="rgba(8,10,15,0.85)" stroke="${layerStroke}" stroke-opacity="0.65" stroke-width="1" />
+            <text x="0" y="2.5" text-anchor="middle" fill="#f8fafc" font-size="10" font-family="Inter, sans-serif" font-weight="600">${escapeXml(truncate(item.name, 14))} · ${layerTag}</text>
+          </g>
+        </g>
+      `;
+    }
+
+    function escapeXml(str) {
+      return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+    function truncate(str, n) {
+      return str.length > n ? str.slice(0, n - 1) + '…' : str;
+    }
+
+    // =========================================================
+    // STAGE RENDERER
+    // =========================================================
+    function renderStage() {
+      const mood = findById(CATALOG.moods, state.mood);
+      const angle = findById(CATALOG.angles, state.angle);
+      const focal = CATALOG.focals[state.focalIdx] || CATALOG.focals[2];
+      const dof = CATALOG.dofs[state.dofIdx] || CATALOG.dofs[1];
+      const move = findById(CATALOG.movements, state.movement);
+
+      // Sky, Ground & Horizon
+      byId('skyStop1').setAttribute('stop-color', mood.sky1);
+      byId('skyStop2').setAttribute('stop-color', mood.sky2);
+      byId('groundStop1').setAttribute('stop-color', mood.grd1);
+      byId('groundStop2').setAttribute('stop-color', mood.grd2);
+      byId('lightStop1').setAttribute('stop-color', mood.light);
+      byId('lightStop2').setAttribute('stop-color', mood.light);
+
+      const hy = angle.horizonY;
+      byId('skyRect').setAttribute('height', String(hy + 120));
+      byId('groundRect').setAttribute('y', String(hy));
+      byId('groundRect').setAttribute('height', String(570 - hy));
+      byId('horizonLine').setAttribute('y1', String(hy));
+      byId('horizonLine').setAttribute('y2', String(hy));
+
+      // Perspective floor lines radiating from center horizon
+      const fl = byId('floorLines');
+      fl.innerHTML = [-360, -180, 0, 180, 360].map((dx) =>
+        `<line x1="400" y1="${hy}" x2="${400 + dx * 2.2}" y2="540" />`
+      ).join('');
+
+      // Key light glow position
+      const lxPct = Math.round((state.lightPos.x / 800) * 100);
+      const lyPct = Math.round((state.lightPos.y / 450) * 100);
+      byId('keyLightGlow').setAttribute('cx', `${lxPct}%`);
+      byId('keyLightGlow').setAttribute('cy', `${lyPct}%`);
+      byId('lightHandleGroup').setAttribute('transform', `translate(${state.lightPos.x}, ${state.lightPos.y})`);
+
+      // Live DoF blur amounts
+      byId('blurBgStd').setAttribute('stdDeviation', String(dof.bgBlur));
+      byId('blurFgStd').setAttribute('stdDeviation', String(dof.fgBlur));
+
+      // Apply Dutch tilt (when not mid-animation)
+      if (!state.isPlaying) {
+        byId('cameraWorld').setAttribute('transform', angle.tilt ? `rotate(${angle.tilt} 400 225)` : '');
+      }
+
+      // Render items into BG, MG, FG layers (with focal-length compression on BG!)
+      const bgItems = state.items.filter((i) => i.layer === 'bg');
+      const mgItems = state.items.filter((i) => i.layer === 'mg');
+      const fgItems = state.items.filter((i) => i.layer === 'fg');
+
+      byId('layerBG').setAttribute('transform', `translate(400, ${hy}) scale(${focal.bgScale}) translate(-400, ${-hy})`);
+      byId('layerBG').innerHTML = bgItems.map((i) => getElementSvg(i, i.id === state.selectedId)).join('');
+      byId('layerMG').innerHTML = mgItems.map((i) => getElementSvg(i, i.id === state.selectedId)).join('');
+      byId('layerFG').innerHTML = fgItems.map((i) => getElementSvg(i, i.id === state.selectedId)).join('');
+
+      // Atmosphere FX visual overlay
+      let fxSvg = '';
+      if (state.fx.includes('rain')) {
+        for (let i = 0; i < 28; i++) {
+          const rx = (i * 31 + 17) % 780 + 10;
+          const ry = (i * 53 + 29) % 410 + 15;
+          fxSvg += `<line x1="${rx}" y1="${ry}" x2="${rx - 5}" y2="${ry + 22}" stroke="rgba(186,230,253,0.32)" stroke-width="1" />`;
+        }
+      }
+      if (state.fx.includes('haze')) {
+        fxSvg += `<rect x="0" y="${hy - 45}" width="800" height="120" fill="rgba(226,232,240,0.08)" />`;
+      }
+      if (state.fx.includes('dust')) {
+        for (let i = 0; i < 20; i++) {
+          const dx = (i * 47 + 40) % 740 + 30;
+          const dy = (i * 67 + 20) % 360 + 45;
+          fxSvg += `<circle cx="${dx}" cy="${dy}" r="${(i % 2) + 1.2}" fill="rgba(253,230,138,0.45)" />`;
+        }
+      }
+      byId('fxLayer').innerHTML = fxSvg;
+
+      // Aspect ratio masks & reticles
+      const b = getFrameBounds();
+      byId('aspectMaskGroup').innerHTML = `
+        <rect x="0" y="0" width="800" height="${b.y}" />
+        <rect x="0" y="${b.y + b.h}" width="800" height="${450 - (b.y + b.h)}" />
+        <rect x="0" y="0" width="${b.x}" height="450" />
+        <rect x="${b.x + b.w}" y="0" width="${800 - (b.x + b.w)}" height="450" />
+      `;
+      const pad = 14, rlen = 22;
+      byId('reticleGroup').innerHTML = `
+        <path d="M ${b.x + pad} ${b.y + pad + rlen} L ${b.x + pad} ${b.y + pad} L ${b.x + pad + rlen} ${b.y + pad}" />
+        <path d="M ${b.x + b.w - pad - rlen} ${b.y + pad} L ${b.x + b.w - pad} ${b.y + pad} L ${b.x + b.w - pad} ${b.y + pad + rlen}" />
+        <path d="M ${b.x + pad} ${b.y + b.h - pad - rlen} L ${b.x + pad} ${b.y + b.h - pad} L ${b.x + pad + rlen} ${b.y + b.h - pad}" />
+        <path d="M ${b.x + b.w - pad - rlen} ${b.y + b.h - pad} L ${b.x + b.w - pad} ${b.y + b.h - pad} L ${b.x + b.w - pad} ${b.y + b.h - pad - rlen}" />
+      `;
+
+      // Rule of Thirds grid
+      byId('thirdsGridOverlay').innerHTML = state.showThirds ? `
+        <line x1="${b.x + b.w / 3}" y1="${b.y}" x2="${b.x + b.w / 3}" y2="${b.y + b.h}" />
+        <line x1="${b.x + (2 * b.w) / 3}" y1="${b.y}" x2="${b.x + (2 * b.w) / 3}" y2="${b.y + b.h}" />
+        <line x1="${b.x}" y1="${b.y + b.h / 3}" x2="${b.x + b.w}" y2="${b.y + b.h / 3}" />
+        <line x1="${b.x}" y1="${b.y + (2 * b.h) / 3}" x2="${b.x + b.w}" y2="${b.y + (2 * b.h) / 3}" />
+      ` : '';
+
+      // Movement path guide
+      const cx = b.x + b.w / 2, cy = b.y + b.h / 2;
+      let mSvg = '';
+      if (state.movement === 'push') {
+        mSvg = `<rect x="${cx - 110}" y="${cy - 60}" width="220" height="120" fill="none" stroke="#f59e0b" stroke-width="1.3" stroke-dasharray="5 4" opacity="0.6" />
+                <rect x="${cx - 72}" y="${cy - 40}" width="144" height="80" fill="none" stroke="#fbbf24" stroke-width="1.8" opacity="0.85" />`;
+      } else if (state.movement === 'pull') {
+        mSvg = `<rect x="${cx - 65}" y="${cy - 36}" width="130" height="72" fill="none" stroke="#f59e0b" stroke-width="1.3" stroke-dasharray="5 4" opacity="0.6" />
+                <rect x="${cx - 135}" y="${cy - 74}" width="270" height="148" fill="none" stroke="#fbbf24" stroke-width="1.8" opacity="0.85" />`;
+      } else if (state.movement === 'pan_r' || state.movement === 'track') {
+        mSvg = `<path d="M ${cx - 95} ${b.y + b.h - 26} L ${cx + 95} ${b.y + b.h - 26} M ${cx + 83} ${b.y + b.h - 33} L ${cx + 95} ${b.y + b.h - 26} L ${cx + 83} ${b.y + b.h - 19}" stroke="#fbbf24" stroke-width="2.2" fill="none" />`;
+      } else if (state.movement === 'pan_l') {
+        mSvg = `<path d="M ${cx + 95} ${b.y + b.h - 26} L ${cx - 95} ${b.y + b.h - 26} M ${cx - 83} ${b.y + b.h - 33} L ${cx - 95} ${b.y + b.h - 26} L ${cx - 83} ${b.y + b.h - 19}" stroke="#fbbf24" stroke-width="2.2" fill="none" />`;
+      } else if (state.movement === 'crane') {
+        mSvg = `<path d="M ${b.x + b.w - 38} ${cy + 58} L ${b.x + b.w - 38} ${cy - 58} M ${b.x + b.w - 46} ${cy - 46} L ${b.x + b.w - 38} ${cy - 58} L ${b.x + b.w - 30} ${cy - 46}" stroke="#fbbf24" stroke-width="2.2" fill="none" />`;
+      } else if (state.movement === 'orbit') {
+        mSvg = `<path d="M ${cx - 90} ${b.y + b.h - 30} Q ${cx} ${b.y + b.h - 8} ${cx + 90} ${b.y + b.h - 30}" stroke="#fbbf24" stroke-width="2" stroke-dasharray="6 3" fill="none" />`;
+      } else if (state.movement === 'handheld') {
+        mSvg = `<path d="M ${cx - 60} ${b.y + b.h - 26} Q ${cx - 30} ${b.y + b.h - 36} ${cx} ${b.y + b.h - 26} T ${cx + 60} ${b.y + b.h - 28}" stroke="#fbbf24" stroke-width="2" fill="none" />`;
+      }
+      byId('motionGuideOverlay').innerHTML = mSvg;
+
+      // HUD telemetry
+      byId('hudTopLeft').textContent = `${focal.mm} · ${dof.label.split(' — ')[0]} · ${angle.label.toUpperCase()}`;
+      byId('hudTopRight').textContent = `${move.label.toUpperCase()} · ${state.aspect}`;
+      byId('hudCounts').textContent = `FG: ${fgItems.length} · MG: ${mgItems.length} · BG: ${bgItems.length}`;
+    }
+
+    // =========================================================
+    // INSPECTOR & CONTROLS RENDERER
+    // =========================================================
+    function renderInspector() {
+      const list = byId('stageElementList');
+      list.innerHTML = state.items.map((item) => {
+        const active = item.id === state.selectedId;
+        const badgeCls = item.layer === 'fg' ? 'layer-badge-fg' : item.layer === 'bg' ? 'layer-badge-bg' : 'layer-badge-mg';
+        return `
+          <button type="button" data-select-id="${item.id}" class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg border text-[11px] transition ${active ? 'border-amber-500 bg-amber-500/15 text-amber-200 font-semibold' : 'border-stage-border bg-stage-bg text-slate-300 hover:border-slate-500'}">
+            <span class="px-1 rounded text-[9px] font-mono border ${badgeCls}">${item.layer.toUpperCase()}</span>
+            <span>${escapeXml(truncate(item.name, 14))}</span>
+          </button>
+        `;
+      }).join('');
+      list.querySelectorAll('button[data-select-id]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          state.selectedId = Number(btn.getAttribute('data-select-id'));
+          renderAll();
+        });
+      });
+
+      const body = byId('inspectorBody');
+      const sel = state.items.find((i) => i.id === state.selectedId);
+      if (!sel) {
+        byId('selectedPosBadge').textContent = 'No element selected';
+        body.innerHTML = `<p class="text-xs text-slate-500 py-4 text-center">Click any character or object on the frame—or add one from the palette—to edit its name, depth layer, and action.</p>`;
+        return;
+      }
+
+      byId('selectedPosBadge').textContent = `${sel.layer.toUpperCase()} · ${describePosition(sel)}`;
+      body.innerHTML = `
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          <div>
+            <label for="inspName" class="block text-[10px] font-mono uppercase text-slate-400 mb-1">${sel.type === 'hero' ? 'Main Character Name' : 'Object / Character Name'}</label>
+            <input id="inspName" type="text" value="${escapeXml(sel.name)}" class="w-full rounded-lg bg-stage-bg border border-stage-border focus:border-amber-500 px-2.5 py-1.5 text-xs text-slate-100 outline-none" />
+          </div>
+          <div>
+            <label class="block text-[10px] font-mono uppercase text-slate-400 mb-1">Depth Layer</label>
+            <div class="grid grid-cols-3 gap-1">
+              ${['fg', 'mg', 'bg'].map((lyr) => `
+                <button type="button" data-set-layer="${lyr}" class="py-1.5 rounded-lg border text-[11px] font-mono uppercase transition ${sel.layer === lyr ? 'border-amber-500 bg-amber-500/20 text-amber-200 font-semibold' : 'border-stage-border bg-stage-bg text-slate-400 hover:text-slate-200'}">${lyr}</button>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <label for="inspDesc" class="block text-[10px] font-mono uppercase text-slate-400 mb-1">Appearance / Visual Detail</label>
+          <input id="inspDesc" type="text" value="${escapeXml(sel.desc)}" placeholder="e.g., wearing a soaked trench coat" class="w-full rounded-lg bg-stage-bg border border-stage-border focus:border-amber-500 px-2.5 py-1.5 text-xs text-slate-100 outline-none" />
+        </div>
+
+        <div>
+          <label for="inspAction" class="block text-[10px] font-mono uppercase text-slate-400 mb-1">Action / Motion in Shot</label>
+          <input id="inspAction" type="text" value="${escapeXml(sel.action)}" placeholder="e.g., turns slowly toward the glowing doorway" class="w-full rounded-lg bg-stage-bg border border-stage-border focus:border-amber-500 px-2.5 py-1.5 text-xs text-slate-100 outline-none" />
+        </div>
+
+        <div class="grid grid-cols-2 gap-3 pt-1">
+          <div>
+            <div class="flex justify-between text-[10px] font-mono text-slate-400 mb-1">
+              <span>Size in Frame</span>
+              <span class="text-amber-400">${Math.round(sel.scale * 100)}%</span>
+            </div>
+            <input id="inspScale" type="range" min="0.55" max="1.8" step="0.05" value="${sel.scale}" class="w-full" />
+          </div>
+          <div>
+            <span class="block text-[10px] font-mono text-slate-400 mb-1">Facing</span>
+            <div class="grid grid-cols-3 gap-1">
+              ${['left', 'center', 'right'].map((dir) => `
+                <button type="button" data-set-face="${dir}" class="py-1 rounded-md border text-[10px] capitalize transition ${sel.facing === dir ? 'border-amber-500 bg-amber-500/20 text-amber-200' : 'border-stage-border bg-stage-bg text-slate-400'}">${dir}</button>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between pt-2 border-t border-stage-border/60">
+          <button id="toggleHeroBtn" type="button" class="text-[11px] text-amber-300 hover:text-amber-200 font-medium">${sel.type === 'hero' ? '★ Main Character' : '☆ Mark as Main Character'}</button>
+          <button id="deleteItemBtn" type="button" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-[11px] text-red-300 transition">Remove</button>
+        </div>
+      `;
+
+      byId('inspName').addEventListener('input', (e) => { sel.name = e.target.value; renderStage(); renderPrompt(); updateListLabel(sel); });
+      byId('inspDesc').addEventListener('input', (e) => { sel.desc = e.target.value; renderPrompt(); });
+      byId('inspAction').addEventListener('input', (e) => { sel.action = e.target.value; renderPrompt(); });
+      byId('inspScale').addEventListener('input', (e) => { sel.scale = Number(e.target.value); renderStage(); renderPrompt(); });
+
+      body.querySelectorAll('button[data-set-layer]').forEach((btn) => {
+        btn.addEventListener('click', () => { sel.layer = btn.getAttribute('data-set-layer'); renderAll(); });
+      });
+      body.querySelectorAll('button[data-set-face]').forEach((btn) => {
+        btn.addEventListener('click', () => { sel.facing = btn.getAttribute('data-set-face'); renderAll(); });
+      });
+      byId('toggleHeroBtn').addEventListener('click', () => {
+        sel.type = sel.type === 'hero' ? 'person' : 'hero';
+        renderAll();
+      });
+      byId('deleteItemBtn').addEventListener('click', () => {
+        state.items = state.items.filter((i) => i.id !== sel.id);
+        state.selectedId = state.items.length ? state.items[0].id : null;
+        renderAll();
+        showToast('Removed element from frame');
+      });
+    }
+
+    function updateListLabel(sel) {
+      const btn = document.querySelector(`button[data-select-id="${sel.id}"] span:last-child`);
+      if (btn) btn.textContent = truncate(sel.name, 14);
+    }
+
+    function renderControls() {
+      // Aspect buttons
+      document.querySelectorAll('.aspect-btn').forEach((btn) => {
+        const act = btn.getAttribute('data-aspect') === state.aspect;
+        btn.classList.toggle('bg-amber-500/20', act);
+        btn.classList.toggle('text-amber-300', act);
+        btn.classList.toggle('font-semibold', act);
+        btn.classList.toggle('text-slate-400', !act);
+      });
+
+      // Sliders
+      const focal = CATALOG.focals[state.focalIdx] || CATALOG.focals[2];
+      const dof = CATALOG.dofs[state.dofIdx] || CATALOG.dofs[1];
+      byId('focalSlider').value = String(state.focalIdx);
+      byId('focalReadout').textContent = focal.label;
+      byId('dofSlider').value = String(state.dofIdx);
+      byId('dofReadout').textContent = dof.label;
+      byId('speedSlider').value = String(state.speed);
+      byId('moveSpeedText').textContent = CATALOG.speeds[state.speed].label;
+
+      // Angle grid
+      const ag = byId('angleBtnGrid');
+      ag.innerHTML = CATALOG.angles.map((a) => `
+        <button type="button" data-angle="${a.id}" class="chip-btn ${state.angle === a.id ? 'active' : ''} px-2 py-1.5 rounded-lg border border-stage-border bg-stage-panel text-[11px] font-medium text-slate-300">${a.label}</button>
+      `).join('');
+      ag.querySelectorAll('button').forEach((b) => b.addEventListener('click', () => { state.angle = b.getAttribute('data-angle'); renderAll(); }));
+
+      // Movement grid
+      const mg = byId('movementBtnGrid');
+      mg.innerHTML = CATALOG.movements.map((m) => `
+        <button type="button" data-move="${m.id}" class="chip-btn ${state.movement === m.id ? 'active' : ''} px-2 py-1.5 rounded-lg border border-stage-border bg-stage-panel text-[11px] font-medium text-slate-300">${m.label}</button>
+      `).join('');
+      mg.querySelectorAll('button').forEach((b) => b.addEventListener('click', () => { state.movement = b.getAttribute('data-move'); renderAll(); }));
+
+      // Mood grid
+      const moodG = byId('moodBtnGrid');
+      moodG.innerHTML = CATALOG.moods.map((m) => `
+        <button type="button" data-mood="${m.id}" class="chip-btn ${state.mood === m.id ? 'active' : ''} flex items-center gap-1.5 px-2 py-1.5 rounded-lg border border-stage-border bg-stage-panel text-[11px] font-medium text-slate-300">
+          <span class="w-2.5 h-2.5 rounded-full shrink-0" style="background:${m.light}"></span>
+          <span class="truncate">${m.label}</span>
+        </button>
+      `).join('');
+      moodG.querySelectorAll('button').forEach((b) => b.addEventListener('click', () => { state.mood = b.getAttribute('data-mood'); renderAll(); }));
+
+      // FX toggles
+      const fxG = byId('fxBtnGrid');
+      fxG.innerHTML = CATALOG.fxList.map((f) => {
+        const act = state.fx.includes(f.id);
+        return `<button type="button" data-fx="${f.id}" class="chip-btn ${act ? 'active' : ''} px-2.5 py-1 rounded-lg border border-stage-border bg-stage-panel text-[11px] text-slate-300">${act ? '✓ ' : '+ '}${f.label}</button>`;
+      }).join('');
+      fxG.querySelectorAll('button').forEach((b) => b.addEventListener('click', () => {
+        const id = b.getAttribute('data-fx');
+        state.fx = state.fx.includes(id) ? state.fx.filter((x) => x !== id) : [...state.fx, id];
+        renderAll();
+      }));
+
+      // Format tabs
+      document.querySelectorAll('.fmt-btn').forEach((btn) => {
+        const act = btn.getAttribute('data-fmt') === state.outputFormat;
+        btn.classList.toggle('bg-amber-500/20', act);
+        btn.classList.toggle('text-amber-300', act);
+        btn.classList.toggle('font-semibold', act);
+        btn.classList.toggle('text-slate-400', !act);
+      });
+    }
+
+    // =========================================================
+    // SPATIAL-TO-CINEMATOGRAPHY PROMPT TRANSLATOR
+    // =========================================================
+    function describeLayerItems(items, layerWord) {
+      if (!items.length) return '';
+      return items.map((item) => {
+        const pos = describePosition(item);
+        const facingTxt = item.type === 'hero' || item.type === 'person'
+          ? (item.facing === 'left' ? ', facing frame-left' : item.facing === 'right' ? ', facing frame-right' : '')
+          : '';
+        const detail = item.desc.trim() ? ` (${item.desc.trim()})` : '';
+        const act = item.action.trim() ? `, ${item.action.trim()}` : '';
+        return `${item.name.trim() || 'object'}${detail} positioned in the ${layerWord} ${pos}${facingTxt}${act}`;
+      }).join('; ');
+    }
+
+    function renderPrompt() {
+      const focal = CATALOG.focals[state.focalIdx] || CATALOG.focals[2];
+      const dof = CATALOG.dofs[state.dofIdx] || CATALOG.dofs[1];
+      const angle = findById(CATALOG.angles, state.angle);
+      const move = findById(CATALOG.movements, state.movement);
+      const speed = CATALOG.speeds[state.speed] || CATALOG.speeds[0];
+      const mood = findById(CATALOG.moods, state.mood);
+      const fxPrompts = state.fx.map((id) => findById(CATALOG.fxList, id).prompt);
+      const lightDir = describeLightDirection();
+
+      const fgItems = state.items.filter((i) => i.layer === 'fg');
+      const mgItems = state.items.filter((i) => i.layer === 'mg');
+      const bgItems = state.items.filter((i) => i.layer === 'bg');
+
+      // Update compact layer breakdown summary
+      byId('sumFG').textContent = fgItems.length ? fgItems.map((i) => `${i.name} (${describePosition(i)})`).join(', ') : 'Empty';
+      byId('sumMG').textContent = mgItems.length ? mgItems.map((i) => `${i.name} (${describePosition(i)})`).join(', ') : 'Empty';
+      byId('sumBG').textContent = bgItems.length ? bgItems.map((i) => `${i.name} (${describePosition(i)})`).join(', ') : 'Empty';
+
+      let output = '';
+      if (state.outputFormat === 'json') {
+        output = JSON.stringify({
+          aspect_ratio: state.aspect,
+          camera: {
+            angle: angle.label,
+            lens: focal.mm,
+            depth_of_field: dof.label,
+            movement: `${speed.label} ${move.label}`
+          },
+          lighting: {
+            mood: mood.label,
+            key_direction: lightDir,
+            atmosphere_fx: state.fx
+          },
+          spatial_blocking: {
+            foreground: fgItems.map((i) => ({ name: i.name, position: describePosition(i), detail: i.desc, action: i.action })),
+            midground_focus: mgItems.map((i) => ({ name: i.name, is_main_character: i.type === 'hero', position: describePosition(i), facing: i.facing, detail: i.desc, action: i.action })),
+            background: bgItems.map((i) => ({ name: i.name, position: describePosition(i), detail: i.desc, action: i.action }))
+          }
+        }, null, 2);
+      } else {
+        const fgTxt = fgItems.length ? `In the foreground, ${describeLayerItems(fgItems, 'foreground')}.` : '';
+        const mgTxt = mgItems.length ? `In crisp midground focus, ${describeLayerItems(mgItems, 'midground')}.` : 'A balanced cinematic midground composition.';
+        const bgTxt = bgItems.length ? `In the background, ${describeLayerItems(bgItems, 'background')}.` : '';
+        const fxTxt = fxPrompts.length ? `Atmospheric details include ${fxPrompts.join(', ')}.` : '';
+
+        if (state.outputFormat === 'runway') {
+          output = `[Camera: ${speed.label} ${move.label}, ${angle.label}, ${focal.mm}, ${state.aspect}] ${mgTxt} ${fgTxt} ${bgTxt} Optics: ${focal.prompt}, ${dof.prompt}. Lighting: ${mood.prompt} with ${lightDir}. ${fxTxt}`.replace(/\s+/g, ' ').trim();
+        } else if (state.outputFormat === 'veo') {
+          output = `A cinematic ${state.aspect} shot captured from an ${angle.prompt}. ${fgTxt} ${mgTxt} ${bgTxt} Camera motion: ${move.prompt} at a ${speed.adj} pace, preserving coherent spatial parallax across depth layers. Filmed on a ${focal.prompt}, ${dof.prompt}. Lit with ${mood.prompt} and ${lightDir}. ${fxTxt} Naturalistic 24fps film cadence with matching ambient soundscape.`.replace(/\s+/g, ' ').trim();
+        } else if (state.outputFormat === 'sora') {
+          output = `Photorealistic ${state.aspect} cinema sequence staged across layered physical depth. ${fgTxt} ${mgTxt} ${bgTxt} Captured from an ${angle.prompt} on a ${focal.prompt}, ${dof.prompt}. Throughout the shot, the camera is ${move.prompt} with ${speed.adj} physical weight. ${mood.prompt.charAt(0).toUpperCase() + mood.prompt.slice(1)}, driven by ${lightDir}. ${fxTxt}`.replace(/\s+/g, ' ').trim();
+        } else {
+          output = `A cinematic ${state.aspect} frame shot from an ${angle.prompt} on a ${focal.prompt}, ${dof.prompt}. ${fgTxt} ${mgTxt} ${bgTxt} The camera is ${move.prompt} at a ${speed.adj} pace. Illuminated by ${mood.prompt}, with ${lightDir}. ${fxTxt} 24fps natural cinema motion blur.`.replace(/\s+/g, ' ').trim();
+        }
+      }
+
+      const outEl = byId('promptOutput');
+      outEl.value = output;
+      outEl.classList.toggle('font-mono', state.outputFormat === 'json');
+      outEl.classList.toggle('font-sans', state.outputFormat !== 'json');
+      const words = output.trim() ? output.trim().split(/\s+/).length : 0;
+      byId('promptStats').textContent = `${words} words · ~${Math.round(words * 1.33)} tokens`;
+    }
+
+    // =========================================================
+    // LIVE CAMERA MOVEMENT PREVIEW ANIMATION (WITH PARALLAX!)
+    // =========================================================
+    function playCameraPreview() {
+      if (state.isPlaying) {
+        cancelAnimationFrame(animFrameId);
+        state.isPlaying = false;
+        byId('playMotionLabel').textContent = 'Preview Camera Move';
+        byId('layerFG').setAttribute('transform', '');
+        byId('layerMG').setAttribute('transform', '');
+        renderStage();
+        return;
+      }
+
+      state.isPlaying = true;
+      byId('playMotionLabel').textContent = 'Stop Preview';
+      const duration = state.speed === 2 ? 2200 : state.speed === 1 ? 3000 : 3800;
+      const start = performance.now();
+      const angle = findById(CATALOG.angles, state.angle);
+      const focal = CATALOG.focals[state.focalIdx] || CATALOG.focals[2];
+
+      function step(now) {
+        if (!state.isPlaying) return;
+        const rawT = Math.min((now - start) / duration, 1);
+        const t = rawT < 0.5 ? 2 * rawT * rawT : 1 - Math.pow(-2 * rawT + 2, 2) / 2; // smooth easeInOut
+
+        let scale = 1, tx = 0, ty = 0, fgShiftX = 0, bgShiftX = 0;
+        if (state.movement === 'push') {
+          scale = 1 + t * 0.24;
+        } else if (state.movement === 'pull') {
+          scale = 1.24 - t * 0.24;
+        } else if (state.movement === 'pan_r') {
+          tx = -t * 68;
+        } else if (state.movement === 'pan_l') {
+          tx = t * 68;
+        } else if (state.movement === 'track') {
+          tx = -t * 48;
+          fgShiftX = -t * 44;
+          bgShiftX = t * 26;
+        } else if (state.movement === 'crane') {
+          ty = t * 52;
+          scale = 1 - t * 0.08;
+        } else if (state.movement === 'orbit') {
+          fgShiftX = Math.sin(t * Math.PI) * -55;
+          bgShiftX = Math.sin(t * Math.PI) * 35;
+          scale = 1 + Math.sin(t * Math.PI) * 0.06;
+        } else if (state.movement === 'handheld') {
+          tx = Math.sin(rawT * 24) * 5;
+          ty = Math.cos(rawT * 19) * 4;
+        }
+
+        const tiltStr = angle.tilt ? ` rotate(${angle.tilt} 400 225)` : '';
+        byId('cameraWorld').setAttribute('transform', `translate(400 225) scale(${scale}) translate(${-400 + tx} ${-225 + ty})${tiltStr}`);
+        byId('layerFG').setAttribute('transform', `translate(${fgShiftX}, 0)`);
+        byId('layerBG').setAttribute('transform', `translate(${400 + bgShiftX}, ${angle.horizonY}) scale(${focal.bgScale}) translate(-400, ${-angle.horizonY})`);
+
+        if (rawT < 1) {
+          animFrameId = requestAnimationFrame(step);
+        } else {
+          state.isPlaying = false;
+          byId('playMotionLabel').textContent = 'Preview Camera Move';
+          byId('layerFG').setAttribute('transform', '');
+          renderStage();
+        }
+      }
+      animFrameId = requestAnimationFrame(step);
+    }
+
+    // =========================================================
+    // POINTER DRAG-AND-DROP ON SVG STAGE
+    // =========================================================
+    function svgPoint(evt) {
+      const svg = byId('stageSvg');
+      const pt = svg.createSVGPoint();
+      pt.x = evt.clientX;
+      pt.y = evt.clientY;
+      return pt.matrixTransform(svg.getScreenCTM().inverse());
+    }
+
+    function initStageDrag() {
+      const svg = byId('stageSvg');
+
+      svg.addEventListener('pointerdown', (e) => {
+        if (state.isPlaying) return;
+        const lightEl = e.target.closest('#lightHandleGroup');
+        if (lightEl) {
+          const p = svgPoint(e);
+          dragTarget = { kind: 'light', offsetX: state.lightPos.x - p.x, offsetY: state.lightPos.y - p.y };
+          svg.setPointerCapture(e.pointerId);
+          return;
+        }
+        const itemEl = e.target.closest('[data-item-id]');
+        if (itemEl) {
+          const id = Number(itemEl.getAttribute('data-item-id'));
+          const item = state.items.find((i) => i.id === id);
+          if (!item) return;
+          state.selectedId = id;
+          const p = svgPoint(e);
+          dragTarget = { kind: 'item', id, offsetX: item.x - p.x, offsetY: item.y - p.y };
+          svg.setPointerCapture(e.pointerId);
+          renderAll();
+        }
+      });
+
+      svg.addEventListener('pointermove', (e) => {
+        if (!dragTarget) return;
+        const p = svgPoint(e);
+        const nx = Math.max(40, Math.min(760, Math.round(p.x + dragTarget.offsetX)));
+        const ny = Math.max(35, Math.min(415, Math.round(p.y + dragTarget.offsetY)));
+        if (dragTarget.kind === 'light') {
+          state.lightPos = { x: nx, y: ny };
+          renderStage();
+          renderPrompt();
+        } else if (dragTarget.kind === 'item') {
+          const item = state.items.find((i) => i.id === dragTarget.id);
+          if (item) {
+            item.x = nx;
+            item.y = ny;
+            renderStage();
+            renderPrompt();
+            byId('selectedPosBadge').textContent = `${item.layer.toUpperCase()} · ${describePosition(item)}`;
+          }
+        }
+      });
+
+      const endDrag = () => { dragTarget = null; };
+      svg.addEventListener('pointerup', endDrag);
+      svg.addEventListener('pointercancel', endDrag);
+    }
+
+    // =========================================================
+    // PALETTE & MODAL
+    // =========================================================
+    function renderPalette() {
+      const grid = byId('paletteGrid');
+      grid.innerHTML = CATALOG.palette.map((p) => {
+        const lyrColor = p.type === 'custom'
+          ? 'border-amber-500/40 text-amber-300 bg-amber-500/10'
+          : p.layer === 'fg'
+            ? 'border-rose-500/30 text-rose-200 bg-stage-bg'
+            : p.layer === 'bg'
+              ? 'border-sky-500/30 text-sky-200 bg-stage-bg'
+              : 'border-amber-500/30 text-amber-100 bg-stage-bg';
+        return `<button type="button" data-pal-type="${p.type}" class="px-2.5 py-1.5 rounded-lg border ${lyrColor} hover:bg-slate-800 text-[11px] font-medium transition">${p.label}</button>`;
+      }).join('');
+
+      grid.querySelectorAll('button[data-pal-type]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const type = btn.getAttribute('data-pal-type');
+          if (type === 'custom') {
+            byId('customNameInput').value = '';
+            byId('customDescInput').value = '';
+            byId('customModal').classList.remove('hidden');
+            return;
+          }
+          const tpl = CATALOG.palette.find((x) => x.type === type);
+          if (!tpl) return;
+          const id = ++nextId;
+          const b = getFrameBounds();
+          const randX = Math.round(b.x + b.w * (0.28 + Math.random() * 0.44));
+          const defaultY = tpl.layer === 'fg' ? 320 : tpl.layer === 'bg' ? 185 : 245;
+          state.items.push({
+            id,
+            type: tpl.type,
+            name: tpl.defaultName,
+            layer: tpl.layer,
+            x: randX,
+            y: defaultY,
+            scale: 1.0,
+            facing: 'center',
+            desc: tpl.desc,
+            action: tpl.action
+          });
+          state.selectedId = id;
+          renderAll();
+          showToast(`Placed "${tpl.defaultName}" in ${tpl.layer.toUpperCase()}`);
+        });
+      });
+    }
+
+    function renderAll() {
+      renderStage();
+      renderControls();
+      renderInspector();
+      renderPrompt();
+    }
+
+    function initEvents() {
+      initStageDrag();
+      renderPalette();
+
+      document.querySelectorAll('.aspect-btn').forEach((btn) => {
+        btn.addEventListener('click', () => { state.aspect = btn.getAttribute('data-aspect'); renderAll(); });
+      });
+
+      byId('toggleGridBtn').addEventListener('click', () => {
+        state.showThirds = !state.showThirds;
+        byId('toggleGridBtn').classList.toggle('text-amber-300', state.showThirds);
+        byId('toggleGridBtn').classList.toggle('text-slate-400', !state.showThirds);
+        renderStage();
+      });
+
+      byId('playMotionBtn').addEventListener('click', playCameraPreview);
+      byId('focalSlider').addEventListener('input', (e) => { state.focalIdx = Number(e.target.value); renderAll(); });
+      byId('dofSlider').addEventListener('input', (e) => { state.dofIdx = Number(e.target.value); renderAll(); });
+      byId('speedSlider').addEventListener('input', (e) => { state.speed = Number(e.target.value); renderAll(); });
+
+      document.querySelectorAll('.fmt-btn').forEach((btn) => {
+        btn.addEventListener('click', () => { state.outputFormat = btn.getAttribute('data-fmt'); renderAll(); });
+      });
+
+      byId('copyPromptBtn').addEventListener('click', () => copyText(byId('promptOutput').value));
+
+      byId('scenePresetSelect').addEventListener('change', (e) => {
+        const key = e.target.value;
+        if (!key || !PRESET_SCENES[key]) return;
+        const p = JSON.parse(JSON.stringify(PRESET_SCENES[key]));
+        state = { ...state, ...p, selectedId: p.items[0] ? p.items[0].id : null, isPlaying: false };
+        renderAll();
+        showToast('Loaded staged scene');
+        e.target.value = '';
+      });
+
+      byId('clearStageBtn').addEventListener('click', () => {
+        state.items = [];
+        state.selectedId = null;
+        renderAll();
+        showToast('Cleared all elements from stage');
+      });
+
+      // Custom Object Modal
+      const closeModal = () => byId('customModal').classList.add('hidden');
+      byId('closeCustomModal').addEventListener('click', closeModal);
+      byId('cancelCustomBtn').addEventListener('click', closeModal);
+      byId('customModalBg').addEventListener('click', closeModal);
+      byId('confirmCustomBtn').addEventListener('click', () => {
+        const name = byId('customNameInput').value.trim();
+        if (!name) { showToast('Enter a name for your object'); return; }
+        const layer = byId('customLayerSelect').value;
+        const desc = byId('customDescInput').value.trim();
+        const id = ++nextId;
+        state.items.push({
+          id, type: 'custom', name, layer, x: 400, y: layer === 'bg' ? 185 : layer === 'fg' ? 320 : 250,
+          scale: 1.0, facing: 'center', desc, action: ''
+        });
+        state.selectedId = id;
+        closeModal();
+        renderAll();
+        showToast(`Added "${name}" to ${layer.toUpperCase()}`);
+      });
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      initEvents();
+      renderAll();
+      if (window.lucide) window.lucide.createIcons();
+    });
+  </script>
+</body>
+</html>

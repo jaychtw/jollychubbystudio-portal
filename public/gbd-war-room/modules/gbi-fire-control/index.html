@@ -1,0 +1,3179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GMD // GBI FIRE CONTROL CONSOLE - NORAD SECTOR 7</title>
+<style>
+  :root {
+    --bg-chassis: #0c0e11;
+    --panel-dark: #14181e;
+    --panel-recess: #090b0e;
+    --panel-border: #2a313c;
+    --bezel-light: #38414f;
+    --crt-green: #2dff6e;
+    --crt-green-dim: rgba(45, 255, 110, 0.18);
+    --crt-amber: #ffb020;
+    --crt-amber-dim: rgba(255, 176, 32, 0.18);
+    --crt-red: #ff3333;
+    --crt-red-dim: rgba(255, 51, 51, 0.22);
+    --crt-cyan: #38bdf8;
+    --text-main: #cfd8e3;
+    --text-muted: #6e7c8f;
+    --font-mono: 'Courier New', Courier, 'Lucida Console', monospace;
+  }
+
+  * {
+    box-sizing: border-box;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    background-color: var(--bg-chassis);
+    color: var(--text-main);
+    font-family: var(--font-mono);
+    overflow-x: hidden;
+  }
+
+  /* Subtle brushed steel background pattern */
+  body {
+    background-image: 
+      radial-gradient(circle at 50% 0%, #1c222b 0%, #090b0e 85%),
+      repeating-linear-gradient(0deg, rgba(255,255,255,0.015) 0px, rgba(255,255,255,0.015) 1px, transparent 1px, transparent 3px);
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+
+  /* ================= TOP COMMAND BAR ================= */
+  .top-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 5px 12px;
+    background: linear-gradient(180deg, #1b2028 0%, #101419 100%);
+    border-bottom: 2px solid var(--panel-border);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.6);
+    z-index: 20;
+  }
+
+  /* ================= TIGHT TOP OVERWATCH DECK (WORLD MAP + TELEMETRY BAYS) ================= */
+  .overwatch-wall-wrap {
+    max-width: 1680px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 6px 10px 0 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .overwatch-strip {
+    display: grid;
+    grid-template-columns: 280px 1fr 290px;
+    gap: 8px;
+    width: 100%;
+    height: 158px;
+  }
+
+  @media (max-width: 1120px) {
+    .overwatch-strip {
+      grid-template-columns: 1fr;
+      height: auto;
+    }
+  }
+
+  .ow-side-bay {
+    background: #040805;
+    border: 2px solid #253028;
+    border-radius: 5px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    overflow: hidden;
+    box-shadow: inset 0 0 16px rgba(0,0,0,0.9), 0 4px 12px rgba(0,0,0,0.65);
+  }
+
+  .ow-side-bay.nag-alert {
+    border-color: var(--crt-red);
+    box-shadow: 0 0 14px rgba(255, 51, 51, 0.45), inset 0 0 12px rgba(255, 51, 51, 0.2);
+  }
+
+  .vtc-window-bar {
+    height: 18px;
+    background: linear-gradient(90deg, #0b140e 0%, #132419 50%, #0b140e 100%);
+    border-bottom: 1px solid #213d2a;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 7px;
+    font-size: 0.56rem;
+    font-weight: bold;
+    letter-spacing: 0.7px;
+    color: #7AD996;
+    flex-shrink: 0;
+  }
+
+  .ow-bay-body {
+    flex: 1;
+    padding: 6px 8px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 4px;
+    font-size: 0.6rem;
+  }
+
+  .doomsday-box {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #070d09;
+    border: 1px solid #1e3826;
+    padding: 4px 7px;
+    border-radius: 3px;
+  }
+
+  .doomsday-digits {
+    font-size: 0.98rem;
+    font-weight: bold;
+    color: var(--crt-red);
+    letter-spacing: 1.5px;
+    text-shadow: 0 0 8px rgba(255, 51, 51, 0.5);
+  }
+
+  .voice-transcript-box {
+    background: #060b08;
+    border: 1px solid #1b3022;
+    border-radius: 3px;
+    padding: 4px 6px;
+    min-height: 36px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
+  }
+
+  .vtc-call-bar {
+    height: 22px;
+    background: linear-gradient(180deg, #09120c 0%, #040805 100%);
+    border-top: 1px solid #1b3322;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 7px;
+    font-size: 0.54rem;
+    color: #5ca874;
+    flex-shrink: 0;
+  }
+
+  .vtc-call-icons {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .call-dot {
+    height: 14px;
+    padding: 0 5px;
+    border-radius: 2px;
+    background: #0c2414;
+    border: 1px solid #2dff6e;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.52rem;
+    color: #a3f7bf;
+    cursor: pointer;
+  }
+
+  .call-dot.active-ack {
+    background: #c92020;
+    border-color: #ff9999;
+    color: #fff;
+    animation: blink-fast 0.45s infinite alternate;
+    font-weight: bold;
+  }
+
+  /* Center Giant World Map Screen (Unified Monochrome Green CRT, Zero Overlapping) */
+  .center-map-screen {
+    background: #030805;
+    border: 2px solid #263029;
+    border-radius: 5px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.85), inset 0 0 18px rgba(45, 255, 110, 0.12);
+  }
+
+  .map-canvas-holder {
+    flex: 1;
+    position: relative;
+    min-height: 0;
+  }
+
+  .map-canvas-holder::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.32) 50%),
+      radial-gradient(circle at center, transparent 60%, rgba(0, 0, 0, 0.65) 100%);
+    background-size: 100% 2px, 100% 100%;
+    pointer-events: none;
+    z-index: 4;
+  }
+
+  .map-canvas-holder canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  .map-Comms-strip {
+    height: 22px;
+    background: #050c07;
+    border-top: 1px solid #1e3b27;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 8px;
+    gap: 8px;
+    font-size: 0.58rem;
+    flex-shrink: 0;
+  }
+
+  .eam-grid-table {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+  }
+
+  .eam-cell {
+    background: #070e09;
+    border: 1px solid #1c3624;
+    border-radius: 3px;
+    padding: 3px 6px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  /* GBD SYSTEMS - ACTIVE OPERATIONS Divider Banner */
+  .gbd-operations-banner {
+    background: linear-gradient(90deg, #08110b 0%, #112618 50%, #08110b 100%);
+    border: 1px solid #264d33;
+    border-radius: 3px;
+    padding: 2px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.62rem;
+    font-weight: bold;
+    letter-spacing: 1.5px;
+    color: #a8f0be;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.65);
+  }
+
+  .ow-badge {
+    font-size: 0.52rem;
+    padding: 1px 4px;
+    border-radius: 2px;
+    background: #2b1111;
+    border: 1px solid var(--crt-red);
+    color: var(--crt-red);
+    animation: blink-fast 0.8s infinite alternate;
+  }
+
+  .ow-badge.amber {
+    background: #2b1f09;
+    border-color: var(--crt-amber);
+    color: var(--crt-amber);
+  }
+
+  .ow-badge.cyan {
+    background: #09222b;
+    border-color: var(--crt-cyan);
+    color: var(--crt-cyan);
+    animation: none;
+  }
+
+  .decoy-code-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .decoy-code-val {
+    color: var(--crt-green);
+    font-weight: bold;
+    letter-spacing: 1px;
+  }
+
+  .world-ack-btn {
+    background: #172636;
+    border: 1px solid #38bdf8;
+    color: #b8e6fe;
+    font-family: var(--font-mono);
+    font-size: 0.54rem;
+    font-weight: bold;
+    padding: 2px 6px;
+    border-radius: 2px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .world-ack-btn.pinging {
+    background: #611919;
+    border-color: #ff5555;
+    color: #fff;
+    animation: pulse-amber 0.5s infinite alternate;
+  }
+
+  .brand-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .status-beacon {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--crt-red);
+    box-shadow: 0 0 10px var(--crt-red);
+    animation: pulse-red 1.2s infinite alternate;
+  }
+
+  @keyframes pulse-red {
+    from { opacity: 0.4; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1.08); }
+  }
+
+  .brand-title h1 {
+    margin: 0;
+    font-size: 0.95rem;
+    letter-spacing: 1.5px;
+    color: #e6edf5;
+    text-shadow: 0 1px 2px #000;
+  }
+
+  .brand-sub {
+    font-size: 0.7rem;
+    color: var(--crt-amber);
+    letter-spacing: 1px;
+  }
+
+  .top-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .defcon-group {
+    display: flex;
+    background: var(--panel-recess);
+    padding: 3px;
+    border-radius: 4px;
+    border: 1px solid var(--panel-border);
+    gap: 3px;
+  }
+
+  .hw-btn {
+    background: linear-gradient(180deg, #252c37 0%, #161b22 100%);
+    border: 1px solid #3c4656;
+    border-bottom: 3px solid #0b0e12;
+    color: var(--text-main);
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: bold;
+    padding: 5px 9px;
+    border-radius: 3px;
+    cursor: pointer;
+    letter-spacing: 0.5px;
+    transition: all 0.08s ease;
+  }
+
+  .hw-btn:hover {
+    background: linear-gradient(180deg, #2f3846 0%, #1c222b 100%);
+    border-color: #546278;
+  }
+
+  .hw-btn:active {
+    transform: translateY(2px);
+    border-bottom-width: 1px;
+  }
+
+  .hw-btn.active-defcon-3 {
+    background: #173824;
+    border-color: var(--crt-green);
+    color: var(--crt-green);
+    box-shadow: 0 0 8px rgba(45, 255, 110, 0.25);
+  }
+
+  .hw-btn.active-defcon-2 {
+    background: #3d2c11;
+    border-color: var(--crt-amber);
+    color: var(--crt-amber);
+    box-shadow: 0 0 8px rgba(255, 176, 32, 0.25);
+  }
+
+  .hw-btn.active-defcon-1 {
+    background: #421414;
+    border-color: var(--crt-red);
+    color: var(--crt-red);
+    box-shadow: 0 0 8px rgba(255, 51, 51, 0.35);
+  }
+
+  .hw-btn.audio-on {
+    border-color: var(--crt-cyan);
+    color: var(--crt-cyan);
+  }
+
+  /* ================= MAIN 3-COLUMN CONSOLE ================= */
+  .console-grid {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1.05fr 1.45fr 1.05fr;
+    gap: 8px;
+    padding: 6px 10px 8px 10px;
+    max-width: 1680px;
+    width: 100%;
+    margin: 0 auto;
+  }
+
+  @media (max-width: 1120px) {
+    .console-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .console-column {
+    background: linear-gradient(180deg, #171c23 0%, #101318 100%);
+    border: 2px solid var(--panel-border);
+    border-radius: 6px;
+    padding: 7px 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 6px 18px rgba(0,0,0,0.65);
+    position: relative;
+  }
+
+  /* Corner decorative bolts */
+  .console-column::before, .console-column::after {
+    content: '+';
+    position: absolute;
+    top: 4px;
+    font-size: 10px;
+    color: #465163;
+    font-weight: bold;
+  }
+  .console-column::before { left: 6px; }
+  .console-column::after { right: 6px; }
+
+  .module-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #2b3340;
+    padding-bottom: 5px;
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .module-title {
+    font-size: 0.78rem;
+    font-weight: bold;
+    letter-spacing: 1.2px;
+    color: #9fb0c7;
+  }
+
+  .module-tag {
+    font-size: 0.65rem;
+    padding: 2px 5px;
+    background: var(--panel-recess);
+    border: 1px solid #303947;
+    color: var(--crt-amber);
+    border-radius: 2px;
+  }
+
+  .sub-panel {
+    background: var(--panel-recess);
+    border: 1px solid #252c36;
+    border-radius: 4px;
+    padding: 7px 8px;
+    box-shadow: inset 0 2px 8px rgba(0,0,0,0.8);
+  }
+
+  .sub-label {
+    font-size: 0.68rem;
+    color: var(--text-muted);
+    letter-spacing: 0.8px;
+    margin-bottom: 6px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  /* ================= CRT SCREEN STYLING ================= */
+  .crt-frame {
+    position: relative;
+    background: #040906;
+    border: 3px solid #222933;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: inset 0 0 24px rgba(0,0,0,0.95), 0 0 0 1px #000;
+  }
+
+  .crt-frame::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.28) 50%),
+                radial-gradient(circle at center, transparent 58%, rgba(0,0,0,0.55) 100%);
+    background-size: 100% 3px, 100% 100%;
+    pointer-events: none;
+    z-index: 5;
+  }
+
+  canvas {
+    display: block;
+    width: 100%;
+  }
+
+  /* ================= LEFT PANEL: SENSOR & DISCRIMINATION ================= */
+  .tuner-box {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .freq-readout-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #06090c;
+    border: 1px solid #26303d;
+    padding: 6px 10px;
+    border-radius: 3px;
+  }
+
+  .freq-val {
+    font-size: 1.05rem;
+    font-weight: bold;
+    color: var(--crt-cyan);
+    text-shadow: 0 0 8px rgba(56, 189, 248, 0.4);
+  }
+
+  .resonance-bar-wrap {
+    height: 10px;
+    background: #05070a;
+    border: 1px solid #2a3340;
+    border-radius: 2px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .resonance-bar-fill {
+    height: 100%;
+    width: 15%;
+    background: var(--crt-amber);
+    transition: width 0.1s linear, background-color 0.15s;
+  }
+
+  .slider-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  input[type="range"] {
+    -webkit-appearance: none;
+    flex: 1;
+    height: 10px;
+    background: #141920;
+    border: 1px solid #354050;
+    border-radius: 2px;
+    outline: none;
+  }
+
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px;
+    height: 22px;
+    background: linear-gradient(180deg, #4b586e 0%, #272f3b 100%);
+    border: 1px solid #798ca8;
+    border-radius: 2px;
+    cursor: pointer;
+    box-shadow: 0 2px 5px #000;
+  }
+
+  .ir-toggle-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .toggle-switch-btn {
+    flex: 1;
+    padding: 8px;
+    background: #181e26;
+    border: 1px solid #384354;
+    border-bottom: 3px solid #0a0d11;
+    color: #8b9bb0;
+    font-family: var(--font-mono);
+    font-weight: bold;
+    font-size: 0.75rem;
+    border-radius: 3px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .toggle-switch-btn.engaged {
+    background: #102e1d;
+    border-color: var(--crt-green);
+    color: var(--crt-green);
+    box-shadow: inset 0 0 10px rgba(45, 255, 110, 0.2);
+  }
+
+  .led {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: #2c3440;
+    border: 1px solid #000;
+    display: inline-block;
+  }
+
+  .led.green { background: var(--crt-green); box-shadow: 0 0 7px var(--crt-green); }
+  .led.amber { background: var(--crt-amber); box-shadow: 0 0 7px var(--crt-amber); }
+  .led.red { background: var(--crt-red); box-shadow: 0 0 7px var(--crt-red); }
+  .led.cyan { background: var(--crt-cyan); box-shadow: 0 0 7px var(--crt-cyan); }
+
+  /* Discriminated Target Output Box */
+  .target-intel-box {
+    background: #050a07;
+    border: 1px solid #243b2c;
+    padding: 8px 10px;
+    border-radius: 4px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .intel-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .intel-k {
+    font-size: 0.62rem;
+    color: #5f7a68;
+  }
+
+  .intel-v {
+    font-size: 0.95rem;
+    font-weight: bold;
+    color: #3e5245;
+    letter-spacing: 1px;
+  }
+
+  .intel-v.locked {
+    color: var(--crt-green);
+    text-shadow: 0 0 8px rgba(45, 255, 110, 0.45);
+  }
+
+  .aux-switches {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+
+  .aux-btn {
+    background: #141920;
+    border: 1px solid #2d3644;
+    border-bottom: 2px solid #090c0f;
+    color: #7c8b9e;
+    font-family: var(--font-mono);
+    font-size: 0.62rem;
+    padding: 6px 4px;
+    border-radius: 3px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .aux-btn.on {
+    color: var(--crt-cyan);
+    border-color: #2f6987;
+  }
+
+  /* ================= CENTER PANEL: TRAJECTORY & STEP ANNUNCIATOR ================= */
+  .countdown-banner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #080a0d;
+    border: 1px solid #2c3542;
+    padding: 8px 12px;
+    border-radius: 4px;
+  }
+
+  .timer-label-block {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .timer-title {
+    font-size: 0.72rem;
+    color: var(--crt-amber);
+    font-weight: bold;
+    letter-spacing: 1px;
+  }
+
+  .timer-sub {
+    font-size: 0.64rem;
+    color: var(--text-muted);
+  }
+
+  .timer-digits {
+    font-size: 2.05rem;
+    font-weight: bold;
+    color: var(--crt-amber);
+    text-shadow: 0 0 12px rgba(255, 176, 32, 0.45);
+    letter-spacing: 2px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .timer-digits.critical {
+    color: var(--crt-red);
+    text-shadow: 0 0 14px rgba(255, 51, 51, 0.75);
+    animation: blink-fast 0.45s infinite alternate;
+  }
+
+  @keyframes blink-fast {
+    from { opacity: 1; }
+    to { opacity: 0.45; }
+  }
+
+  /* 5-Step Annunciator Strip */
+  .step-strip {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 4px;
+  }
+
+  .step-tile {
+    background: #0c0f14;
+    border: 1px solid #262e3a;
+    padding: 6px 4px;
+    text-align: center;
+    border-radius: 3px;
+    font-size: 0.62rem;
+    color: #556275;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    transition: all 0.15s;
+  }
+
+  .step-tile.active {
+    background: #2b210d;
+    border-color: var(--crt-amber);
+    color: var(--crt-amber);
+    box-shadow: 0 0 10px rgba(255, 176, 32, 0.25);
+  }
+
+  .step-tile.done {
+    background: #0e2918;
+    border-color: var(--crt-green);
+    color: var(--crt-green);
+  }
+
+  .step-tile.fault {
+    background: #3b0d0d;
+    border-color: var(--crt-red);
+    color: var(--crt-red);
+  }
+
+  /* Fault / Drift Alert Bar */
+  .alert-bar {
+    min-height: 36px;
+    background: #090c10;
+    border: 1px solid #28303d;
+    border-radius: 4px;
+    padding: 6px 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 0.74rem;
+  }
+
+  .alert-bar.fault-active {
+    background: #360a0a;
+    border-color: var(--crt-red);
+    color: #ff8080;
+    animation: shake 0.28s ease-in-out;
+  }
+
+  .alert-bar.drift-active {
+    background: #332206;
+    border-color: var(--crt-amber);
+    color: var(--crt-amber);
+  }
+
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-4px); }
+    75% { transform: translateX(4px); }
+  }
+
+  .purge-progress {
+    width: 110px;
+    height: 8px;
+    background: #1a0505;
+    border: 1px solid var(--crt-red);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .purge-fill {
+    height: 100%;
+    background: var(--crt-red);
+    width: 0%;
+  }
+
+  .resync-btn {
+    background: var(--crt-amber);
+    color: #000;
+    border: none;
+    font-family: var(--font-mono);
+    font-weight: bold;
+    font-size: 0.72rem;
+    padding: 4px 10px;
+    border-radius: 2px;
+    cursor: pointer;
+    animation: pulse-amber 0.6s infinite alternate;
+  }
+
+  @keyframes pulse-amber {
+    from { box-shadow: 0 0 2px var(--crt-amber); }
+    to { box-shadow: 0 0 12px var(--crt-amber); }
+  }
+
+  /* Telemetry Footer Strip under CRT */
+  .telemetry-strip {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+  }
+
+  .telem-box {
+    background: #070a0e;
+    border: 1px solid #222a36;
+    padding: 5px 7px;
+    border-radius: 3px;
+  }
+
+  .telem-k {
+    font-size: 0.58rem;
+    color: var(--text-muted);
+  }
+
+  .telem-v {
+    font-size: 0.82rem;
+    font-weight: bold;
+    color: var(--crt-green);
+  }
+
+  /* ================= RIGHT PANEL: SILO, KEYPAD, ARM & COMMIT ================= */
+  .silo-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+
+  .silo-btn {
+    background: linear-gradient(180deg, #1d232c 0%, #12161c 100%);
+    border: 1px solid #333e4d;
+    border-bottom: 3px solid #090b0e;
+    border-radius: 3px;
+    padding: 7px 8px;
+    text-align: left;
+    cursor: pointer;
+    font-family: var(--font-mono);
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    transition: all 0.08s;
+  }
+
+  .silo-btn:hover {
+    border-color: #516178;
+  }
+
+  .silo-btn:active {
+    transform: translateY(2px);
+    border-bottom-width: 1px;
+  }
+
+  .silo-btn.selected {
+    background: #102d1c;
+    border-color: var(--crt-green);
+    box-shadow: 0 0 10px rgba(45, 255, 110, 0.2);
+  }
+
+  .silo-name {
+    font-size: 0.7rem;
+    font-weight: bold;
+    color: #dce4ee;
+  }
+
+  .silo-status {
+    font-size: 0.62rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .st-ready { color: var(--crt-green); }
+  .st-maint { color: var(--crt-amber); }
+  .st-off { color: var(--crt-red); }
+
+  /* Keypad */
+  .keypad-wrap {
+    display: grid;
+    grid-template-columns: 1fr 1.2fr;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .code-display-box {
+    background: #040806;
+    border: 1px solid #27382d;
+    border-radius: 4px;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 100%;
+  }
+
+  .code-screen {
+    font-size: 1.45rem;
+    font-weight: bold;
+    letter-spacing: 4px;
+    color: var(--crt-green);
+    text-align: center;
+    padding: 6px 0;
+    background: #020503;
+    border: 1px solid #1b2b20;
+    border-radius: 2px;
+    text-shadow: 0 0 8px rgba(45, 255, 110, 0.5);
+  }
+
+  .code-hint {
+    font-size: 0.6rem;
+    color: #6c8273;
+    text-align: center;
+    margin-top: 4px;
+  }
+
+  .keypad-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px;
+  }
+
+  .key-btn {
+    background: linear-gradient(180deg, #28303c 0%, #171c24 100%);
+    border: 1px solid #3f4b5e;
+    border-bottom: 3px solid #0a0c10;
+    color: #e3ebf5;
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    font-weight: bold;
+    padding: 7px 0;
+    border-radius: 3px;
+    cursor: pointer;
+  }
+
+  .key-btn:active {
+    transform: translateY(2px);
+    border-bottom-width: 1px;
+  }
+
+  .key-btn.key-clr {
+    color: var(--crt-amber);
+    font-size: 0.72rem;
+  }
+
+  .key-btn.key-ent {
+    background: linear-gradient(180deg, #1b422b 0%, #10291a 100%);
+    border-color: #2f7a4e;
+    color: var(--crt-green);
+    font-size: 0.72rem;
+  }
+
+  /* Step 4: Safety Guard + Arm Switch */
+  .arm-assembly {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    background: #0d1015;
+    border: 1px solid #2a323e;
+    padding: 8px;
+    border-radius: 4px;
+  }
+
+  .safety-cover-container {
+    position: relative;
+    flex: 1;
+    height: 46px;
+  }
+
+  .arm-switch-under {
+    width: 100%;
+    height: 100%;
+    background: #1a2029;
+    border: 1px solid #3c4757;
+    color: #8c9bae;
+    font-family: var(--font-mono);
+    font-weight: bold;
+    font-size: 0.76rem;
+    border-radius: 3px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .arm-switch-under.armed {
+    background: #3b1313;
+    border-color: var(--crt-red);
+    color: #ff6b6b;
+    box-shadow: inset 0 0 12px rgba(255, 51, 51, 0.35);
+  }
+
+  /* Flip-up Red Acrylic Guard */
+  .red-guard {
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+      -45deg,
+      rgba(210, 30, 30, 0.85),
+      rgba(210, 30, 30, 0.85) 8px,
+      rgba(150, 15, 15, 0.9) 8px,
+      rgba(150, 15, 15, 0.9) 16px
+    );
+    border: 2px solid #ff4d4d;
+    border-radius: 4px;
+    color: #fff;
+    font-size: 0.66rem;
+    font-weight: bold;
+    letter-spacing: 1px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transform-origin: top center;
+    transition: transform 0.25s cubic-bezier(0.2, 0.9, 0.3, 1.2), opacity 0.2s;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.75);
+    z-index: 3;
+    text-shadow: 0 1px 2px #000;
+  }
+
+  .red-guard.flipped {
+    transform: perspective(260px) rotateX(82deg) translateY(-6px);
+    opacity: 0.28;
+    pointer-events: none;
+  }
+
+  .guard-reset-btn {
+    background: #1c222b;
+    border: 1px solid #384352;
+    color: #93a2b8;
+    font-family: var(--font-mono);
+    font-size: 0.62rem;
+    padding: 6px;
+    border-radius: 3px;
+    cursor: pointer;
+  }
+
+  /* Step 5: Hazard Bezel Commit Button */
+  .hazard-bezel {
+    padding: 7px;
+    border-radius: 5px;
+    background: repeating-linear-gradient(
+      -45deg,
+      #1c1c1c,
+      #1c1c1c 10px,
+      #b58112 10px,
+      #b58112 20px
+    );
+    border: 2px solid #3c434f;
+    box-shadow: inset 0 2px 6px rgba(0,0,0,0.85);
+  }
+
+  .commit-btn {
+    width: 100%;
+    padding: 13px 10px;
+    background: linear-gradient(180deg, #3b1414 0%, #210909 100%);
+    border: 2px solid #6b2424;
+    border-bottom: 4px solid #120404;
+    color: #a85656;
+    font-family: var(--font-mono);
+    font-size: 0.95rem;
+    font-weight: bold;
+    letter-spacing: 1.8px;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.1s;
+    text-transform: uppercase;
+  }
+
+  .commit-btn.hot {
+    background: linear-gradient(180deg, #d92626 0%, #8f1111 100%);
+    border-color: #ff7a7a;
+    color: #ffffff;
+    text-shadow: 0 0 8px rgba(255,255,255,0.8);
+    box-shadow: 0 0 18px rgba(255, 51, 51, 0.55);
+    animation: commit-pulse 0.8s infinite alternate;
+  }
+
+  .commit-btn:active {
+    transform: translateY(3px);
+    border-bottom-width: 1px;
+  }
+
+  @keyframes commit-pulse {
+    from { box-shadow: 0 0 10px rgba(255, 51, 51, 0.45); }
+    to { box-shadow: 0 0 24px rgba(255, 51, 51, 0.85); }
+  }
+
+  /* ================= OVERLAYS (START, OUTCOME, MANUAL) ================= */
+  .overlay-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(5, 7, 10, 0.88);
+    backdrop-filter: blur(3px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+    padding: 16px;
+  }
+
+  .overlay-backdrop.hidden {
+    display: none;
+  }
+
+  .modal-box {
+    max-width: 620px;
+    width: 100%;
+    background: linear-gradient(180deg, #181e26 0%, #0e1217 100%);
+    border: 2px solid #3c4759;
+    border-radius: 6px;
+    padding: 20px;
+    box-shadow: 0 14px 40px rgba(0,0,0,0.9);
+  }
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #2e3746;
+    padding-bottom: 10px;
+    margin-bottom: 14px;
+  }
+
+  .modal-title {
+    font-size: 1.1rem;
+    font-weight: bold;
+    letter-spacing: 1.2px;
+    color: var(--crt-amber);
+  }
+
+  .modal-body {
+    font-size: 0.82rem;
+    line-height: 1.55;
+    color: #c5d1e0;
+  }
+
+  .modal-body ol {
+    padding-left: 18px;
+    margin: 10px 0;
+  }
+
+  .modal-body li {
+    margin-bottom: 8px;
+  }
+
+  .modal-actions {
+    margin-top: 18px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+  }
+
+  .primary-action-btn {
+    background: linear-gradient(180deg, #1d5c37 0%, #113821 100%);
+    border: 1px solid var(--crt-green);
+    color: var(--crt-green);
+    font-family: var(--font-mono);
+    font-weight: bold;
+    font-size: 0.85rem;
+    padding: 10px 18px;
+    border-radius: 4px;
+    cursor: pointer;
+    letter-spacing: 1px;
+  }
+
+  .primary-action-btn:hover {
+    background: linear-gradient(180deg, #247344 0%, #15472a 100%);
+    box-shadow: 0 0 12px rgba(45, 255, 110, 0.3);
+  }
+
+  /* Outcome specific styles */
+  .outcome-success {
+    border-color: var(--crt-green);
+  }
+  .outcome-success .modal-title {
+    color: var(--crt-green);
+  }
+
+  .outcome-fail {
+    border-color: var(--crt-red);
+  }
+  .outcome-fail .modal-title {
+    color: var(--crt-red);
+  }
+
+  .stat-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 12px;
+    background: #080b0f;
+    padding: 10px;
+    border: 1px solid #262f3d;
+    border-radius: 4px;
+  }
+
+  /* Blinding white flash on nuclear impact */
+  .whiteout-flash {
+    position: fixed;
+    inset: 0;
+    background: #ffffff;
+    z-index: 100;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 1.4s ease-out;
+  }
+  .whiteout-flash.active {
+    opacity: 1;
+    transition: none;
+  }
+</style>
+</head>
+<body>
+
+  <!-- Nuclear Impact Flash Layer -->
+  <div id="whiteoutFlash" class="whiteout-flash"></div>
+
+  <!-- TOP COMMAND STATUS BAR -->
+  <header class="top-bar">
+    <div class="brand-title">
+      <div class="status-beacon" id="topBeacon"></div>
+      <div>
+        <h1>GMD // GBI EXOATMOSPHERIC FIRE CONTROL</h1>
+        <div class="brand-sub">NORTHCOM / CHEYENNE MTN // KINETIC HIT-TO-KILL CONSOLE</div>
+      </div>
+    </div>
+
+    <div class="top-controls">
+      <div class="defcon-group" title="Select Alert Difficulty">
+        <button class="hw-btn active-defcon-3" id="btnDefcon3" onclick="setDefcon(3)">DEFCON 3</button>
+        <button class="hw-btn" id="btnDefcon2" onclick="setDefcon(2)">DEFCON 2</button>
+        <button class="hw-btn" id="btnDefcon1" onclick="setDefcon(1)">DEFCON 1</button>
+      </div>
+      <button class="hw-btn audio-on" id="btnAudio" onclick="toggleAudio()">AUDIO: ON</button>
+      <button class="hw-btn" onclick="toggleManual(true)">REFERENCE MANUAL</button>
+      <button class="hw-btn" onclick="resetScenario()">NEW THREAT</button>
+    </div>
+  </header>
+
+  <!-- TIGHT COMMAND OVERWATCH STRIP (WORLD MAP + DEDICATED SIDE TELEMETRY BAYS — NO VIDEO CALL SCREENS) -->
+  <section class="overwatch-wall-wrap" aria-label="Global Threat Overwatch">
+    <div class="overwatch-strip">
+
+      <!-- LEFT BAY: DOOMSDAY CLOCK & NMCC FLASH VOICE TRANSCRIPT -->
+      <div class="ow-side-bay" id="owMonitorVtc">
+        <div class="vtc-window-bar">
+          <span>NC2 // SIOP &amp; FLASH TRAFFIC</span>
+          <span class="ow-badge" id="vtcStatusBadge">FLASH OVERRIDE</span>
+        </div>
+        <div class="ow-bay-body">
+          <div class="doomsday-box">
+            <div>
+              <div style="font-size:0.5rem; color:#6e8f78;">DOOMSDAY PROXIMITY</div>
+              <div style="font-size:0.54rem; color:var(--crt-amber);">SIOP-6E: COCKED</div>
+            </div>
+            <div class="doomsday-digits" id="doomsdayClock">00:01:29</div>
+          </div>
+
+          <div class="voice-transcript-box">
+            <div style="display:flex; justify-content:space-between; font-size:0.5rem; color:#699c78;">
+              <span id="vtcSpeakerId">CH-01: NMCC PENTAGON</span>
+              <span id="vtcVoiceStress" style="color:var(--crt-amber);">STRESS: 94%</span>
+            </div>
+            <div id="vtcSubtitleText" style="color:var(--crt-amber); font-weight:bold; font-size:0.58rem; line-height:1.25;">
+              POTUS: "Tell me we have a clean shot—do NOT miss!"
+            </div>
+          </div>
+        </div>
+        <div class="vtc-call-bar">
+          <span id="newsChyronText" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:135px;">
+            EAM BROADCAST ACTIVE
+          </span>
+          <div class="vtc-call-icons">
+            <span class="call-dot active-ack" id="btnAckVtc" onclick="acknowledgeVtc()" title="Acknowledge Flash Order">ACK ORDER</span>
+            <span class="call-dot" id="btnMuteVtc" onclick="toggleVtcMute()" title="Mute Comms Chime">MUTE</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- CENTER GIANT SCREEN: GLOBAL DOT-MATRIX SITUATION MONITOR (CLEAN, ZERO OVERLAPPING) -->
+      <div class="center-map-screen" id="owMonitorWorld">
+        <div class="vtc-window-bar">
+          <span>GLOBAL THREAT &amp; EARLY WARNING SITUATION DISPLAY // SBIRS-GEO &amp; BMEWS NET</span>
+          <span class="ow-badge amber" id="worldPingBadge">TRACKING ANOMALIES</span>
+        </div>
+        <div class="map-canvas-holder">
+          <canvas id="worldCanvas" width="820" height="116"></canvas>
+        </div>
+        <div class="map-Comms-strip">
+          <span style="color:#5ca874; font-weight:bold;">BMEWS / SBIRS FEED:</span>
+          <span id="worldTickerText" style="color: #7ec8f8; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex:1;">
+            FLASH: BALTIC FLEET COMMS SPIKE // SSBN PATROL ARC DELTA-9
+          </span>
+          <button class="world-ack-btn" id="btnAckWorld" onclick="ackWorldAnomaly()">SILENCE PING</button>
+        </div>
+      </div>
+
+      <!-- RIGHT BAY: NC2 EAM CRYPTO MATRIX & EARLY WARNING RADAR STATUS (COGNITIVE DECOY TRAP) -->
+      <div class="ow-side-bay">
+        <div class="vtc-window-bar">
+          <span>NC2 // EAM CRYPTO &amp; BMEWS NET</span>
+          <span style="color:#ff6b6b;">LIVE KEYS</span>
+        </div>
+        <div class="ow-bay-body">
+          <div style="font-size:0.5rem; color:#7fa68a; letter-spacing:0.4px;">
+            INCOMING EAM AUTHENTICATION TOKENS (NON-APOGEE):
+          </div>
+          <div class="eam-grid-table">
+            <div class="eam-cell">
+              <span style="color:#789682;">SIOP-KEY:</span>
+              <span class="decoy-code-val" id="decoyCode1">8841</span>
+            </div>
+            <div class="eam-cell">
+              <span style="color:#789682;">PACOM-ID:</span>
+              <span class="decoy-code-val" id="decoyCode2">3092</span>
+            </div>
+            <div class="eam-cell">
+              <span style="color:#789682;">NMCC-AUTH:</span>
+              <span class="decoy-code-val" id="decoyCode3">7719</span>
+            </div>
+            <div class="eam-cell">
+              <span style="color:#789682;">SAS-LOCK:</span>
+              <span class="decoy-code-val" id="decoyCode4">5104</span>
+            </div>
+          </div>
+          <div style="display:flex; justify-content:space-between; font-size:0.52rem; color:#8ce6a8; background:#060c08; padding:3px 6px; border:1px solid #193020; border-radius:2px;">
+            <span>THULE BMEWS: <strong style="color:#2dff6e;">LOCKED</strong></span>
+            <span>FYLINGDALES: <strong style="color:#2dff6e;">NOMINAL</strong></span>
+          </div>
+        </div>
+        <div class="vtc-call-bar">
+          <span>SAT-LINK: MILSTAR-4 CRYPTO</span>
+          <span style="color:var(--crt-green);">SYNC 99.8%</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- HORIZONTAL STRUCTURAL BANNER BAR -->
+    <div class="gbd-operations-banner">
+      <span style="color:#7da2c4;">GBD Systems</span>
+      <span>GBD SYSTEMS - ACTIVE OPERATIONS</span>
+      <span style="color:#38bdf8; font-size:0.56rem;">NORAD // CHEYENNE MTN HARDENED LINK</span>
+    </div>
+  </section>
+
+  <!-- MAIN 3-COLUMN TACTICAL CONSOLE -->
+  <main class="console-grid">
+
+    <!-- ==================== LEFT COLUMN: SENSOR & DISCRIMINATION ==================== -->
+    <section class="console-column">
+      <div class="module-header">
+        <span class="module-title">01 // SBX-1 &amp; IR DISCRIMINATION</span>
+        <span class="module-tag">STEP 1</span>
+      </div>
+
+      <!-- Radar & Waveform CRT -->
+      <div class="crt-frame">
+        <canvas id="sensorCanvas" width="420" height="165"></canvas>
+      </div>
+
+      <!-- Frequency Tuning & IR Filter -->
+      <div class="sub-panel tuner-box">
+        <div class="sub-label">
+          <span>X-BAND PHASE RESONANCE TUNER</span>
+          <span id="lockIndicatorText" style="color: var(--crt-amber);">UNRESOLVED DECOYS</span>
+        </div>
+
+        <div class="freq-readout-row">
+          <div>
+            <div style="font-size: 0.6rem; color: var(--text-muted);">CARRIER FREQ</div>
+            <div class="freq-val" id="freqReadout">9.42 GHz</div>
+          </div>
+          <div style="text-align: right;">
+            <div style="font-size: 0.6rem; color: var(--text-muted);">RV SIGNAL COHERENCE</div>
+            <div class="freq-val" id="coherenceReadout" style="color: var(--crt-amber);">18%</div>
+          </div>
+        </div>
+
+        <div class="resonance-bar-wrap">
+          <div class="resonance-bar-fill" id="resonanceBar"></div>
+        </div>
+
+        <div class="slider-row">
+          <button class="hw-btn" onclick="nudgeFreq(-0.05)">&lt;</button>
+          <input type="range" id="freqSlider" min="8.00" max="11.00" step="0.01" value="9.42" oninput="onFreqChange(this.value)">
+          <button class="hw-btn" onclick="nudgeFreq(0.05)">&gt;</button>
+        </div>
+
+        <div class="ir-toggle-row">
+          <button class="toggle-switch-btn" id="btnIrFilter" onclick="toggleIrFilter()">
+            <span>CRYOGENIC IR PLUME FILTER</span>
+            <span class="led" id="ledIrFilter"></span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Discriminated Target Intel -->
+      <div class="target-intel-box">
+        <div class="intel-cell">
+          <span class="intel-k">CORRIDOR SECTOR</span>
+          <span class="intel-v" id="intelSector">ENCRYPTED</span>
+        </div>
+        <div class="intel-cell">
+          <span class="intel-k">APOGEE SOLUTION CODE</span>
+          <span class="intel-v" id="intelCode">----</span>
+        </div>
+      </div>
+
+      <!-- Auxiliary Sensor Links (Tactile immersion switches) -->
+      <div class="sub-panel">
+        <div class="sub-label"><span>AUXILIARY SENSOR BUS</span><span>NOMINAL</span></div>
+        <div class="aux-switches">
+          <button class="aux-btn on" onclick="toggleAux(this)">
+            <span class="led cyan"></span>
+            <span>SBIRS-GEO</span>
+          </button>
+          <button class="aux-btn on" onclick="toggleAux(this)">
+            <span class="led cyan"></span>
+            <span>COBRA DANE</span>
+          </button>
+          <button class="aux-btn on" onclick="toggleAux(this)">
+            <span class="led cyan"></span>
+            <span>CLEAR AFS</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== CENTER COLUMN: TRAJECTORY & ENGAGEMENT CRT ==================== -->
+    <section class="console-column">
+      <div class="module-header">
+        <span class="module-title">02 // EXOATMOSPHERIC TRAJECTORY &amp; INTERCEPT</span>
+        <span class="module-tag" id="defconBadge">DEFCON 3</span>
+      </div>
+
+      <!-- Main Countdown Timer -->
+      <div class="countdown-banner">
+        <div class="timer-label-block">
+          <span class="timer-title" id="timerTitle">TIME TO ATMOSPHERIC REENTRY</span>
+          <span class="timer-sub" id="timerSub">MIDCOURSE WINDOW ACTIVE — ZERO-TOLERANCE PROTOCOL</span>
+        </div>
+        <div class="timer-digits" id="timerDigits">55.00</div>
+      </div>
+
+      <!-- Primary Trajectory Vector CRT -->
+      <div class="crt-frame">
+        <canvas id="trajCanvas" width="580" height="205"></canvas>
+      </div>
+
+      <!-- 5-Step Sequence Annunciator Strip -->
+      <div class="step-strip">
+        <div class="step-tile active" id="stepTile1">
+          <strong>[1] DISCRIM</strong>
+          <span>RV LOCK</span>
+        </div>
+        <div class="step-tile" id="stepTile2">
+          <strong>[2] SILO</strong>
+          <span>ALLOCATE</span>
+        </div>
+        <div class="step-tile" id="stepTile3">
+          <strong>[3] SOLUTION</strong>
+          <span>UPLOAD</span>
+        </div>
+        <div class="step-tile" id="stepTile4">
+          <strong>[4] EKV ARM</strong>
+          <span>INTERLOCK</span>
+        </div>
+        <div class="step-tile" id="stepTile5">
+          <strong>[5] COMMIT</strong>
+          <span>LAUNCH</span>
+        </div>
+      </div>
+
+      <!-- Protocol Fault / Telemetry Drift Status Bar -->
+      <div class="alert-bar" id="alertBar">
+        <span id="alertMessage">AWAITING STEP 1: TUNE X-BAND &amp; ENGAGE IR FILTER TO ISOLATE RV.</span>
+        <div id="alertActionArea"></div>
+      </div>
+
+      <!-- Live Ballistic Telemetry Strip -->
+      <div class="telemetry-strip">
+        <div class="telem-box">
+          <div class="telem-k">WARHEAD ALTITUDE</div>
+          <div class="telem-v" id="telemAlt">1,140 km</div>
+        </div>
+        <div class="telem-box">
+          <div class="telem-k">CLOSING VELOCITY</div>
+          <div class="telem-v" id="telemVel">7.24 km/s</div>
+        </div>
+        <div class="telem-box">
+          <div class="telem-k">DECOY OBJECTS</div>
+          <div class="telem-v" id="telemDecoys">3 ACTIVE</div>
+        </div>
+        <div class="telem-box">
+          <div class="telem-k">EKV STATUS</div>
+          <div class="telem-v" id="telemEkv" style="color: var(--text-muted);">SAFE / COLD</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== RIGHT COLUMN: SILO ARMAMENT & FIRE CONTROL ==================== -->
+    <section class="console-column">
+      <div class="module-header">
+        <span class="module-title">03 // GBI SILO &amp; FIRE CONTROL</span>
+        <span class="module-tag">STEPS 2–5</span>
+      </div>
+
+      <!-- Step 2: Silo Allocation Matrix -->
+      <div class="sub-panel">
+        <div class="sub-label">
+          <span>[STEP 2] INTERCEPTOR SILO SELECT</span>
+          <span style="color: var(--crt-cyan);">SECTOR MATCH REQ</span>
+        </div>
+        <div class="silo-grid" id="siloGrid">
+          <!-- Populated dynamically per scenario -->
+        </div>
+      </div>
+
+      <!-- Step 3: Firing Solution Keypad -->
+      <div class="sub-panel">
+        <div class="sub-label">
+          <span>[STEP 3] APOGEE OFFSET UPLOAD</span>
+          <span>4-DIGIT KEY</span>
+        </div>
+        <div class="keypad-wrap">
+          <div class="code-display-box">
+            <div style="font-size: 0.6rem; color: #6c8273;">SOLUTION BUFFER</div>
+            <div class="code-screen" id="keypadDisplay">____</div>
+            <div class="code-hint" id="keypadStatus">AWAITING UPLOAD</div>
+          </div>
+          <div class="keypad-grid">
+            <button class="key-btn" onclick="pressKey('1')">1</button>
+            <button class="key-btn" onclick="pressKey('2')">2</button>
+            <button class="key-btn" onclick="pressKey('3')">3</button>
+            <button class="key-btn" onclick="pressKey('4')">4</button>
+            <button class="key-btn" onclick="pressKey('5')">5</button>
+            <button class="key-btn" onclick="pressKey('6')">6</button>
+            <button class="key-btn" onclick="pressKey('7')">7</button>
+            <button class="key-btn" onclick="pressKey('8')">8</button>
+            <button class="key-btn" onclick="pressKey('9')">9</button>
+            <button class="key-btn key-clr" onclick="pressClear()">CLR</button>
+            <button class="key-btn" onclick="pressKey('0')">0</button>
+            <button class="key-btn key-ent" onclick="pressEnter()">ENT</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 4: Safety Interlock & EKV Arm -->
+      <div class="sub-panel">
+        <div class="sub-label">
+          <span>[STEP 4] EKV THERMAL BATTERY ARM</span>
+          <span id="armStateLabel">INTERLOCKED</span>
+        </div>
+        <div class="arm-assembly">
+          <div class="safety-cover-container">
+            <div class="red-guard" id="redGuard" onclick="flipSafetyGuard()">
+              ▲ LIFT SAFETY GUARD ▲
+            </div>
+            <button class="arm-switch-under" id="btnArmEkv" onclick="toggleArmEkv()">
+              <span class="led" id="ledArmEkv"></span>
+              <span id="armBtnText">EKV: SAFE</span>
+            </button>
+          </div>
+          <button class="guard-reset-btn" onclick="closeSafetyGuard()" title="Close Safety Guard">COVER</button>
+        </div>
+      </div>
+
+      <!-- Step 5: Terminal Commit / Launch -->
+      <div class="sub-panel">
+        <div class="sub-label">
+          <span>[STEP 5] TERMINAL INTERCEPT COMMIT</span>
+          <span style="color: var(--crt-red);">LIVE ORDNANCE</span>
+        </div>
+        <div class="hazard-bezel">
+          <button class="commit-btn" id="btnCommit" onclick="commitLaunch()">
+            COMMIT // LAUNCH GBI
+          </button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ==================== BRIEFING / START OVERLAY ==================== -->
+  <div class="overlay-backdrop" id="startOverlay">
+    <div class="modal-box">
+      <div class="modal-header">
+        <span class="modal-title">PRIORITY FLASH // BALLISTIC LAUNCH DETECTED</span>
+        <span class="module-tag">NORAD ALERT</span>
+      </div>
+      <div class="modal-body">
+        <p><strong>CRITICAL WARNING:</strong> Space-Based Infrared Satellites (SBIRS) have detected an ICBM booster burnout on an exoatmospheric trajectory toward the continental United States. Multiple Mylar balloon decoys have deployed in midcourse.</p>
+        <p>You are commanding the <strong>Ground-Based Midcourse Defense (GMD)</strong> fire control console. Execute the strict 5-step launch sequence before atmospheric reentry:</p>
+        <ol>
+          <li><strong>DISCRIMINATE:</strong> Tune the X-Band frequency slider to peak resonance and engage the <em>Cryogenic IR Filter</em> to strip decoys, revealing the <strong>Corridor Sector</strong> and <strong>4-Digit Solution Code</strong>.</li>
+          <li><strong>SILO SELECT:</strong> Allocate a <code>READY</code> interceptor in the matching sector (<code>NORTH-PAC</code> &rarr; Ft. Greely, <code>SOUTH-PAC</code> &rarr; Vandenberg).</li>
+          <li><strong>UPLOAD CODE:</strong> Enter the 4-digit Apogee Solution Code on the keypad and press <code>ENT</code>.</li>
+          <li><strong>ARM EKV:</strong> Flip open the red safety guard and switch the Exoatmospheric Kill Vehicle to <code>ARMED</code>.</li>
+          <li><strong>COMMIT:</strong> Press <code>COMMIT // LAUNCH GBI</code> to achieve a kinetic hit-to-kill intercept in space.</li>
+        </ol>
+        <p style="color: var(--crt-amber);"><strong>ZERO-TOLERANCE RULE:</strong> Executing any step out of sequence or selecting an offline silo triggers an immediate <strong>5-second System Purge lockout</strong> while the warhead continues closing.</p>
+      </div>
+      <div class="modal-actions">
+        <button class="primary-action-btn" onclick="startSimulation()">ACKNOWLEDGE &amp; ASSUME COMMAND</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== REFERENCE MANUAL MODAL ==================== -->
+  <div class="overlay-backdrop hidden" id="manualOverlay">
+    <div class="modal-box">
+      <div class="modal-header">
+        <span class="modal-title">GMD STANDARD OPERATING PROCEDURE (SOP-44)</span>
+        <button class="hw-btn" onclick="toggleManual(false)">CLOSE [X]</button>
+      </div>
+      <div class="modal-body">
+        <ol>
+          <li><strong>STEP 1 — X-BAND &amp; IR DISCRIMINATION:</strong> Adjust the frequency slider until RV Signal Coherence reaches <code>95%+</code>, then toggle <code>CRYOGENIC IR PLUME FILTER</code> ON. This suppresses decoy signatures and decrypts Sector &amp; Apogee Code.</li>
+          <li><strong>STEP 2 — SILO ALLOCATION:</strong> Select a green <code>READY</code> silo matching the decrypted corridor:
+            <br>&bull; <code>NORTH-PAC</code> &rarr; <strong>FT. GREELY, AK</strong>
+            <br>&bull; <code>SOUTH-PAC</code> &rarr; <strong>VANDENBERG SFB, CA</strong>
+            <br><em>Warning: Selecting a MAINT/OFFLINE silo or wrong region causes a Protocol Fault.</em>
+          </li>
+          <li><strong>STEP 3 — SOLUTION UPLOAD:</strong> Type the 4-digit code into the tactical keypad and press <code>ENT</code>.</li>
+          <li><strong>STEP 4 — EKV INTERLOCK:</strong> Click the striped red guard to lift it, then engage <code>EKV: ARMED</code>.</li>
+          <li><strong>STEP 5 — TERMINAL COMMIT:</strong> Press <code>COMMIT // LAUNCH GBI</code> before countdown reaches zero.</li>
+          <li><strong>TELEMETRY DRIFT (DEFCON 2/1):</strong> If SBX-1 telemetry drifts mid-sequence, click <code>RE-SYNC SBX</code> in the alert bar before continuing.</li>
+        </ol>
+      </div>
+      <div class="modal-actions">
+        <button class="primary-action-btn" onclick="toggleManual(false)">RETURN TO CONSOLE</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== END-OF-ENGAGEMENT OUTCOME MODAL ==================== -->
+  <div class="overlay-backdrop hidden" id="outcomeOverlay">
+    <div class="modal-box" id="outcomeBox">
+      <div class="modal-header">
+        <span class="modal-title" id="outcomeTitle">ENGAGEMENT RESULT</span>
+        <span class="module-tag" id="outcomeTag">FINAL TELEMETRY</span>
+      </div>
+      <div class="modal-body">
+        <p id="outcomeDesc"></p>
+        <div class="stat-grid" id="outcomeStats"></div>
+      </div>
+      <div class="modal-actions">
+        <button class="primary-action-btn" onclick="resetScenario()">ENGAGE NEW SCENARIO</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+/* ==========================================================================
+   PROCEDURAL WEB AUDIO TELEMETRY SYNTHESIZER (NO EXTERNAL ASSETS)
+   ========================================================================== */
+class SoundEngine {
+  constructor() {
+    this.ctx = null;
+    this.enabled = true;
+  }
+
+  init() {
+    if (!this.ctx) {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      this.ctx = new AudioCtx();
+    }
+    if (this.ctx.state === 'suspended') {
+      this.ctx.resume();
+    }
+  }
+
+  playTone(freq, type, duration, gainVal = 0.12, slideTo = null) {
+    if (!this.enabled) return;
+    this.init();
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, now);
+    if (slideTo) {
+      osc.frequency.exponentialRampToValueAtTime(slideTo, now + duration);
+    }
+    gain.gain.setValueAtTime(gainVal, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start(now);
+    osc.stop(now + duration);
+  }
+
+  clickSwitch() {
+    this.playTone(920, 'triangle', 0.045, 0.14, 240);
+  }
+
+  rotaryTick() {
+    this.playTone(1400, 'sine', 0.02, 0.05, 600);
+  }
+
+  dtmf(digit) {
+    const tones = {
+      '1': 697, '2': 740, '3': 784,
+      '4': 830, '5': 880, '6': 932,
+      '7': 987, '8': 1046, '9': 1108,
+      '0': 1174, 'CLR': 420, 'ENT': 1320
+    };
+    this.playTone(tones[digit] || 800, 'sine', 0.09, 0.12);
+  }
+
+  stepConfirm() {
+    this.playTone(580, 'sine', 0.09, 0.12);
+    setTimeout(() => this.playTone(880, 'sine', 0.14, 0.14), 75);
+  }
+
+  radarPing(critical = false) {
+    this.playTone(critical ? 1280 : 980, 'sine', 0.08, critical ? 0.11 : 0.06);
+  }
+
+  faultBuzzer() {
+    this.playTone(135, 'sawtooth', 0.38, 0.22, 95);
+    setTimeout(() => this.playTone(125, 'sawtooth', 0.38, 0.22, 85), 180);
+  }
+
+  driftWarning() {
+    this.playTone(640, 'square', 0.12, 0.12);
+    setTimeout(() => this.playTone(480, 'square', 0.15, 0.12), 140);
+  }
+
+  launchRoar() {
+    if (!this.enabled) return;
+    this.init();
+    const duration = 2.4;
+    const bufferSize = this.ctx.sampleRate * duration;
+    const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (this.ctx.sampleRate * 1.1));
+    }
+    const noise = this.ctx.createBufferSource();
+    noise.buffer = buffer;
+
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(320, this.ctx.currentTime);
+    filter.frequency.exponentialRampToValueAtTime(90, this.ctx.currentTime + duration);
+
+    const gain = this.ctx.createGain();
+    gain.gain.setValueAtTime(0.35, this.ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+
+    noise.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.ctx.destination);
+    noise.start();
+  }
+
+  hitToKillSuccess() {
+    const notes = [523.25, 659.25, 783.99, 1046.50];
+    notes.forEach((n, idx) => {
+      setTimeout(() => this.playTone(n, 'triangle', 0.25, 0.16), idx * 110);
+    });
+  }
+
+  impactFail() {
+    this.launchRoar();
+    this.playTone(65, 'sawtooth', 1.4, 0.3, 28);
+  }
+
+  /* Annoying background Overwatch distraction chirps & chimes */
+  vtcChime() {
+    if (!this.enabled || state.vtcMuted) return;
+    this.playTone(1046.5, 'sine', 0.08, 0.055);
+    setTimeout(() => this.playTone(1318.5, 'sine', 0.11, 0.055), 85);
+  }
+
+  worldTelemetryChirp() {
+    if (!this.enabled) return;
+    const base = 1500 + Math.random() * 900;
+    this.playTone(base, 'square', 0.035, 0.035, base * 0.78);
+    setTimeout(() => this.playTone(base * 1.15, 'sine', 0.045, 0.035), 45);
+  }
+
+  easDataBurst() {
+    if (!this.enabled) return;
+    for (let i = 0; i < 4; i++) {
+      setTimeout(() => {
+        this.playTone(i % 2 === 0 ? 1567.98 : 2093.0, 'sawtooth', 0.03, 0.025);
+      }, i * 38);
+    }
+  }
+}
+
+const sfx = new SoundEngine();
+
+/* ==========================================================================
+   DISTRACTION DATA POOLS (OVERWATCH MONITORS)
+   ========================================================================== */
+const VTC_MESSAGES = [
+  { speaker: 'POTUS', ch: 'CH-01: SITUATION ROOM', stress: '96%', text: 'POTUS: "Tell me we have a clean shot—do NOT miss!"' },
+  { speaker: 'VANCE', ch: 'CH-02: NMCC PENTAGON', stress: '91%', text: 'GEN. VANCE: "NORAD confirms trajectory, why haven\'t you fired?!"' },
+  { speaker: 'SECDEF', ch: 'CH-03: E-4B NIGHTWATCH', stress: '89%', text: 'SECDEF: "Confirm silo readiness immediately! Clock is bleeding!"' },
+  { speaker: 'POTUS', ch: 'CH-01: SITUATION ROOM', stress: '98%', text: 'POTUS: "Acknowledge my order! Are the interceptors armed?!"' },
+  { speaker: 'VANCE', ch: 'CH-02: NMCC PENTAGON', stress: '94%', text: 'GEN. VANCE: "Do NOT punch in the EAM keys—use the SBX-1 code!"' },
+  { speaker: 'POTUS', ch: 'CH-01: SITUATION ROOM', stress: '99%', text: 'POTUS: "Millions of lives are riding on your console right now!"' },
+  { speaker: 'VANCE', ch: 'CH-02: NMCC PENTAGON', stress: '93%', text: 'GEN. VANCE: "Verify your corridor sector before committing ordnance!"' }
+];
+
+const WORLD_TICKERS = [
+  'FALSE ALARM?: HIGH-ALTITUDE METEOROLOGICAL ROCKET — KAMCHATKA',
+  'FLASH: BALTIC FLEET COMMS SPIKE // ENCRYPTED BURST DETECTED',
+  'INTEL: UNSCHEDULED SILO DOOR TELEMETRY — SECTOR 7 EURASIA',
+  'SAT-09: ORBITAL DEBRIS PROXIMITY ALERT OVER ARCTIC CIRCLE',
+  'NAVY: OHIO-CLASS SSBN PATROL ARC DELTA-9 SHIFTING LAUNCH DEPTH',
+  'NORAD: SOLAR FLARE KP-6 IONOSPHERIC SCINTILLATION WARNING',
+  'STRATCOM: B-52H NUCLEAR ALERT WING TAXIING AT MINOT AFB'
+];
+
+const NEWS_CHYRONS = [
+  'BREAKING: UNVERIFIED LAUNCH REPORTS OVER NORTH PACIFIC — PENTAGON DECLINES COMMENT',
+  'URGENT: CIVIL DEFENSE SIRENS SOUNDING IN HONOLULU, ANCHORAGE, AND SEATTLE',
+  'LIVE: EMERGENCY BROADCAST SYSTEM INTERRUPTS ALL NATIONAL TELEVISION NETWORKS',
+  'ALERT: FAA ORDERS IMMEDIATE GROUND STOP FOR ALL NORTH AMERICAN AIRSPACE'
+];
+
+/* ==========================================================================
+   GAME STATE & ZERO-TOLERANCE STATE MACHINE
+   ========================================================================== */
+const state = {
+  defcon: 3,
+  running: false,
+  pausedForModal: true,
+  phase: 'ACTIVE', // 'ACTIVE' | 'TERMINAL_FLIGHT' | 'ENDED'
+
+  // Countdown & Timing
+  totalTime: 55.0,
+  timeRemaining: 55.0,
+  lastTick: 0,
+  pingAccumulator: 0,
+
+  // Overwatch Distraction State
+  vtcTimer: 0,
+  vtcIndex: 0,
+  vtcMuted: false,
+  vtcMuteCooldown: 0,
+  vtcAckFlash: 0,
+  vtcNagActive: false,
+  worldTimer: 0,
+  worldChirpTimer: 0,
+  worldAnomalyActive: false,
+  // DoomsdaySeconds: 89,
+  doomsdaySeconds: 89,
+  doomsdayAcc: 0,
+  worldHotspots: [
+    { x: 0.89, y: 0.24, label: 'KAMCHATKA-IR', type: 'RADAR', pulse: 0.2 },
+    { x: 0.52, y: 0.27, label: 'KALININGRAD', type: 'COMMS', pulse: 1.4 },
+    { x: 0.61, y: 0.43, label: 'NATANZ-TEL', type: 'THERM', pulse: 2.7 },
+    { x: 0.79, y: 0.41, label: 'BOHAI-SSBN', type: 'SONAR', pulse: 3.9 },
+    { x: 0.41, y: 0.20, label: 'GIUK-GAP', type: 'SOSUS', pulse: 5.1 }
+  ],
+
+  // Zero-Tolerance State Machine
+  currentStep: 1,
+  lockoutTimer: 0,
+  lockoutDuration: 5.0,
+  faultCount: 0,
+
+  // Mid-Sequence Telemetry Drift (DEFCON 2 & 1)
+  driftTriggered: false,
+  driftTriggerTime: 0,
+  driftActive: false,
+
+  // Step 1: Discrimination Parameters
+  targetFreq: 9.42,
+  currentFreq: 8.50,
+  coherence: 0,
+  irFilterOn: false,
+  targetSector: 'NORTH-PAC',
+  solutionCode: '4821',
+  decoyCount: 3,
+
+  // Step 2: Silos
+  silos: [],
+  selectedSiloId: null,
+
+  // Step 3: Keypad
+  keypadInput: '',
+  codeUploaded: false,
+
+  // Step 4: Arming
+  guardOpen: false,
+  ekvArmed: false,
+
+  // Step 5: Terminal Flight Animation
+  terminalProgress: 0,
+  launchTimeRemaining: 0,
+  radarAngle: 0
+};
+
+/* ==========================================================================
+   TOP BAR & MODAL CONTROLS
+   ========================================================================== */
+function setDefcon(level) {
+  sfx.clickSwitch();
+  state.defcon = level;
+  document.getElementById('btnDefcon3').className = 'hw-btn' + (level === 3 ? ' active-defcon-3' : '');
+  document.getElementById('btnDefcon2').className = 'hw-btn' + (level === 2 ? ' active-defcon-2' : '');
+  document.getElementById('btnDefcon1').className = 'hw-btn' + (level === 1 ? ' active-defcon-1' : '');
+  document.getElementById('defconBadge').textContent = `DEFCON ${level}`;
+  resetScenario();
+}
+
+function toggleAudio() {
+  sfx.enabled = !sfx.enabled;
+  const btn = document.getElementById('btnAudio');
+  btn.textContent = sfx.enabled ? 'AUDIO: ON' : 'AUDIO: OFF';
+  btn.classList.toggle('audio-on', sfx.enabled);
+  if (sfx.enabled) sfx.clickSwitch();
+}
+
+function toggleManual(show) {
+  sfx.clickSwitch();
+  const el = document.getElementById('manualOverlay');
+  el.classList.toggle('hidden', !show);
+  state.pausedForModal = show || !document.getElementById('startOverlay').classList.contains('hidden');
+}
+
+function toggleAux(btn) {
+  if (state.lockoutTimer > 0) { sfx.faultBuzzer(); return; }
+  sfx.clickSwitch();
+  btn.classList.toggle('on');
+  const led = btn.querySelector('.led');
+  led.classList.toggle('cyan');
+}
+
+function startSimulation() {
+  sfx.init();
+  sfx.stepConfirm();
+  document.getElementById('startOverlay').classList.add('hidden');
+  state.pausedForModal = false;
+  resetScenario();
+}
+
+function resetScenario() {
+  document.getElementById('outcomeOverlay').classList.add('hidden');
+  document.getElementById('whiteoutFlash').classList.remove('active');
+
+  // Configure parameters by DEFCON
+  if (state.defcon === 3) {
+    state.totalTime = 56.0;
+    state.decoyCount = 3;
+    state.driftTriggered = true; // Disabled on DEFCON 3
+  } else if (state.defcon === 2) {
+    state.totalTime = 46.0;
+    state.decoyCount = 4;
+    state.driftTriggered = false;
+    state.driftTriggerTime = 26.0;
+  } else {
+    state.totalTime = 38.0;
+    state.decoyCount = 5;
+    state.driftTriggered = false;
+    state.driftTriggerTime = 22.0;
+  }
+
+  state.timeRemaining = state.totalTime;
+  state.phase = 'ACTIVE';
+  state.currentStep = 1;
+  state.lockoutTimer = 0;
+  state.faultCount = 0;
+  state.driftActive = false;
+
+  // Randomize target signature & codes
+  state.targetFreq = +(8.25 + Math.random() * 2.5).toFixed(2);
+  state.currentFreq = +(8.10 + Math.random() * 2.7).toFixed(2);
+  if (Math.abs(state.currentFreq - state.targetFreq) < 0.45) {
+    state.currentFreq = state.targetFreq > 9.5 ? 8.40 : 10.60;
+  }
+
+  state.irFilterOn = false;
+  state.targetSector = Math.random() < 0.5 ? 'NORTH-PAC' : 'SOUTH-PAC';
+  state.solutionCode = String(Math.floor(1000 + Math.random() * 9000));
+
+  // Generate Silo Matrix (always 1 valid READY for NORTH-PAC and 1 valid READY for SOUTH-PAC, plus traps)
+  const greelyNumReady = String(Math.floor(1 + Math.random() * 39)).padStart(2, '0');
+  const greelyNumMaint = String(Math.floor(1 + Math.random() * 39)).padStart(2, '0');
+  const vandyNumReady = String(Math.floor(1 + Math.random() * 4)).padStart(2, '0');
+  const vandyNumOff = String(Math.floor(1 + Math.random() * 4)).padStart(2, '0');
+
+  state.silos = [
+    { id: 'FG-R', name: `FT. GREELY #${greelyNumReady}`, sector: 'NORTH-PAC', status: 'READY' },
+    { id: 'FG-M', name: `FT. GREELY #${greelyNumMaint}`, sector: 'NORTH-PAC', status: 'MAINT' },
+    { id: 'VB-R', name: `VANDENBERG #${vandyNumReady}`, sector: 'SOUTH-PAC', status: 'READY' },
+    { id: 'VB-O', name: `VANDENBERG #${vandyNumOff}`, sector: 'SOUTH-PAC', status: 'OFFLINE' }
+  ];
+  state.selectedSiloId = null;
+
+  // Reset Keypad & Arming
+  state.keypadInput = '';
+  state.codeUploaded = false;
+  state.guardOpen = false;
+  state.ekvArmed = false;
+  state.terminalProgress = 0;
+
+  // Reset Overwatch Distraction Monitors & Decoy 4-Digit Codes
+  state.vtcIndex = Math.floor(Math.random() * VTC_MESSAGES.length);
+  state.vtcTimer = 3.5;
+  state.vtcMuted = false;
+  state.vtcMuteCooldown = 0;
+  state.vtcNagActive = false;
+  state.worldTimer = 4.0;
+  state.worldChirpTimer = 2.5;
+  state.worldAnomalyActive = false;
+  state.worldFocusIdx = 0;
+  state.doomsdaySeconds = 89;
+  randomizeDecoyCodes();
+  updateVtcUI();
+  document.getElementById('owMonitorVtc').classList.remove('nag-alert');
+  document.getElementById('btnAckVtc').classList.remove('urgent');
+  document.getElementById('btnAckWorld').classList.remove('pinging');
+
+  // Sync DOM Controls
+  document.getElementById('freqSlider').value = state.currentFreq.toFixed(2);
+  document.getElementById('btnIrFilter').classList.remove('engaged');
+  document.getElementById('ledIrFilter').className = 'led';
+
+  document.getElementById('intelSector').textContent = 'ENCRYPTED';
+  document.getElementById('intelSector').classList.remove('locked');
+  document.getElementById('intelCode').textContent = '----';
+  document.getElementById('intelCode').classList.remove('locked');
+
+  document.getElementById('keypadDisplay').textContent = '____';
+  document.getElementById('keypadStatus').textContent = 'AWAITING UPLOAD';
+  document.getElementById('keypadStatus').style.color = '#6c8273';
+
+  document.getElementById('redGuard').classList.remove('flipped');
+  document.getElementById('btnArmEkv').classList.remove('armed');
+  document.getElementById('ledArmEkv').className = 'led';
+  document.getElementById('armBtnText').textContent = 'EKV: SAFE';
+  document.getElementById('armStateLabel').textContent = 'INTERLOCKED';
+  document.getElementById('telemEkv').textContent = 'SAFE / COLD';
+  document.getElementById('telemEkv').style.color = 'var(--text-muted)';
+
+  document.getElementById('btnCommit').classList.remove('hot');
+  document.getElementById('telemDecoys').textContent = `${state.decoyCount} ACTIVE`;
+
+  renderSiloGrid();
+  updateCoherence();
+  updateStepAnnunciators();
+  setAlertNormal('AWAITING STEP 1: TUNE X-BAND & ENGAGE IR FILTER TO ISOLATE RV.');
+
+  state.running = true;
+  state.lastTick = performance.now();
+}
+
+function renderSiloGrid() {
+  const grid = document.getElementById('siloGrid');
+  grid.innerHTML = '';
+  state.silos.forEach(silo => {
+    const btn = document.createElement('button');
+    btn.className = 'silo-btn' + (state.selectedSiloId === silo.id ? ' selected' : '');
+    const statusClass = silo.status === 'READY' ? 'st-ready' : (silo.status === 'MAINT' ? 'st-maint' : 'st-off');
+    const ledClass = silo.status === 'READY' ? 'green' : (silo.status === 'MAINT' ? 'amber' : 'red');
+    btn.innerHTML = `
+      <span class="silo-name">${silo.name}</span>
+      <span class="silo-status">
+        <span class="${statusClass}">${silo.status}</span>
+        <span class="led ${ledClass}"></span>
+      </span>
+    `;
+    btn.onclick = () => selectSilo(silo);
+    grid.appendChild(btn);
+  });
+}
+
+/* ==========================================================================
+   ZERO-TOLERANCE GUARD & LOCKOUT HANDLER
+   ========================================================================== */
+function canInteract(requiredStep) {
+  if (!state.running || state.pausedForModal || state.phase !== 'ACTIVE') return false;
+
+  if (state.lockoutTimer > 0) {
+    sfx.faultBuzzer();
+    return false;
+  }
+
+  if (state.driftActive) {
+    triggerProtocolFault('SBX-1 TELEMETRY DRIFT UNRESOLVED! RE-SYNC RADAR FIRST.');
+    return false;
+  }
+
+  if (state.currentStep !== requiredStep) {
+    triggerProtocolFault(`OUT-OF-SEQUENCE INPUT! COMPLETE STEP ${state.currentStep} FIRST.`);
+    return false;
+  }
+
+  return true;
+}
+
+function triggerProtocolFault(reason) {
+  sfx.faultBuzzer();
+  state.faultCount++;
+  state.lockoutTimer = state.lockoutDuration;
+
+  const tile = document.getElementById(`stepTile${state.currentStep}`);
+  if (tile) tile.classList.add('fault');
+
+  const bar = document.getElementById('alertBar');
+  bar.className = 'alert-bar fault-active';
+  document.getElementById('alertMessage').textContent = `PROTOCOL FAULT: ${reason}`;
+  document.getElementById('alertActionArea').innerHTML = `
+    <div class="purge-progress"><div class="purge-fill" id="purgeFill"></div></div>
+  `;
+}
+
+function triggerTelemetryDrift() {
+  state.driftTriggered = true;
+  state.driftActive = true;
+  sfx.driftWarning();
+
+  const bar = document.getElementById('alertBar');
+  bar.className = 'alert-bar drift-active';
+  document.getElementById('alertMessage').textContent = 'WARNING: SBX-1 RADAR PHASE DRIFT DETECTED!';
+  document.getElementById('alertActionArea').innerHTML = `
+    <button class="resync-btn" onclick="resolveDrift()">RE-SYNC SBX</button>
+  `;
+}
+
+function resolveDrift() {
+  if (!state.driftActive || state.lockoutTimer > 0) return;
+  sfx.stepConfirm();
+  state.driftActive = false;
+  setAlertNormal(`SBX-1 COHERENCE RESTORED. CONTINUE STEP ${state.currentStep}.`);
+}
+
+function setAlertNormal(msg) {
+  const bar = document.getElementById('alertBar');
+  bar.className = 'alert-bar';
+  document.getElementById('alertMessage').textContent = msg;
+  document.getElementById('alertActionArea').innerHTML = '';
+}
+
+function updateStepAnnunciators() {
+  for (let i = 1; i <= 5; i++) {
+    const el = document.getElementById(`stepTile${i}`);
+    el.classList.remove('active', 'done', 'fault');
+    if (i < state.currentStep) el.classList.add('done');
+    else if (i === state.currentStep) el.classList.add('active');
+  }
+}
+
+/* ==========================================================================
+   STEP 1: X-BAND DISCRIMINATION & IR FILTER
+   ========================================================================== */
+function onFreqChange(val) {
+  if (!state.running || state.pausedForModal || state.phase !== 'ACTIVE') return;
+  if (state.lockoutTimer > 0) {
+    document.getElementById('freqSlider').value = state.currentFreq.toFixed(2);
+    sfx.faultBuzzer();
+    return;
+  }
+  state.currentFreq = parseFloat(val);
+  sfx.rotaryTick();
+  updateCoherence();
+  checkStep1Completion();
+}
+
+function nudgeFreq(delta) {
+  if (state.lockoutTimer > 0) { sfx.faultBuzzer(); return; }
+  let next = Math.min(11.0, Math.max(8.0, +(state.currentFreq + delta).toFixed(2)));
+  document.getElementById('freqSlider').value = next.toFixed(2);
+  onFreqChange(next);
+}
+
+function toggleIrFilter() {
+  if (state.lockoutTimer > 0) { sfx.faultBuzzer(); return; }
+  if (!state.running || state.phase !== 'ACTIVE') return;
+
+  sfx.clickSwitch();
+  state.irFilterOn = !state.irFilterOn;
+  document.getElementById('btnIrFilter').classList.toggle('engaged', state.irFilterOn);
+  document.getElementById('ledIrFilter').className = state.irFilterOn ? 'led green' : 'led';
+  updateCoherence();
+  checkStep1Completion();
+}
+
+function updateCoherence() {
+  const diff = Math.abs(state.currentFreq - state.targetFreq);
+  const rawMatch = Math.max(0, 1 - diff / 0.65);
+  const pct = Math.round(rawMatch * 100);
+  state.coherence = pct;
+
+  document.getElementById('freqReadout').textContent = `${state.currentFreq.toFixed(2)} GHz`;
+  const cohEl = document.getElementById('coherenceReadout');
+  const barEl = document.getElementById('resonanceBar');
+  cohEl.textContent = `${pct}%`;
+  barEl.style.width = `${pct}%`;
+
+  if (pct >= 94) {
+    cohEl.style.color = 'var(--crt-green)';
+    barEl.style.backgroundColor = 'var(--crt-green)';
+  } else if (pct >= 65) {
+    cohEl.style.color = 'var(--crt-amber)';
+    barEl.style.backgroundColor = 'var(--crt-amber)';
+  } else {
+    cohEl.style.color = 'var(--crt-red)';
+    barEl.style.backgroundColor = 'var(--crt-red)';
+  }
+
+  const lockText = document.getElementById('lockIndicatorText');
+  if (pct >= 94 && state.irFilterOn) {
+    lockText.textContent = 'WARHEAD RV ISOLATED';
+    lockText.style.color = 'var(--crt-green)';
+  } else if (pct >= 94 && !state.irFilterOn) {
+    lockText.textContent = 'ENGAGE IR FILTER';
+    lockText.style.color = 'var(--crt-cyan)';
+  } else {
+    lockText.textContent = 'UNRESOLVED DECOYS';
+    lockText.style.color = 'var(--crt-amber)';
+  }
+}
+
+function checkStep1Completion() {
+  if (state.currentStep === 1 && state.coherence >= 94 && state.irFilterOn) {
+    sfx.stepConfirm();
+    state.currentStep = 2;
+
+    const secEl = document.getElementById('intelSector');
+    const codeEl = document.getElementById('intelCode');
+    secEl.textContent = state.targetSector;
+    secEl.classList.add('locked');
+    codeEl.textContent = state.solutionCode;
+    codeEl.classList.add('locked');
+
+    document.getElementById('telemDecoys').textContent = 'SUPPRESSED';
+    updateStepAnnunciators();
+    setAlertNormal(`STEP 1 COMPLETE. ALLOCATE READY SILO FOR ${state.targetSector}.`);
+  }
+}
+
+/* ==========================================================================
+   STEP 2: SILO ALLOCATION
+   ========================================================================== */
+function selectSilo(silo) {
+  if (!canInteract(2)) return;
+
+  if (silo.status !== 'READY') {
+    triggerProtocolFault(`${silo.name} IS ${silo.status}! SELECT A READY SILO.`);
+    return;
+  }
+
+  if (silo.sector !== state.targetSector) {
+    triggerProtocolFault(`CORRIDOR MISMATCH! ${state.targetSector} REQUIRES ${state.targetSector === 'NORTH-PAC' ? 'FT. GREELY' : 'VANDENBERG'}.`);
+    return;
+  }
+
+  sfx.stepConfirm();
+  state.selectedSiloId = silo.id;
+  state.currentStep = 3;
+  renderSiloGrid();
+  updateStepAnnunciators();
+  setAlertNormal(`SILO ${silo.name} ALLOCATED. ENTER SOLUTION CODE ${state.solutionCode}.`);
+}
+
+/* ==========================================================================
+   STEP 3: KEYPAD FIRING SOLUTION UPLOAD
+   ========================================================================== */
+function pressKey(digit) {
+  if (!canInteract(3)) return;
+  sfx.dtmf(digit);
+  if (state.keypadInput.length < 4) {
+    state.keypadInput += digit;
+    updateKeypadDisplay();
+  }
+}
+
+function pressClear() {
+  if (!canInteract(3)) return;
+  sfx.dtmf('CLR');
+  state.keypadInput = '';
+  updateKeypadDisplay();
+}
+
+function pressEnter() {
+  if (!canInteract(3)) return;
+  sfx.dtmf('ENT');
+
+  if (state.keypadInput !== state.solutionCode) {
+    state.keypadInput = '';
+    updateKeypadDisplay();
+    triggerProtocolFault(`INVALID APOGEE SOLUTION CODE! EXPECTED ${state.solutionCode}.`);
+    return;
+  }
+
+  sfx.stepConfirm();
+  state.codeUploaded = true;
+  state.currentStep = 4;
+  document.getElementById('keypadStatus').textContent = 'SOLUTION VERIFIED';
+  document.getElementById('keypadStatus').style.color = 'var(--crt-green)';
+  updateStepAnnunciators();
+  setAlertNormal('SOLUTION UPLOADED. LIFT SAFETY GUARD & ARM EKV.');
+}
+
+function updateKeypadDisplay() {
+  const padded = state.keypadInput.padEnd(4, '_');
+  document.getElementById('keypadDisplay').textContent = padded;
+}
+
+/* ==========================================================================
+   STEP 4: SAFETY INTERLOCK & EKV ARMING
+   ========================================================================== */
+function flipSafetyGuard() {
+  if (!canInteract(4)) return;
+  sfx.clickSwitch();
+  state.guardOpen = true;
+  document.getElementById('redGuard').classList.add('flipped');
+  document.getElementById('armStateLabel').textContent = 'GUARD OPEN';
+  document.getElementById('armStateLabel').style.color = 'var(--crt-amber)';
+}
+
+function closeSafetyGuard() {
+  if (state.lockoutTimer > 0) { sfx.faultBuzzer(); return; }
+  sfx.clickSwitch();
+  state.guardOpen = false;
+  document.getElementById('redGuard').classList.remove('flipped');
+  if (!state.ekvArmed) {
+    document.getElementById('armStateLabel').textContent = 'INTERLOCKED';
+    document.getElementById('armStateLabel').style.color = '';
+  }
+}
+
+function toggleArmEkv() {
+  if (!canInteract(4)) return;
+  if (!state.guardOpen) {
+    triggerProtocolFault('SAFETY GUARD CLOSED! LIFT RED COVER BEFORE ARMING.');
+    return;
+  }
+
+  sfx.stepConfirm();
+  state.ekvArmed = true;
+  state.currentStep = 5;
+
+  document.getElementById('btnArmEkv').classList.add('armed');
+  document.getElementById('ledArmEkv').className = 'led red';
+  document.getElementById('armBtnText').textContent = 'EKV: ARMED';
+  document.getElementById('armStateLabel').textContent = 'THERMAL HOT';
+  document.getElementById('armStateLabel').style.color = 'var(--crt-red)';
+
+  const telemEkv = document.getElementById('telemEkv');
+  telemEkv.textContent = 'ARMED // HOT';
+  telemEkv.style.color = 'var(--crt-red)';
+
+  document.getElementById('btnCommit').classList.add('hot');
+  updateStepAnnunciators();
+  setAlertNormal('EKV ARMED & READY! PRESS COMMIT // LAUNCH GBI IMMEDIATELY!');
+}
+
+/* ==========================================================================
+   STEP 5: TERMINAL COMMIT & KINETIC INTERCEPT SEQUENCE
+   ========================================================================== */
+function commitLaunch() {
+  if (!canInteract(5)) return;
+
+  sfx.launchRoar();
+  state.phase = 'TERMINAL_FLIGHT';
+  state.terminalProgress = 0;
+  state.launchTimeRemaining = state.timeRemaining;
+
+  document.getElementById('btnCommit').classList.remove('hot');
+  document.getElementById('stepTile5').classList.remove('active');
+  document.getElementById('stepTile5').classList.add('done');
+
+  setAlertNormal('BOOSTER IGNITION! GBI ASCENDING TO EXOATMOSPHERIC INTERCEPT...');
+}
+
+function concludeEngagement(success, failReason = '') {
+  state.phase = 'ENDED';
+  state.running = false;
+
+  const overlay = document.getElementById('outcomeOverlay');
+  const box = document.getElementById('outcomeBox');
+  const title = document.getElementById('outcomeTitle');
+  const tag = document.getElementById('outcomeTag');
+  const desc = document.getElementById('outcomeDesc');
+  const stats = document.getElementById('outcomeStats');
+
+  overlay.classList.remove('hidden');
+
+  if (success) {
+    sfx.hitToKillSuccess();
+    box.className = 'modal-box outcome-success';
+    title.textContent = 'HIT-TO-KILL CONFIRMED // THREAT NEUTRALIZED';
+    tag.textContent = 'EXOATMOSPHERIC COLLISION';
+    desc.textContent = 'The Exoatmospheric Kill Vehicle (EKV) achieved direct kinetic impact in midcourse space. Warhead pulverized prior to atmospheric reentry with zero nuclear yield.';
+
+    const interceptAlt = Math.round(320 + state.launchTimeRemaining * 14.5);
+    const closingSpeed = (14.8 + Math.random() * 1.4).toFixed(2);
+    stats.innerHTML = `
+      <div><div class="telem-k">INTERCEPT ALTITUDE</div><div class="telem-v">${interceptAlt} KM (EXO)</div></div>
+      <div><div class="telem-k">CLOSING VELOCITY</div><div class="telem-v">${closingSpeed} KM/S</div></div>
+      <div><div class="telem-k">WINDOW MARGIN</div><div class="telem-v">${state.launchTimeRemaining.toFixed(2)} SEC</div></div>
+      <div><div class="telem-k">PROTOCOL FAULTS</div><div class="telem-v">${state.faultCount}</div></div>
+    `;
+  } else {
+    sfx.impactFail();
+    const flash = document.getElementById('whiteoutFlash');
+    flash.classList.add('active');
+    setTimeout(() => flash.classList.remove('active'), 120);
+
+    box.className = 'modal-box outcome-fail';
+    title.textContent = 'REENTRY BREACH // INTERCEPT FAILED';
+    tag.textContent = 'DEFENSE FAILURE';
+    desc.textContent = failReason || 'The incoming reentry vehicle crossed the midcourse engagement floor before GBI kinetic intercept could be achieved.';
+
+    stats.innerHTML = `
+      <div><div class="telem-k">ALERT TIER</div><div class="telem-v" style="color:var(--crt-red);">DEFCON ${state.defcon}</div></div>
+      <div><div class="telem-k">SEQUENCE REACHED</div><div class="telem-v" style="color:var(--crt-red);">STEP ${state.currentStep} OF 5</div></div>
+      <div><div class="telem-k">PROTOCOL FAULTS</div><div class="telem-v" style="color:var(--crt-red);">${state.faultCount}</div></div>
+      <div><div class="telem-k">CORRIDOR</div><div class="telem-v" style="color:var(--crt-red);">${state.targetSector}</div></div>
+    `;
+  }
+}
+
+/* ==========================================================================
+   MAIN SIMULATION LOOP & CRT VECTOR RENDERING
+   ========================================================================== */
+function updateLoop(now) {
+  const dt = Math.min(0.1, (now - state.lastTick) / 1000);
+  state.lastTick = now;
+
+  state.radarAngle = (state.radarAngle + dt * 2.2) % (Math.PI * 2);
+
+  if (state.running && !state.pausedForModal) {
+    updateOverwatch(dt);
+
+    if (state.phase === 'ACTIVE') {
+      state.timeRemaining = Math.max(0, state.timeRemaining - dt);
+
+      // Radar ping cadence accelerates as timer drops
+      const pingInterval = state.timeRemaining < 12 ? 0.45 : (state.timeRemaining < 25 ? 0.85 : 1.4);
+      state.pingAccumulator += dt;
+      if (state.pingAccumulator >= pingInterval) {
+        state.pingAccumulator = 0;
+        sfx.radarPing(state.timeRemaining < 12);
+      }
+
+      // Lockout countdown
+      if (state.lockoutTimer > 0) {
+        state.lockoutTimer = Math.max(0, state.lockoutTimer - dt);
+        const fill = document.getElementById('purgeFill');
+        if (fill) {
+          const pct = ((state.lockoutDuration - state.lockoutTimer) / state.lockoutDuration) * 100;
+          fill.style.width = `${pct}%`;
+        }
+        if (state.lockoutTimer === 0) {
+          updateStepAnnunciators();
+          if (state.driftActive) {
+            triggerTelemetryDrift();
+          } else {
+            setAlertNormal(`PURGE COMPLETE. RESUME STEP ${state.currentStep}.`);
+          }
+        }
+      }
+
+      // Trigger DEFCON 2/1 mid-sequence Telemetry Drift
+      if (!state.driftTriggered && state.timeRemaining <= state.driftTriggerTime && state.lockoutTimer === 0) {
+        triggerTelemetryDrift();
+      }
+
+      // Update Timer Digits & Live Altitude
+      const timerEl = document.getElementById('timerDigits');
+      timerEl.textContent = state.timeRemaining.toFixed(2).padStart(5, '0');
+      timerEl.classList.toggle('critical', state.timeRemaining <= 12.0);
+
+      const progress = 1 - (state.timeRemaining / state.totalTime);
+      // Parabolic altitude curve from 450km -> 1320km apogee -> 110km reentry floor
+      const alt = Math.round(110 + Math.sin(progress * Math.PI * 0.88 + 0.25) * 1210);
+      document.getElementById('telemAlt').textContent = `${alt.toLocaleString()} km`;
+
+      if (state.timeRemaining <= 0) {
+        concludeEngagement(false, 'TIME EXPIRED: Warhead descended below 100 km exoatmospheric floor before interceptor launch.');
+      }
+    } else if (state.phase === 'TERMINAL_FLIGHT') {
+      state.terminalProgress += dt / 3.4;
+      if (state.terminalProgress >= 1) {
+        state.terminalProgress = 1;
+        concludeEngagement(true);
+      }
+    }
+  }
+  drawWorldCanvas(now / 1000);
+  drawSensorCRT(now / 1000);
+  drawTrajectoryCRT(now / 1000);
+  requestAnimationFrame(updateLoop);
+}
+
+/* ==========================================================================
+   LEFT CRT: SBX-1 RADAR & X-BAND DECOY WAVEFORM CANVAS
+   ========================================================================== */
+function drawSensorCRT(t) {
+  const canvas = document.getElementById('sensorCanvas');
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width;
+  const h = canvas.height;
+
+  ctx.fillStyle = '#040a07';
+  ctx.fillRect(0, 0, w, h);
+
+  // Grid lines
+  ctx.strokeStyle = 'rgba(45, 255, 110, 0.12)';
+  ctx.lineWidth = 1;
+  for (let x = 0; x < w; x += 28) {
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+  }
+  for (let y = 0; y < h; y += 28) {
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+  }
+
+  // Left side: Circular Radar Scope
+  const cx = 102;
+  const cy = h / 2;
+  const maxR = 82;
+
+  ctx.strokeStyle = 'rgba(45, 255, 110, 0.35)';
+  [0.33, 0.66, 1.0].forEach(r => {
+    ctx.beginPath();
+    ctx.arc(cx, cy, maxR * r, 0, Math.PI * 2);
+    ctx.stroke();
+  });
+
+  // Crosshairs
+  ctx.beginPath();
+  ctx.moveTo(cx - maxR, cy); ctx.lineTo(cx + maxR, cy);
+  ctx.moveTo(cx, cy - maxR); ctx.lineTo(cx, cy + maxR);
+  ctx.stroke();
+
+  // Radar Sweep Wedge
+  const grad = ctx.createConicGradient ? null : null;
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(state.radarAngle);
+  ctx.fillStyle = 'rgba(45, 255, 110, 0.16)';
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.arc(0, 0, maxR, -0.35, 0);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = '#2dff6e';
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.lineTo(maxR, 0);
+  ctx.stroke();
+  ctx.restore();
+
+  // Blips: 1 Real Warhead + Decoys (decoy opacity fades as coherence rises + IR filter)
+  const decoyVisibility = Math.max(0.05, 1 - (state.coherence / 100) * (state.irFilterOn ? 0.95 : 0.55));
+  const blips = [
+    { angle: -0.75, dist: 0.54, real: true },
+    { angle: -0.62, dist: 0.62, real: false },
+    { angle: -0.88, dist: 0.48, real: false },
+    { angle: -0.71, dist: 0.70, real: false },
+    { angle: -0.95, dist: 0.60, real: false }
+  ];
+
+  blips.slice(0, 1 + state.decoyCount).forEach(b => {
+    const bx = cx + Math.cos(b.angle) * (maxR * b.dist);
+    const by = cy + Math.sin(b.angle) * (maxR * b.dist);
+    if (b.real) {
+      ctx.fillStyle = state.currentStep > 1 ? '#2dff6e' : '#ffb020';
+      ctx.beginPath();
+      ctx.arc(bx, by, 4, 0, Math.PI * 2);
+      ctx.fill();
+      if (state.currentStep > 1) {
+        ctx.strokeStyle = '#2dff6e';
+        ctx.strokeRect(bx - 7, by - 7, 14, 14);
+      }
+    } else {
+      ctx.fillStyle = `rgba(255, 176, 32, ${decoyVisibility})`;
+      ctx.beginPath();
+      ctx.arc(bx, by, 3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  });
+
+  // Right side: Spectral Waveform Discrimination Graph
+  const wx = 204;
+  const ww = w - wx - 12;
+  const wy = 24;
+  const wh = h - 42;
+
+  ctx.strokeStyle = 'rgba(45, 255, 110, 0.3)';
+  ctx.strokeRect(wx, wy, ww, wh);
+
+  ctx.fillStyle = '#2dff6e';
+  ctx.font = '10px Courier New';
+  ctx.fillText('SPECTRAL SIGNATURE', wx + 6, wy + 12);
+
+  // Draw Decoy Noise Waves (suppressed as tuning improves)
+  const noiseAmp = (1 - state.coherence / 100) * 34 + (state.irFilterOn ? 2 : 14);
+  ctx.strokeStyle = 'rgba(255, 176, 32, 0.65)';
+  ctx.lineWidth = 1.3;
+  ctx.beginPath();
+  for (let i = 0; i <= ww; i += 3) {
+    const px = wx + i;
+    const py = wy + wh * 0.55 + Math.sin(i * 0.14 + t * 9) * noiseAmp * Math.cos(i * 0.05 - t * 4);
+    if (i === 0) ctx.moveTo(px, py);
+    else ctx.lineTo(px, py);
+  }
+  ctx.stroke();
+
+  // Draw True Warhead Reentry Vehicle Carrier Spike
+  const rvGain = 0.25 + (state.coherence / 100) * 0.75;
+  ctx.strokeStyle = '#2dff6e';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  for (let i = 0; i <= ww; i += 2) {
+    const px = wx + i;
+    const norm = (i - ww / 2) / 18;
+    const gaussian = Math.exp(-norm * norm) * (wh * 0.42 * rvGain);
+    const py = wy + wh * 0.72 - gaussian + Math.sin(i * 0.3 + t * 14) * 2;
+    if (i === 0) ctx.moveTo(px, py);
+    else ctx.lineTo(px, py);
+  }
+  ctx.stroke();
+}
+
+/* ==========================================================================
+   CENTER CRT: EXOATMOSPHERIC BALLISTIC TRAJECTORY & KINETIC INTERCEPT
+   ========================================================================== */
+function drawTrajectoryCRT(t) {
+  const canvas = document.getElementById('trajCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width;
+  const h = canvas.height;
+
+  ctx.fillStyle = '#030806';
+  ctx.fillRect(0, 0, w, h);
+
+  // Subtle Grid
+  ctx.strokeStyle = 'rgba(45, 255, 110, 0.1)';
+  ctx.lineWidth = 1;
+  for (let x = 0; x < w; x += 36) {
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+  }
+  for (let y = 0; y < h; y += 30) {
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+  }
+
+  // Earth Horizon Curve at bottom
+  ctx.strokeStyle = '#2dff6e';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(w / 2, h + 310, 355, -Math.PI * 0.72, -Math.PI * 0.28);
+  ctx.stroke();
+
+  // Karman Line (100 km Exoatmospheric Floor)
+  ctx.strokeStyle = 'rgba(56, 189, 248, 0.45)';
+  ctx.lineWidth = 1.2;
+  ctx.setLineDash([5, 5]);
+  ctx.beginPath();
+  ctx.arc(w / 2, h + 310, 388, -Math.PI * 0.73, -Math.PI * 0.27);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.fillStyle = 'rgba(56, 189, 248, 0.75)';
+  ctx.font = '9px Courier New';
+  ctx.fillText('EXOATMOSPHERIC FLOOR (100 KM) // MIDCOURSE ZONE ABOVE', 14, h - 54);
+
+  // Trajectory Parabolic Control Points
+  const p0 = { x: 48, y: h - 26 };
+  const p1 = { x: w * 0.48, y: 12 };
+  const p2 = { x: w - 52, y: h - 24 };
+
+  const bezierPt = (u) => {
+    const inv = 1 - u;
+    return {
+      x: inv * inv * p0.x + 2 * inv * u * p1.x + u * u * p2.x,
+      y: inv * inv * p0.y + 2 * inv * u * p1.y + u * u * p2.y
+    };
+  };
+
+  // Full Predicted Ballistic Arc (Dashed Red)
+  ctx.strokeStyle = 'rgba(255, 51, 51, 0.35)';
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([4, 4]);
+  ctx.beginPath();
+  ctx.moveTo(p0.x, p0.y);
+  ctx.quadraticCurveTo(p1.x, p1.y, p2.x, p2.y);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Highlighted Midcourse Intercept Window (u = 0.25 to 0.78)
+  ctx.strokeStyle = 'rgba(255, 176, 32, 0.55)';
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  for (let u = 0.25; u <= 0.78; u += 0.02) {
+    const pt = bezierPt(u);
+    if (u === 0.25) ctx.moveTo(pt.x, pt.y);
+    else ctx.lineTo(pt.x, pt.y);
+  }
+  ctx.stroke();
+
+  // Compute Current Threat Warhead Position
+  const timeProgress = 1 - (state.timeRemaining / state.totalTime);
+  const warheadU = 0.15 + timeProgress * 0.72;
+  const warheadPos = bezierPt(warheadU);
+
+  // Solid Active Warhead Track from Launch to Current Pos
+  ctx.strokeStyle = '#ff3333';
+  ctx.lineWidth = 2.2;
+  ctx.beginPath();
+  for (let u = 0; u <= warheadU; u += 0.02) {
+    const pt = bezierPt(u);
+    if (u === 0) ctx.moveTo(pt.x, pt.y);
+    else ctx.lineTo(pt.x, pt.y);
+  }
+  ctx.stroke();
+
+  // Draw Decoy Cloud if Step 1 not yet completed
+  if (state.currentStep === 1) {
+    ctx.fillStyle = 'rgba(255, 176, 32, 0.75)';
+    for (let i = 0; i < state.decoyCount; i++) {
+      const dx = warheadPos.x + Math.cos(t * 3 + i * 2.1) * 11;
+      const dy = warheadPos.y + Math.sin(t * 2.5 + i * 1.7) * 8;
+      ctx.beginPath();
+      ctx.arc(dx, dy, 2.2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  // Draw Incoming Warhead Reticle
+  ctx.fillStyle = '#ff3333';
+  ctx.beginPath();
+  ctx.arc(warheadPos.x, warheadPos.y, 4.5, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.strokeStyle = '#ff3333';
+  ctx.lineWidth = 1.2;
+  ctx.strokeRect(warheadPos.x - 8, warheadPos.y - 8, 16, 16);
+
+  ctx.fillStyle = '#ff8080';
+  ctx.font = '10px Courier New';
+  ctx.fillText(state.currentStep > 1 ? 'RV-01 [ISOLATED]' : 'THREAT COMPLEX', warheadPos.x - 36, warheadPos.y - 12);
+
+  // Labels for Launch Site, GMD Silos, and Target City
+  ctx.fillStyle = '#ff5555';
+  ctx.fillText('LAUNCH', p0.x - 16, p0.y + 14);
+  ctx.fillText('CONUS', p2.x - 16, p2.y + 14);
+
+  const gmdSite = { x: w - 128, y: h - 38 };
+  ctx.fillStyle = '#38bdf8';
+  ctx.fillRect(gmdSite.x - 4, gmdSite.y - 4, 8, 8);
+  ctx.fillText('GMD SITES', gmdSite.x - 24, gmdSite.y + 14);
+
+  // Top-left Telemetry Overlay inside CRT
+  ctx.fillStyle = '#2dff6e';
+  ctx.fillText(`SECTOR: ${state.currentStep > 1 ? state.targetSector : 'SCANNING...'}`, 14, 18);
+  ctx.fillText('APOGEE: 1,320 KM // MIDCOURSE INTERCEPT WINDOW', 14, 32);
+
+  // Terminal Flight GBI Interceptor Ascent & Kinetic Collision Flash
+  if (state.phase === 'TERMINAL_FLIGHT' || (state.phase === 'ENDED' && state.terminalProgress >= 1)) {
+    const u = Math.min(1, state.terminalProgress);
+    const gbiX = gmdSite.x + (warheadPos.x - gmdSite.x) * u;
+    const gbiY = gmdSite.y + (warheadPos.y - gmdSite.y) * u - Math.sin(u * Math.PI) * 32;
+
+    ctx.strokeStyle = '#38bdf8';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(gmdSite.x, gmdSite.y);
+    ctx.lineTo(gbiX, gbiY);
+    ctx.stroke();
+
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(gbiX, gbiY, 4, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#38bdf8';
+    ctx.fillText('EKV-01', gbiX + 8, gbiY + 4);
+
+    if (u > 0.88) {
+      const blastR = (u - 0.88) * 260;
+      ctx.strokeStyle = '#2dff6e';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.arc(warheadPos.x, warheadPos.y, blastR, 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.fillStyle = 'rgba(45, 255, 110, 0.35)';
+      ctx.beginPath();
+      ctx.arc(warheadPos.x, warheadPos.y, blastR * 0.65, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+}
+
+/* ==========================================================================
+   OVERWATCH DISTRACTION CONTROLLERS (FLASH TRAFFIC, WORLD MAP, DOOMSDAY CLOCK)
+   ========================================================================== */
+function randomizeDecoyCodes() {
+  const gen = () => {
+    let c = String(Math.floor(1000 + Math.random() * 9000));
+    if (c === state.solutionCode) c = '9901';
+    return c;
+  };
+  document.getElementById('decoyCode1').textContent = gen();
+  document.getElementById('decoyCode2').textContent = gen();
+  document.getElementById('decoyCode3').textContent = gen();
+  const d4 = document.getElementById('decoyCode4');
+  if (d4) d4.textContent = gen();
+}
+
+function updateVtcUI() {
+  const msg = VTC_MESSAGES[state.vtcIndex % VTC_MESSAGES.length];
+  const subEl = document.getElementById('vtcSubtitleText');
+  const spkEl = document.getElementById('vtcSpeakerId');
+  const strEl = document.getElementById('vtcVoiceStress');
+  const badgeEl = document.getElementById('vtcStatusBadge');
+  const muteBtn = document.getElementById('btnMuteVtc');
+  const ackBtn = document.getElementById('btnAckVtc');
+  const monEl = document.getElementById('owMonitorVtc');
+
+  if (spkEl) spkEl.textContent = msg.ch;
+  if (strEl) strEl.textContent = `STRESS: ${msg.stress}`;
+
+  if (state.vtcAckFlash > 0) {
+    subEl.textContent = 'LINK CONFIRMED — TELEMETRY PACKET SENT TO COMMAND.';
+    subEl.style.color = 'var(--crt-green)';
+  } else {
+    subEl.textContent = msg.text;
+    subEl.style.color = msg.speaker === 'POTUS' ? 'var(--crt-amber)' : 'var(--crt-cyan)';
+  }
+
+  if (monEl) monEl.classList.toggle('nag-alert', state.vtcNagActive && !state.vtcMuted);
+  if (ackBtn) ackBtn.classList.toggle('active-ack', state.vtcNagActive);
+
+  if (state.vtcMuted) {
+    badgeEl.textContent = `MUTED (${Math.ceil(state.vtcMuteCooldown)}S)`;
+    badgeEl.className = 'ow-badge cyan';
+    muteBtn.textContent = 'UNMUTE';
+  } else if (state.vtcNagActive) {
+    badgeEl.textContent = 'EXECUTION DEMAND';
+    badgeEl.className = 'ow-badge';
+    muteBtn.textContent = 'MUTE';
+  } else {
+    badgeEl.textContent = 'SECURE LINK';
+    badgeEl.className = 'ow-badge amber';
+    muteBtn.textContent = 'MUTE';
+  }
+}
+
+function acknowledgeVtc() {
+  sfx.clickSwitch();
+  state.vtcAckFlash = 1.2;
+  state.vtcNagActive = false;
+  state.vtcTimer = 4.5;
+  updateVtcUI();
+}
+
+function toggleVtcMute() {
+  sfx.clickSwitch();
+  state.vtcMuted = !state.vtcMuted;
+  if (state.vtcMuted) {
+    state.vtcMuteCooldown = 6.5; // White House comms officer overrides mute after 6.5s
+    state.vtcNagActive = false;
+  }
+  updateVtcUI();
+}
+
+function ackWorldAnomaly() {
+  sfx.clickSwitch();
+  state.worldAnomalyActive = false;
+  state.worldFocusIdx = (state.worldFocusIdx + 1) % state.worldHotspots.length;
+  document.getElementById('btnAckWorld').classList.remove('pinging');
+  const badge = document.getElementById('worldPingBadge');
+  badge.textContent = 'SCANNING THEATERS';
+  badge.className = 'ow-badge cyan';
+}
+
+function updateOverwatch(dt) {
+  if (!state.running || state.pausedForModal || state.phase !== 'ACTIVE') return;
+
+  // VTC Priority Call Cycling & Nagging
+  if (state.vtcAckFlash > 0) {
+    state.vtcAckFlash = Math.max(0, state.vtcAckFlash - dt);
+    if (state.vtcAckFlash === 0) updateVtcUI();
+  }
+
+  if (state.vtcMuted && state.vtcMuteCooldown > 0) {
+    state.vtcMuteCooldown -= dt;
+    if (state.vtcMuteCooldown <= 0) {
+      state.vtcMuted = false;
+      state.vtcNagActive = true;
+      sfx.vtcChime();
+    }
+    updateVtcUI();
+  }
+
+  state.vtcTimer -= dt;
+  const vtcCadence = state.defcon === 1 ? 3.4 : (state.defcon === 2 ? 4.4 : 5.5);
+  if (state.vtcTimer <= 0) {
+    state.vtcTimer = vtcCadence;
+    state.vtcIndex = (state.vtcIndex + 1) % VTC_MESSAGES.length;
+    state.vtcNagActive = true;
+    sfx.vtcChime();
+    updateVtcUI();
+  }
+
+  // World Situation Random False-Alarm Pings & Tickers
+  state.worldChirpTimer -= dt;
+  const chirpCadence = state.defcon === 1 ? 2.0 : (state.defcon === 2 ? 3.0 : 4.3);
+  if (state.worldChirpTimer <= 0) {
+    state.worldChirpTimer = chirpCadence + Math.random() * 1.5;
+    state.worldAnomalyActive = true;
+    state.worldFocusIdx = Math.floor(Math.random() * state.worldHotspots.length);
+    document.getElementById('btnAckWorld').classList.add('pinging');
+    const badge = document.getElementById('worldPingBadge');
+    badge.textContent = `BOGEY: ${state.worldHotspots[state.worldFocusIdx].label}`;
+    badge.className = 'ow-badge';
+
+    if (Math.random() < 0.7) sfx.worldTelemetryChirp();
+    else sfx.easDataBurst();
+  }
+
+  state.worldTimer -= dt;
+  if (state.worldTimer <= 0) {
+    state.worldTimer = 4.2;
+    const tIdx = Math.floor(Math.random() * WORLD_TICKERS.length);
+    const nIdx = Math.floor(Math.random() * NEWS_CHYRONS.length);
+    document.getElementById('worldTickerText').textContent = WORLD_TICKERS[tIdx];
+    document.getElementById('newsChyronText').textContent = NEWS_CHYRONS[nIdx];
+    if (Math.random() < 0.55) randomizeDecoyCodes();
+  }
+
+  // Doomsday Proximity Clock Tick
+  state.doomsdayAcc += dt;
+  if (state.doomsdayAcc >= 1.0) {
+    state.doomsdayAcc -= 1.0;
+    state.doomsdaySeconds = Math.max(1, state.doomsdaySeconds - 1);
+    const mins = String(Math.floor(state.doomsdaySeconds / 60)).padStart(2, '0');
+    const secs = String(state.doomsdaySeconds % 60).padStart(2, '0');
+    document.getElementById('doomsdayClock').textContent = `00:${mins}:${secs}`;
+  }
+}
+
+/* ==========================================================================
+   RENDER CENTER GIANT DOT-MATRIX WORLD MAP (UNIFIED MONOCHROME GREEN CRT)
+   ========================================================================== */
+const WORLD_DOT_MATRIX = [
+  "                   .......                       ..    ...                      ",
+  "                 ...........                   .....  ......                    ",
+  "    .....       ............                  ...............     ..........    ",
+  "  .........................          ....    .................................. ",
+  " ..........................         ............................................",
+  "   .......................         .............................................",
+  "     ....................         ..............................................",
+  "      ..................         .............................................  ",
+  "       ................          ...........................................    ",
+  "        .............             .........................................     ",
+  "         ...........             .........................................      ",
+  "          .........             .........................................       ",
+  "           .......             .........................................        ",
+  "            .....              ...............  .......................         ",
+  "              ...               .............     ....................          ",
+  "               ...              ............       .................            ",
+  "                ....             ...........        ..............              ",
+  "                 .......          ..........         ...........                ",
+  "                  ..........       .........          ........                  ",
+  "                  ............     .........           .....     ..   ...       ",
+  "                   ............     ........            ...       .......       ",
+  "                    ...........      .......                       .......      ",
+  "                    ..........       .......                         .......    ",
+  "                     ........         .....                        ...........  ",
+  "                     .......          .....                       ............. ",
+  "                      .....            ....                       ............. ",
+  "                      ....              ...                        ...........  ",
+  "                      ...                .                          .........   ",
+  "                      ..                                             ...    ..  ",
+  "                      .                                                     ..  "
+];
+
+function drawWorldCanvas(t) {
+  const canvas = document.getElementById('worldCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width;
+  const h = canvas.height;
+
+  // Deep Monochrome CRT Bunker Map Background
+  ctx.fillStyle = '#030805';
+  ctx.fillRect(0, 0, w, h);
+
+  // Subtle Latitude / Longitude Grid Lines
+  ctx.strokeStyle = 'rgba(45, 255, 110, 0.08)';
+  ctx.lineWidth = 1;
+  for (let x = 0; x < w; x += 34) {
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+  }
+  for (let y = 0; y < h; y += 24) {
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+  }
+
+  // Render High-Density Dot-Matrix Continents in Unified Green Phosphor Palette
+  const rows = WORLD_DOT_MATRIX.length;
+  const cols = WORLD_DOT_MATRIX[0].length;
+  const cellW = (w - 28) / cols;
+  const cellH = (h - 18) / rows;
+  const dotRadius = Math.min(cellW, cellH) * 0.34;
+
+  for (let r = 0; r < rows; r++) {
+    const rowStr = WORLD_DOT_MATRIX[r];
+    for (let c = 0; c < cols; c++) {
+      if (rowStr[c] === '.') {
+        const px = 14 + c * cellW + cellW * 0.5;
+        const py = 9 + r * cellH + cellH * 0.5;
+        const shade = 0.45 + 0.38 * (1 - c / cols);
+        ctx.fillStyle = `rgba(65, 235, 120, ${shade.toFixed(2)})`;
+        ctx.beginPath();
+        ctx.arc(px, py, dotRadius, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  }
+
+  // Draw Active Trans-Pacific ICBM Trajectory Arc on World Map
+  const launchPt = { x: w * 0.77, y: h * 0.30 };
+  const targetPt = { x: w * 0.19, y: h * 0.33 };
+  const ctrlPt   = { x: w * 0.48, y: h * 0.04 };
+
+  ctx.strokeStyle = 'rgba(255, 65, 65, 0.85)';
+  ctx.lineWidth = 1.6;
+  ctx.setLineDash([4, 3]);
+  ctx.beginPath();
+  ctx.moveTo(launchPt.x, launchPt.y);
+  ctx.quadraticCurveTo(ctrlPt.x, ctrlPt.y, targetPt.x, targetPt.y);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Animated Warhead Blip along Global Arc
+  const u = Math.min(0.95, 1 - (state.timeRemaining / state.totalTime));
+  const inv = 1 - u;
+  const wx = inv * inv * launchPt.x + 2 * inv * u * ctrlPt.x + u * u * targetPt.x;
+  const wy = inv * inv * launchPt.y + 2 * inv * u * ctrlPt.y + u * u * targetPt.y;
+
+  ctx.fillStyle = '#ff3333';
+  ctx.beginPath();
+  ctx.arc(wx, wy, 3.5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = '#ff6666';
+  ctx.strokeRect(wx - 6, wy - 6, 12, 12);
+
+  // Draw Distracting Global Hotspots & Active Anomaly Reticle
+  state.worldHotspots.forEach((spot, idx) => {
+    const sx = spot.x * w;
+    const sy = spot.y * h;
+    const isFocused = state.worldAnomalyActive && state.worldFocusIdx === idx;
+
+    const pulseR = 3 + ((t * 5 + spot.pulse) % 6);
+    ctx.strokeStyle = isFocused ? '#ff3333' : 'rgba(255, 176, 32, 0.65)';
+    ctx.lineWidth = isFocused ? 1.5 : 1;
+    ctx.beginPath();
+    ctx.arc(sx, sy, pulseR, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.fillStyle = isFocused ? '#ff3333' : '#ffb020';
+    ctx.beginPath();
+    ctx.arc(sx, sy, 2.2, 0, Math.PI * 2);
+    ctx.fill();
+
+    if (isFocused) {
+      ctx.strokeStyle = 'rgba(255, 51, 51, 0.75)';
+      ctx.beginPath();
+      ctx.moveTo(sx - 12, sy); ctx.lineTo(sx + 12, sy);
+      ctx.moveTo(sx, sy - 12); ctx.lineTo(sx, sy + 12);
+      ctx.stroke();
+
+      ctx.fillStyle = '#ff8080';
+      ctx.font = 'bold 8px Courier New';
+      ctx.fillText(spot.label, sx + 8, sy - 5);
+    }
+  });
+}
+
+/* ==========================================================================
+   BOOT ENGINE ON WINDOW LOAD
+   ========================================================================== */
+window.onload = function () {
+  resetScenario();
+  state.pausedForModal = true;
+  requestAnimationFrame(updateLoop);
+};
+</script>
+</body>
+</html>

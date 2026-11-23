@@ -1,0 +1,16 @@
+/* The catalog and header inherit Jolly Chubby Studio's platform stylesheet. */
+.comic-main { max-width: 760px; margin: auto; padding: 1rem clamp(16px, 4vw, 55px) 5rem; }
+.comic-main > .filter { display: block; margin: 0 0 1rem auto; }
+.comic-main h1, .comic-main figcaption, .comic-main .intro { font-family: Georgia, serif; }
+.comic-main h1 { font-size: clamp(2.2rem, 5vw, 4.2rem); line-height: 1.08; font-weight: 500; }
+.comic-main .hero { width: 100%; max-height: 43vh; object-fit: cover; border-radius: 4px; }
+.comic-main .intro { font-size: 1.25rem; }
+.comic-main .cta { display: inline-block; border: 1px solid currentColor; border-radius: 24px; padding: .65rem 1.1rem; margin: .3rem .5rem .3rem 0; text-decoration: none; }
+.comic-main .strip { max-width: 540px; margin: auto; }
+.comic-main .group { margin: 0 auto 2.8rem; }
+.comic-main figure { margin: 0; }
+.comic-main figure img { width: 100%; height: auto; }
+.comic-main figcaption { font-size: 1.12rem; padding: .75rem .3rem 0; line-height: 1.55; }
+.comic-main figcaption p { margin: .5em 0; }
+.comic-main figcaption strong { font: 700 .84em system-ui, sans-serif; }
+.comic-main .silent-cut { height: 48vh; background: var(--bg); border-block: 1px solid var(--line); }

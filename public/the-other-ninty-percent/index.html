@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#153e3c" />
+    <meta
+      name="description"
+      content="Look a little closer. A free, bilingual observation and reasoning game in five illustrated scenes. English and Traditional Chinese. No accounts or timers."
+    />
+    <title>The Other 90% · Look a little closer</title>
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="./src/styles.css" />
+    <script type="module" src="./src/app.js"></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main" id="skip">Skip to game</a>
+    <header class="site-header">
+      <a class="brand" href="./" aria-label="The Other 90%" id="home"
+        ><span class="brand-symbol" aria-hidden="true">◔</span
+        ><span
+          >THE OTHER <b>90%</b
+          ><small id="brand-sub">A FIELD GUIDE TO LOOKING CLOSER</small></span
+        ></a
+      >
+      <button
+        class="language"
+        id="language"
+        type="button"
+        aria-label="切換至繁體中文"
+      >
+        <span aria-hidden="true">文 / A</span>
+        <span id="language-label">繁體中文</span>
+      </button>
+    </header>
+    <main id="main" tabindex="-1"></main>
+    <footer class="site-footer">
+      <span class="footer-mark" aria-hidden="true">◔</span
+      ><span id="footer-copy"></span><span id="footer-note"></span>
+    </footer>
+    <div
+      id="announcement"
+      class="sr-only"
+      aria-live="polite"
+      aria-atomic="true"
+    ></div>
+    <noscript
+      >This game needs JavaScript. Please enable it to play. 此遊戲需要
+      JavaScript，請啟用後開始遊戲。</noscript
+    >
+  </body>
+</html>
