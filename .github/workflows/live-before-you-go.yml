@@ -1,0 +1,61 @@
+name: Check live Before You Go release
+on:
+  push:
+    branches: [verify/before-you-go-63]
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Compare both live releases with the pinned module
+        run: |
+          python3 - <<'PY'
+          from urllib.request import urlopen
+          from pathlib import Path
+          from time import sleep
+          for origin in ["https://jaychtw.github.io","https://jollychubbystudio.com"]:
+              for file in sorted(Path("public/before-you-go").iterdir()):
+                  route = "/before-you-go/" + ("" if file.name == "index.html" else file.name)
+                  for attempt in range(4):
+                      with urlopen(origin+route,timeout=25) as response:
+                          if response.read()==file.read_bytes(): break
+                      sleep(4)
+                  else: raise ValueError(origin+route)
+                  print(origin+route, "matches")
+          PY
+      - run: npm install --prefix "$RUNNER_TEMP/studio-check" playwright@1.56.1 --no-audit --no-fund
+      - name: Open studio app from its catalog and compare three destinations
+        run: |
+          export NODE_PATH="$RUNNER_TEMP/studio-check/node_modules"
+          node - <<'JS'
+          const {chromium}=require('playwright');
+          const assert=require('node:assert/strict');
+          (async()=>{
+            const browser=await chromium.launch({executablePath:'/usr/bin/google-chrome',args:['--no-sandbox']});
+            try {
+              const page=await browser.newPage({locale:'en-US'});
+              await page.goto('https://jollychubbystudio.com/apps/',{waitUntil:'domcontentloaded'});
+              const card=page.locator('a[data-project="before-you-go"]');
+              assert.match(await card.textContent(),/63 destinations/);
+              await card.click();
+              const app=page.context().pages().at(-1);
+              await app.waitForURL('https://jollychubbystudio.com/before-you-go/');
+              const places=app.locator('[data-place]');
+              await places.first().waitFor();
+              assert.equal(await places.count(),63);
+              for(const i of [0,21,62]) await places.nth(i).click();
+              await app.locator('#compare').click();
+              assert.equal(await app.locator('#columns article').count(),3);
+              await app.locator('#language').click();
+              assert.equal(await places.count(),63);
+              const labels=await places.locator('b').allTextContents();
+              assert.equal(new Set(labels).size,63);
+              assert.ok(labels.every(l=>/[\u3400-\u9fff]/.test(l)));
+              console.log('63 destination cards in both languages, three comparison panels.');
+            } finally {await browser.close()}
+          })().catch(e=>{console.error(e);process.exitCode=1});
+          JS
