@@ -1,0 +1,38 @@
+name: Verify studio blog in production
+on:
+  push:
+    branches: [verify/bilingual-studio-blog]
+permissions:
+  contents: read
+jobs:
+  blog:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: npm ci && npm run build:blog
+      - name: Compare published blog files with the generated release
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          from urllib.request import urlopen
+          from time import sleep
+          for f in sorted(Path("public/blog").rglob("*")):
+              if not f.is_file(): continue
+              route = "/"+str(f.relative_to("public")).removesuffix("index.html")
+              for attempt in range(5):
+                  with urlopen("https://jollychubbystudio.com"+route,timeout=25) as response:
+                      if response.read() == f.read_bytes(): break
+                  sleep(3)
+              else: raise ValueError(route)
+              print(route,"matches")
+          PY
+      - run: npm install --prefix "$RUNNER_TEMP/blog-check" playwright@1.56.1 --no-audit --no-fund
+      - name: Verify both translations on the studio domain
+        run: |
+          export NODE_PATH="$RUNNER_TEMP/blog-check/node_modules"
+          STUDIO_ORIGIN=https://jollychubbystudio.com node checks/blog.cjs
