@@ -18,6 +18,18 @@ jobs:
         with:
           node-version: '24'
       - run: npm ci && npm run build:blog && node scripts/prepare-travel-config.mjs
+      - name: Check published text for legacy branding and personal identifiers
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          forbidden = re.compile(r'\bPossibility\b|(?i:jay[ ._-]*chen|jaychtw|jay\.yc\.chen)')
+          extensions = {'.html', '.css', '.js', '.json', '.xml', '.svg', '.txt', '.md', '.py'}
+          for path in Path('public').rglob('*'):
+              if path.suffix in extensions and forbidden.search(path.read_text()):
+                  raise SystemExit(f'Personal identifier or previous studio name in {path}')
+          PY
       - run: test -s public/index.html && test -s public/sitemap.xml
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
