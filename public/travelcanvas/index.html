@@ -137,15 +137,9 @@
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyCYm0edORydyO2MFV_5w4WwUWR0dZm5wQU",
-            authDomain: "traveltogether-2a321.firebaseapp.com",
-            projectId: "traveltogether-2a321",
-            storageBucket: "traveltogether-2a321.firebasestorage.app",
-            messagingSenderId: "558637715909",
-            appId: "1:558637715909:web:9345829be48b40c2e5bbac",
-            measurementId: "G-7LV0857NCF"
-        };
+        const configResponse = await fetch("./firebase-config.json");
+        if (!configResponse.ok) throw new Error("Travel Canvas configuration unavailable");
+        const firebaseConfig = await configResponse.json();
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);

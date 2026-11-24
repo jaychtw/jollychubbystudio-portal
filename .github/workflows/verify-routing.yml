@@ -13,7 +13,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - run: npm ci && npm run build:blog
+      - run: npm ci && npm run build:blog && node scripts/prepare-travel-config.mjs
       - run: python3 migration/verify.py
       - run: npm install --prefix "$RUNNER_TEMP/studio-tools" firebase-tools@14.23.0 playwright@1.56.1 --no-audit --no-fund
       - name: Inspect the custom domain before release

@@ -25,9 +25,9 @@ function insertNav(html) {
 
 for (const entry of files(join(root, "posts"))) {
   if (!entry.isDirectory()) continue;
-  const match = /^\d{4}-\d{2}-\d{2}-([a-z0-9]+(?:-[a-z0-9]+)*)$/.exec(entry.name);
+  const match = /^\d{4}-\d{2}-\d{2}-([a-z0-9]+(?:-[a-z0-9]+)*)$/i.exec(entry.name);
   if (!match) throw Error(`Invalid dated post folder: ${entry.name}`);
-  const slug = match[1];
+  const slug = match[1].toLowerCase();
   if (posts.has(slug)) throw Error(`Duplicate post slug "${slug}": ${posts.get(slug).folder} and ${entry.name}`);
   const post = {folder:entry.name, translations:{}};
   posts.set(slug, post);
@@ -35,7 +35,7 @@ for (const entry of files(join(root, "posts"))) {
   for (const locale of Object.keys(language)) {
     const file = join(directory, locale + ".md");
     if (!existsSync(file)) continue;
-    const parts = /^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)([\s\S]*)$/.exec(read(file).replace(/^\uFEFF/,""));
+    const parts = /^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)([\s\S]*)$/.exec(read(file).trimStart());
     if (!parts) throw Error(`Missing YAML frontmatter in ${file}`);
     const data = parse(parts[1]) ?? {};
     if (data.draft === true) continue;

@@ -29,6 +29,8 @@ def assemble(item):
         else:
             with urllib.request.urlopen(item["live"], timeout=30) as response:
                 body = response.read()
+        if b"firebase-config.json" not in body:
+            raise ValueError("Use the studio Travel Canvas entry with external SDK configuration")
         if b"TravelCanvas" not in body or b"firebase" not in body:
             raise ValueError("Unexpected Travel Canvas entry")
         (dest / "index.html").write_bytes(body)
