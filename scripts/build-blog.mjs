@@ -18,9 +18,14 @@ const coverUrl = page => url(page) + page.cover.split("/").map(encodeURIComponen
 const files = dir => readdirSync(dir, {withFileTypes:true});
 const blogLink = '<a href="/blog/" data-zh="部落格">Blog</a>';
 
+const aboutLink = '<a href="/about/" data-zh="關於">About</a>';
+
 function insertNav(html) {
-  return html.replace(/<nav aria-label="Collections"[^>]*>[\s\S]*?<\/nav>/, nav =>
-    nav.includes('href="/blog/"') ? nav : nav.replace("</nav>", blogLink + "</nav>"));
+  return html.replace(/<nav aria-label="Collections"[^>]*>[\s\S]*?<\/nav>/, nav => {
+    if (!nav.includes('href="/about/"')) nav = nav.replace("</nav>", aboutLink + "</nav>");
+    if (!nav.includes('href="/blog/"')) nav = nav.replace('<a href="/about/"', blogLink + '<a href="/about/"');
+    return nav;
+  }).replace('href="/blue-bear-v3.png"', 'href="/jc-monogram-v1.png"');
 }
 
 for (const entry of files(join(root, "posts"))) {
@@ -129,7 +134,7 @@ try {
 } finally { rmSync(staging,{recursive:true,force:true}); }
 
 // Refresh pages that belong to the portal shell. Standalone apps own their navigation.
-const portalPages = ["index.html","404.html","privacy.html","terms.html"];
+const portalPages = ["index.html","404.html","about/index.html","privacy.html","terms.html"];
 for (const section of ["games","apps","bookshelf","what-now"]) {
   const dir = join(output,section);
   if (existsSync(dir)) portalPages.push(...readdirSync(dir,{recursive:true}).filter(f=>f.endsWith(".html")).map(f=>join(section,f)));
@@ -144,6 +149,6 @@ for (const file of portalPages) {
 }
 const sitemap = join(output,"sitemap.xml");
 const previous = read(sitemap).replace(/<url>\s*<loc>https:\/\/jollychubbystudio\.com\/blog\/[^<]*<\/loc>\s*<\/url>\s*/g,"");
-const routes = ["/blog/",...published.map(url)];
+const routes = [...(previous.includes(`<loc>${origin}/about/</loc>`) ? [] : ["/about/"]), "/blog/",...published.map(url)];
 writeFileSync(sitemap,previous.replace("</urlset>",routes.map(r=>`<url><loc>${origin}${r}</loc></url>`).join("")+"</urlset>"));
 console.log(`Built /blog/ with ${published.length} published language editions.`);
