@@ -1,11 +1,11 @@
 ---
-title: "從 Jolly Chubby Studio 說聲嗨"
+title: "今天開張了"
 date: 2026-11-24
-summary: "工作室的第一篇筆記，從照顧一缸魚，到看看臺灣各地此刻的風景。"
+summary: "從照顧一缸魚，到看看臺灣各地此刻的風景。"
 tags: ["工作室筆記"]
 ---
 
-玩 [Stillwater Aquarium](/stillwater-aquarium/) 時，水一變濁，你可能就會拿起洗砂器，替魚缸清一清底砂。打開 [Before You Go](/before-you-go/)，把三個景點的即時影像並排放在一起，原本還沒打算去哪裡的週末午後，也許就有了方向。
+玩[Stillwater Aquarium](/stillwater-aquarium/) 是模擬水族缸，水髒了，就用洗砂器清一清砂子。[Before You Go](/before-you-go/)]則是能讓你最多選三個景點的即時影像來比較，看看哪邊的景色和天氣適合你出遊的心情。
 
 我們對這些小小的選擇很感興趣。打開作品，就能知道它怎麼玩、怎麼用。在這裡，我們多了一點篇幅，可以聊聊它為什麼會做成今天的樣子。
 
