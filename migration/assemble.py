@@ -42,6 +42,10 @@ def assemble(item):
         run(["git", "fetch", "-q", "--depth=1", "https://github.com/jaychtw/" + repo + ".git", item["revision"]], src)
         run(["git", "checkout", "-q", "--detach", "FETCH_HEAD"], src)
         output = src
+        if mode == "single-html":
+            dest.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(src / "index.html", dest / "index.html")
+            return
         if mode == "build":
             output = src / "dist"
             if repo == "armorheart":

@@ -373,5 +373,13 @@
     "revision": "20ed4a7554ab66b23ba3e81a7c23ae819d68dcc5",
     "live": "https://jaychtw.github.io/zero-sum/",
     "mode": "static"
+  },
+  {
+    "id": "optimistic-bob",
+    "slug": "optimistic-bob",
+    "repo": "optimistic-bob",
+    "revision": "d05768946e092a1a4281cb723cdca12833cd4116",
+    "live": "https://jollychubbystudio.com/optimistic-bob/",
+    "mode": "single-html"
   }
 ]
