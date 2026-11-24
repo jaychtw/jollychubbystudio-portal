@@ -1,0 +1,53 @@
+name: Verify corrected posts and Travel Canvas
+on:
+  push:
+    branches: [verify/blog-travel-repair]
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: npm ci && npm run build:blog
+      - name: Compare the published editions with the Markdown build
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          from urllib.request import urlopen
+          from time import sleep
+          root='https://jollychubbystudio.com/'
+          for f in Path('public/blog').rglob('index.html'):
+              path=str(f.relative_to('public')).removesuffix('index.html')
+              for attempt in range(5):
+                  with urlopen(root+path,timeout=20) as r:
+                      if r.read()==f.read_bytes(): break
+                  sleep(4)
+              else: raise ValueError(path)
+              print(path,'matches')
+          PY
+      - run: npm install --prefix "$RUNNER_TEMP/repair-check" playwright@1.56.1 --no-audit --no-fund
+      - name: Verify language switching and anonymous authentication
+        run: |
+          export NODE_PATH="$RUNNER_TEMP/repair-check/node_modules"
+          STUDIO_ORIGIN=https://jollychubbystudio.com node checks/blog.cjs
+          node - <<'JS'
+          const {chromium}=require('playwright');
+          const assert=require('node:assert/strict');
+          (async()=>{
+            const b=await chromium.launch({executablePath:'/usr/bin/google-chrome',args:['--no-sandbox']});
+            try {
+              const p=await b.newPage();
+              const auth=p.waitForResponse(r=>new URL(r.url()).hostname==='identitytoolkit.googleapis.com' && r.url().includes('accounts:signUp'));
+              const r=await p.goto('https://jollychubbystudio.com/travelcanvas/');
+              assert.equal((await r.text()).includes('firebase-config.json'),true);
+              assert.equal((await auth).status(),200);
+              console.log('Production anonymous sign-in passed.');
+            } finally {await b.close()}
+          })().catch(e=>{console.error(e.name);process.exitCode=1});
+          JS
