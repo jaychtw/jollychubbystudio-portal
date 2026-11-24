@@ -1,7 +1,7 @@
 ---
-title: "Hello from Jolly Chubby Studio"
+title: "Today, we open for business"
 date: 2026-11-24
-summary: "A first note from the studio, with an aquarium to tend and a window onto Taiwan."
+summary: "No matter what that business might be."
 tags: ["Studio notes"]
 ---
 
