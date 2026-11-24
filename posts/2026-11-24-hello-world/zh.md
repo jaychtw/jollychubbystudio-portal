@@ -5,7 +5,7 @@ summary: "從照顧一缸魚，到看看臺灣各地此刻的風景。"
 tags: ["工作室筆記"]
 ---
 
-玩[Stillwater Aquarium](/stillwater-aquarium/) 是模擬水族缸，水髒了，就用洗砂器清一清砂子。[Before You Go](/before-you-go/)]則是能讓你最多選三個景點的即時影像來比較，看看哪邊的景色和天氣適合你出遊的心情。
+[Stillwater Aquarium](/stillwater-aquarium/) 是個模擬水族缸。水髒了，就用洗砂器清一清底砂。[Before You Go](/before-you-go/) 則可以讓你把最多三個景點的即時影像放在一起比較，看看哪裡的天氣和風景最合今天出遊的心情。
 
 我們對這些小小的選擇很感興趣。打開作品，就能知道它怎麼玩、怎麼用。在這裡，我們多了一點篇幅，可以聊聊它為什麼會做成今天的樣子。
 

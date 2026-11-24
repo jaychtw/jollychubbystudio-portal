@@ -22,3 +22,5 @@ GitHub Actions uses the repository secret `FIREBASE_SERVICE_ACCOUNT` and the Fir
 Create `posts/YYYY-MM-DD-<slug>/en.md`, `zh.md`, or both. Copy the starter post’s YAML header and set its title, date and summary. Tags, a relative cover path and `draft: true` are optional. Each edition publishes independently. Store inline illustrations beside the Markdown and refer to them with paths such as `./diagram.png`. Slugs must be unique across dated folders.
 
 Run `npm ci && npm run build:blog` to regenerate the blog in the Hosting directory. The index, post pages, navigation and sitemap are generated before deployment. Merge the post into this repository’s main branch to publish it to Jolly Chubby Studio.
+
+Travel Canvas loads its public Firebase web SDK configuration from a same-origin file generated at deploy time. For a local preview, run `node scripts/prepare-travel-config.mjs` first. The configuration belongs to `traveltogether-2a321`. Its owner manages API restrictions, Authentication quotas and Firestore rules in that project.
