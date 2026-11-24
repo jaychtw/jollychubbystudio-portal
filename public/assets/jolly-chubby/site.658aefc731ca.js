@@ -1,7 +1,7 @@
 const isChinese = () => document.documentElement.lang === "zh-TW";
 function initialLanguage() {
   try {
-    const saved = window.localStorage.getItem("possibility:language");
+    const saved = window.localStorage.getItem("jolly-chubby:language") ?? window.localStorage.getItem("possibility:language");
     if (saved === "zh-TW" || saved === "en") return saved;
     const legacy = window.localStorage.getItem("comics.language");
     if (legacy === "1") return "zh-TW";
@@ -44,7 +44,7 @@ function setLanguage(language) {
   languageButton.lang = isChinese() ? "en" : "zh-TW";
   languageButton.title = isChinese() ? "Switch to English" : "切換至繁體中文";
   languageButton.setAttribute("aria-label", languageButton.title);
-  window.dispatchEvent(new window.Event("possibility:language"));
+  window.dispatchEvent(new window.Event("jolly-chubby:language"));
 }
 if (languageButton) {
   setLanguage(initialLanguage());
@@ -52,7 +52,7 @@ if (languageButton) {
   languageButton.addEventListener("click", () => {
     const language = isChinese() ? "en" : "zh-TW";
     try {
-      window.localStorage.setItem("possibility:language", language);
+      window.localStorage.setItem("jolly-chubby:language", language);
     } catch {
       /* Keep the selection for the current page. */
     }
@@ -70,7 +70,7 @@ if (themeButton) {
     themeButton.setAttribute("aria-label", name);
     themeButton.title = name;
   };
-  window.addEventListener("possibility:language", label);
+  window.addEventListener("jolly-chubby:language", label);
   label();
   themeButton.hidden = false;
   themeButton.addEventListener("click", () => {
@@ -81,7 +81,7 @@ if (themeButton) {
       .querySelector('meta[name="theme-color"]')
       ?.setAttribute("content", next === "dark" ? "#202120" : "#f7f6f2");
     try {
-      window.localStorage.setItem("possibility:theme", next);
+      window.localStorage.setItem("jolly-chubby:theme", next);
     } catch {
       /* Browsing works without persistent storage. */
     }
@@ -98,7 +98,7 @@ if (filters) {
       ? `${tag === "All" ? "" : `「${button.textContent}」標籤下`}共有 ${count} 件作品。`
       : `${count} ${count === 1 ? "project" : "projects"}${tag === "All" ? "" : ` tagged ${tag}`}.`;
   }
-  window.addEventListener("possibility:language", () => {
+  window.addEventListener("jolly-chubby:language", () => {
     announce(filters.querySelector('[aria-pressed="true"]'));
   });
   filters.hidden = false;

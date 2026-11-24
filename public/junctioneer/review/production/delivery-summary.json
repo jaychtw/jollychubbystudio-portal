@@ -20,13 +20,13 @@
     "flaky": 0
   },
   "hostedQA": {
-    "url": "https://github.com/jaychtw/junctioneer/actions/runs/39976924448",
+    "url": "junctioneer/actions/runs/39976924448",
     "conclusion": "success",
     "unitTests": 163,
     "browserTests": 56
   },
   "deployment": {
-    "url": "https://github.com/jaychtw/junctioneer/actions/runs/39977669754",
+    "url": "junctioneer/actions/runs/39977669754",
     "conclusion": "success"
   },
   "liveBrowserStats": {

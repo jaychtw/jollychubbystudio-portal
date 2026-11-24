@@ -1,6 +1,6 @@
 // Blocking, same-origin, tiny head script: apply the explicit preference before CSS paints.
 try {
-  const saved = window.localStorage.getItem("possibility:theme");
+  const saved = window.localStorage.getItem("jolly-chubby:theme") ?? window.localStorage.getItem("possibility:theme");
   if (saved === "light" || saved === "dark") {
     document.documentElement.dataset.theme = saved;
     document

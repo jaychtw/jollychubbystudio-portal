@@ -6,8 +6,8 @@
 
 ## Mandatory UGDS preflight — PASS
 
-- Private source: https://github.com/jaychtw/game-development-standards/blob/v1.0.0/UGDS.md
-- Immutable source: https://github.com/jaychtw/game-development-standards/blob/d5c6696efdd6efc028118600466db44aecae0c9b/UGDS.md
+- Private source: game-development-standards/blob/v1.0.0/UGDS.md
+- Immutable source: game-development-standards/blob/d5c6696efdd6efc028118600466db44aecae0c9b/UGDS.md
 - Fetched tag: `v1.0.0`.
 - Resolved commit: **`d5c6696efdd6efc028118600466db44aecae0c9b`**, exactly matching the handoff.
 - Read-only `git ls-remote` succeeded using existing platform GitHub authentication. A shallow bare fetch then independently verified the tag's commit object. No new token was requested.
@@ -121,7 +121,7 @@ Statuses are scoped to this checkpoint. A Pass here does not assert a finished 1
 
 ## Release, preservation and outstanding work
 
-- Source checkout: `/workspace/junctioneer`; origin https://github.com/jaychtw/junctioneer . The origin was empty when this assignment began. A local checkpoint commit is created for review; use `git rev-parse HEAD` for its full SHA (also supplied in delivery). **No remote push is claimed.**
+- Source checkout: `/workspace/junctioneer`; origin junctioneer . The origin was empty when this assignment began. A local checkpoint commit is created for review; use `git rev-parse HEAD` for its full SHA (also supplied in delivery). **No remote push is claimed.**
 - Reproducible local development/build: verified. A new task's filesystem restoration: **Not Verified**. Preserve the local checkout/checkpoint; source is not remotely backed up yet.
 - CI workflow: authored at `.github/workflows/qa.yml`; **hosted execution not performed**.
 - Deployment: **not authorized or performed**. Live hosted gameplay: **Not Verified**. No public playable URL is claimed.

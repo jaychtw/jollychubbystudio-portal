@@ -28,7 +28,7 @@ async function verify() {
         const href = await counterpart.getAttribute("href");
         await counterpart.click();
         assert.equal(new URL(page.url()).pathname, href);
-        assert.equal(await page.evaluate(() => localStorage.getItem("possibility:language")), href.includes("/en/") ? "en" : "zh-TW");
+        assert.equal(await page.evaluate(() => localStorage.getItem("jolly-chubby:language")), href.includes("/en/") ? "en" : "zh-TW");
         await page.locator("a.blog-switch").click();
         assert.equal(new URL(page.url()).pathname, route);
       } else {

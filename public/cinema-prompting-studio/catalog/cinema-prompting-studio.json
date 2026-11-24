@@ -12,7 +12,6 @@
     "action": "open",
     "url": "/cinema-prompting-studio/"
   },
-  "repositoryUrl": "https://github.com/jaychtw/cinema-prompting-studio",
   "languages": [
     "English",
     "繁體中文"
@@ -20,7 +19,6 @@
   "controls": "Describe a scene, arrange timed beats, and copy or download the prompt.",
   "limitations": "Sightline composes prompts locally. FrameCraft and CinePrompt Studio use external scripts.",
   "approval": {
-    "url": "https://github.com/jaychtw/cinema-prompting-studio",
     "note": "Creator supplied the project repository and the two companion modules."
   },
   "release": {

@@ -7,7 +7,7 @@
   ],
   "native_aspect_ratio": "1672:941 (approximate 16:9)",
   "usage": [
-    "Possibility Games card",
+    "Jolly Chubby Games card",
     "Title screen background"
   ],
   "title_text": "The Butterfly Department",
@@ -21,7 +21,7 @@
       "bytes": 3558524,
       "sha256": "52959c6c95ed6051791a42b746b1d71de58bce39e2cda138ce1097334c108411"
     },
-    "possibility-cover.webp": {
+    "jolly-chubby-cover.webp": {
       "bytes": 843576,
       "sha256": "d06a8435202b49657c834cad058df488bf297efafb3fa64f15d62fd352052c95"
     }

@@ -8,7 +8,7 @@
 - This decision is not a waiver of authored-level solvability or a mechanics change. Future levels must be validated under the approved rules. It supersedes the pending interpretation discussion in the historical QA report.
 - Visual direction: **pending review**. No visual production scaling is authorized yet.
 - Preservation: original POC source, all 14 screenshots, recording and test evidence retained at commit `95711eaeaf4d43b5cf8e19439f73e5eea629b274` and tag `poc-visual-checkpoint-01`. Evidence hashes remain unchanged.
-- Publication: the user explicitly authorized pushing and deploying this POC to the existing `jaychtw/junctioneer` repository to make review accessible. This does not constitute creative approval or full v1.0 acceptance.
+- Publication: the user explicitly authorized pushing and deploying this POC to the existing `junctioneer` repository to make review accessible. This does not constitute creative approval or full v1.0 acceptance.
 
 ## Hosted QA portability follow-up
 

@@ -26,9 +26,9 @@ Hosted setup correction: the dependency-install step on `ubuntu-latest` stalled.
 
 ## Public-build verification — passed
 
-- Hosted QA: https://github.com/jaychtw/junctioneer/actions/runs/39971314038 — passed (72 unit / 32 browser tests).
-- Deployment: https://github.com/jaychtw/junctioneer/actions/runs/39971779830 — passed.
-- Public site: https://jaychtw.github.io/junctioneer/ .
+- Hosted QA: junctioneer/actions/runs/39971314038 — passed (72 unit / 32 browser tests).
+- Deployment: junctioneer/actions/runs/39971779830 — passed.
+- Public site: https://jollychubbystudio.com/junctioneer/ .
 - All **12 live Skip regressions passed**, 0 failed, 0 skipped. Full run data: [live-skip-results.json](fix-evidence/live-skip-results.json). HTTPS checks remained enabled.
 - The post-fix GPU reproduction shows an immediate terminal draw in all three levels (145 / 153 / 145 draw calls), compared with zero before the correction.
 - The user’s condition for starting production is now met. Original POC snapshot remains `poc-visual-checkpoint-01`; the fixed source is separately tagged `poc-skip-fixed-01`.

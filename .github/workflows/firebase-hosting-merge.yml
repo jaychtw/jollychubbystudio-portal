@@ -24,3 +24,7 @@ jobs:
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           projectId: jollychubbystudio
           channelId: live
+      - name: Verify the crossing game on the live site
+        run: |
+          npm install --prefix "$RUNNER_TEMP/crossing-check" playwright@1.56.1 --no-audit --no-fund
+          NODE_PATH="$RUNNER_TEMP/crossing-check/node_modules" node checks/crossing.cjs

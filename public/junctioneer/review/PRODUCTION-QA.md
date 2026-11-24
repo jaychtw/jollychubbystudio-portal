@@ -50,11 +50,11 @@ The three-POC-level frame-frozen Skip suite passes **12/12** after the full-game
 ## Verified production delivery
 
 - Tested game source: **`8bb78b972e8af0bd0f092e9270f4c30aeecfcfe7`**. Subsequent delivery-record edits do not change application source or bundle bytes.
-- Hosted QA: [39976924448](https://github.com/jaychtw/junctioneer/actions/runs/39976924448), successful; **163 unit / 56 browser tests**. Chrome 155.0.8059.39. Evidence: `production-evidence/hosted-qa.json` and `hosted-test-summary.txt`.
-- Production deployment: [39977669754](https://github.com/jaychtw/junctioneer/actions/runs/39977669754), successful build and deploy of that exact source. Build verified the current source/artifact hashes and immutable original evidence hashes on the hosted runner.
+- Hosted QA: 39976924448, successful; **163 unit / 56 browser tests**. Chrome 155.0.8059.39. Evidence: `production-evidence/hosted-qa.json` and `hosted-test-summary.txt`.
+- Production deployment: 39977669754, successful build and deploy of that exact source. Build verified the current source/artifact hashes and immutable original evidence hashes on the hosted runner.
 - Full local browser rerun: **56 passed**, zero failed/skipped/flaky, 293.20 seconds. This supersedes the intermediate pose-expectation results described above.
 - Actual public build: **14 browser tests passed**, zero failed/skipped/flaky. This includes a fresh all-15-level progression and save walkthrough, the bilingual final celebration, touch-linked gameplay, and every L01–L03 × early/midway × success/failure Skip case with subsequent RAF/resize callbacks suppressed. Evidence: `production-evidence/live-browser-results.json`.
 - Separate public packaging check: current JS SHA-256 **`2a6efbfd349731d61e15a09ce5776938772c5d05265a223fa9678e0774f578f3`**, actual failure/retry/zh-TW success, all 15 menu entries, all **57 image hashes**, original and production video metadata, four gallery widths, **zero page errors**. Evidence: `production-evidence/live-publication-check.json` (2026-10-23T15:25:36Z).
-- [Play](https://jaychtw.github.io/junctioneer/) · [Both evidence galleries and recordings](https://jaychtw.github.io/junctioneer/review/) · [Machine-readable delivery record](production-evidence/delivery-summary.json).
+- [Play](https://jollychubbystudio.com/junctioneer/) · [Both evidence galleries and recordings](https://jollychubbystudio.com/junctioneer/review/) · [Machine-readable delivery record](production-evidence/delivery-summary.json).
 
 TLS verification remained enabled throughout. The platform's existing trusted proxy CA was imported into Chromium's supported NSS store; no certificate/checksum bypass was used. A documentation-only publication can update these records while retaining identical tested application bytes. Human and physical-device limits above remain Not Verified; this report does not claim final creative acceptance.

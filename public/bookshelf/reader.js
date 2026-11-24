@@ -169,7 +169,7 @@ function render(anchor) {
   ready = true;
   remember();
 }
-window.addEventListener('possibility:language', () => {
+window.addEventListener('jolly-chubby:language', () => {
   const p = [...main.querySelectorAll('figure')].find(el => el.getBoundingClientRect().bottom > 0 && el.getBoundingClientRect().top < innerHeight);
   const anchor = p ? {id:p.id,offset:p.getBoundingClientRect().top} : {y:scrollY};
   language = document.documentElement.lang === 'zh-TW' ? 1 : 0;
