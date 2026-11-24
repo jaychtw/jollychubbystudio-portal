@@ -1,0 +1,33 @@
+name: Deploy Optimistic Bob proxy
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/optimistic-bob-proxy.yml']
+permissions:
+  contents: read
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: jaychtw/optimistic-bob
+          ref: d05768946e092a1a4281cb723cdca12833cd4116
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+      - uses: google-github-actions/setup-gcloud@v2
+      - name: Check Secret Manager version metadata
+        run: |
+          status=$(gcloud secrets versions describe latest --secret=GEMINI_API_KEY --project=jollychubbystudio --format='value(state)')
+          test "$status" = ENABLED
+      - run: npm install --prefix functions --no-audit --no-fund
+      - run: npx --yes firebase-tools@14.23.0 deploy --only functions:ob3000Respond --project jollychubbystudio --non-interactive
+      - name: Inspect active container cleanup policy
+        run: |
+          gcloud artifacts repositories describe gcf-artifacts --location=us-central1 --project=jollychubbystudio --format=json |
+            jq -e '(.cleanupPolicyDryRun != true) and any(.cleanupPolicies[]?; .action == "DELETE")'
